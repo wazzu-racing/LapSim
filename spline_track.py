@@ -1,8 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import time
+import lapsim
+import pickle
 
-v_min = 30
+car_rad = 29
+v_min = 0
 class node():
    
     def __init__(self, x1, y1, x2, y2):
@@ -24,10 +27,10 @@ class node():
         self.update_shift()
     
     def update_shift(self):
-        if self.shift > self.dist:
-            self.shift = self.dist
-        elif self.shift < 0:
-            self.shift = 0
+        if self.shift > self.dist-car_rad:
+            self.shift = self.dist-car_rad
+        elif self.shift < car_rad:
+            self.shift = car_rad
         
         self.x = self.x1 + (self.x2 - self.x1) * self.shift / self.dist
         self.y = self.y1 + (self.y2 - self.y1) * self.shift / self.dist
@@ -59,15 +62,18 @@ class node():
         self.update_shift()
         
     def start_v(self):
-        if abs(self.x - self.prev_nd.x) < abs(self.next_nd.x - self.x):
-            self.vx = (self.x - self.prev_nd.x) / 2**0.5
-        else:
-            self.vx = (self.next_nd.x - self.x) / 2**0.5
-        
-        if abs(self.y - self.prev_nd.y) < abs(self.next_nd.y - self.y):
-            self.vy = (self.y - self.prev_nd.y) / 2**0.5
-        else:
-            self.vy = (self.next_nd.y - self.y) / 2**0.5 + 1
+        #if abs(self.x - self.prev_nd.x) < abs(self.next_nd.x - self.x):
+        #    self.vx = (self.x - self.prev_nd.x) / 2**0.5
+        #else:
+        #    self.vx = (self.next_nd.x - self.x) / 2**0.5
+        #
+        #if abs(self.y - self.prev_nd.y) < abs(self.next_nd.y - self.y):
+        #    self.vy = (self.y - self.prev_nd.y) / 2**0.5
+        #else:
+        #    self.vy = (self.next_nd.y - self.y) / 2**0.5 + 1
+
+        self.vx = (self.next_nd.x - self.x + self.x - self.prev_nd.x) / 4
+        self.vy = (self.next_nd.y - self.y + self.y - self.prev_nd.y) / 4
 
     def gradient(self):
         self.d_vx = self.next_arc.dcx[1] - self.prev_arc.dcx[2]
@@ -140,27 +146,47 @@ class curve():
             self.ddx.append(p1x * self.dds_dA[0][i] + p2x * self.dds_dA[1][i] + p3x * self.dds_dA[2][i] + p4x * self.dds_dA[3][i])
             self.ddy.append(p1y * self.dds_dA[0][i] + p2y * self.dds_dA[1][i] + p3y * self.dds_dA[2][i] + p4y * self.dds_dA[3][i])
 
-            self.c += abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5 / (self.dx[i]**2 + self.dy[i]**2)**0.25 / self.elem
-            
-            num = abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5
-            dom = (self.dx[i]**2 + self.dy[i]**2)**0.25
+            #self.c += abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5 / (self.dx[i]**2 + self.dy[i]**2)**0.25 / self.elem
+            #num = abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5
+            #dom = (self.dx[i]**2 + self.dy[i]**2)**0.25
+
+            num = (self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**2
+            dom = (self.dx[i]**2 + self.dy[i]**2)**2.5
+
+            self.c += num/dom * 1000/self.elem
+
 
             H = 1
             if self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i] < 0:
                 H = -1
             
             for j in range(4):
-                d_num = (self.ds_dA[j][i] * self.ddy[i] - self.dds_dA[j][i] * self.dy[i]) / (2 * num * H)
-                d_dom = (self.ds_dA[j][i] * self.dx[i]) / (2 * dom**3)
+                #d_num = (self.ds_dA[j][i] * self.ddy[i] - self.dds_dA[j][i] * self.dy[i]) / (2 * num * H)
+                #d_dom = (self.ds_dA[j][i] * self.dx[i]) / (2 * dom**3)
+
+                d_num = (self.ds_dA[j][i] * self.ddy[i] - self.dds_dA[j][i] * self.dy[i]) * (self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i]) * 2
+                d_dom = 5 * (self.ds_dA[j][i] * self.dx[i]) * (self.dx[i]**2 + self.dy[i]**2)**1.5
                 dc = (d_num * dom - d_dom * num) / dom**2
                 self.dcx[j] += dc / self.elem
             
             for j in range(4):
-                d_num = (self.dds_dA[j][i] * self.dx[i] - self.ds_dA[j][i] * self.ddx[i]) / (2 * num * H)
-                d_dom = (self.ds_dA[j][i] * self.dy[i]) / (2 * dom**3)
+                #d_num = (self.dds_dA[j][i] * self.dx[i] - self.ds_dA[j][i] * self.ddx[i]) / (2 * num * H)
+                #d_dom = (self.ds_dA[j][i] * self.dy[i]) / (2 * dom**3)
+
+                d_num = (self.dds_dA[j][i] * self.dx[i] - self.ds_dA[j][i] * self.ddx[i]) * (self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i]) * 2
+                d_dom = 5 * (self.ds_dA[j][i] * self.dy[i]) * (self.dx[i]**2 + self.dy[i]**2)**1.5
                 dc = (d_num * dom - d_dom * num) / dom**2
                 self.dcy[j] += dc / self.elem
+        
+    def interpolate(self):
+        len = []
+        rad = []
+        for i in range(0, self.elem):
+            rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i]))
+            len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
 
+        return(len, rad)
+    
     def plot(self):
         plt.plot(self.x, self.y)
         #plt.plot(self.dx, self.dy)
@@ -192,6 +218,20 @@ class track():
     def plot(self):
         for i in self.arcs:
             i.plot()
+        
+        for i in range(len(self.nds)):
+            nd = self.nds[i]
+            match i % 5:
+                case 0: col = 'blue'
+                case 1: col = 'red'
+                case 2: col = 'black'
+                case 3: col = 'magenta'
+                case 4: col = 'orange'
+            plt.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
+            plt.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
+        
+        plt.axis('equal')
+        plt.show()
     
     def get_cost(self):
         cost = 0
@@ -200,7 +240,14 @@ class track():
         return cost
 
     def adjust_track(self, itterations, step):
-        for i in range(itterations):
+        s = []
+        for i in range(len(itterations)):
+            for j in range(itterations[i]):
+                s += [step[i]]
+
+        for k in range(len(s)):
+            step = s[k]
+
             grad_mag = 0
             for i in self.nds:
                 i.gradient()
@@ -212,8 +259,96 @@ class track():
                 i.vx -= i.d_vx / grad_mag * step
                 i.vy -= i.d_vy / grad_mag * step
                 i.shift -= i.d_shift / grad_mag * step
-                i.update_shift()
+            self.update_track()
+
+            char = 100
+            progress_bar = ' ['
+            for j in range(char):
+                if j / char * len(s) >= k+1: progress_bar += '-'
+                else: progress_bar += '#'
+            progress_bar += '] ' + str(int((k+1.1) * 100 / len(s))) + '%\tcost = ' + str(self.get_cost())
+            print(progress_bar, end='\r')
+        print()
+    
+    def run_sim(self, car, nodes = 5000, start = 0, end = 0):
+        if end == 0:
+            end = len(self.arcs)
+        
+        self.len = []
+        self.rad = []
+        for i in self.arcs[start:end]:
+            new_len, new_rad = i.interpolate()
+            self.len += new_len
+            self.rad += new_rad
+        #print(np.sum(self.len))
+        self.sim = lapsim.sm_bullshit(self.len, self.rad, car, nodes)
+        self.nodes, self.v3, self.t = self.sim.run()
+        #print(self.t)
+    
+    def update_track(self):
+        for i in self.nds:
+            i.update_shift()
+        for i in self.arcs:
+            i.compute()
+
+    def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
+        self.run_sim(car, nodes, start, end)
+        plt.plot(self.nodes, self.v3)
+        plt.show()
+    
+    def refine_track(self):
+        self.run_sim('single_point')
+
+        elem = 50
+        t_step = 10
+        m_step = 3
+        grad = np.zeros(len(self.nds))
+        mag_grad = 0
+        for i in range(1, len(self.nds)-1):
+            self.nds[i].vx += 10
+            new_arc1 = curve(self.nds[i-1], self.nds[i])
+            new_arc2 = curve(self.nds[i], self.nds[i+1])
+            new_len1, new_rad1 = new_arc1.interpolate()
+            new_len2, new_rad2 = new_arc2.interpolate()
+            self.nds[i].vx -= 10
+            grad[i] += self.sim.arcEvaluator(i*50-50, i*50+50, new_len1+new_len2, new_rad1+new_rad2)
+            mag_grad += grad[i]**2
+
+            char = 100
+            progress_bar = ' ['
+            for j in range(char):
+                if j*2 / char * len(self.nds) >= i+1: progress_bar += '-'
+                else: progress_bar += '#'
+            progress_bar += '] ' + str(int((i + 1.1)/2 * 100 / len(self.nds))) + '%'
+            print(progress_bar, end='\r')
+
+        grad = np.zeros(len(self.nds))
+        mag_grad = 0
+        for i in range(1, len(self.nds)-1):
+            self.nds[i].vy += 10
+            new_arc1 = curve(self.nds[i-1], self.nds[i])
+            new_arc2 = curve(self.nds[i], self.nds[i+1])
+            new_len1, new_rad1 = new_arc1.interpolate()
+            new_len2, new_rad2 = new_arc2.interpolate()
+            self.nds[i].vy -= 10
+            grad[i] += self.sim.arcEvaluator(i*50-50, i*50+50, new_len1+new_len2, new_rad1+new_rad2)
+            mag_grad += grad[i]**2
+
+            progress_bar = ' ['
+            for j in range(char):
+                if (j+char)/2 / char * len(self.nds) >= i+1: progress_bar += '-'
+                else: progress_bar += '#'
+            progress_bar += '] ' + str(int((i + char + 2.1)/2 * 100 / len(self.nds))) + '%'
+            print(progress_bar, end='\r')
+        print()
+        
+        mag_grad **= 0.5
+        for i in range(len(self.nds)):
+            self.nds[i].vy += grad[i] / mag_grad * m_step
+        self.update_track()
+        #print(grad)
             
-            for i in self.arcs:
-                i.compute()
-            print(self.get_cost())
+
+            
+
+

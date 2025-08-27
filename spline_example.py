@@ -3,43 +3,48 @@ from matplotlib import pyplot as plt
 import spline_track as spln
 import pickle
 
-with open('C:\\Users\\nbogd\\OneDrive\\Documents\\lapsim stuff - Copy\\trck.pkl', 'rb') as f:
-    points = pickle.load(f)
+txt_input = ''
+while (txt_input != 'y') and (txt_input != 'n'):
+    txt_input = input('load track?: ')
 
-points_x = points['p1x']
-points_y = points['p1y']
-points_x2 = points['p2x']
-points_y2 = points['p2y']
+if txt_input == 'n':
+    with open('C:autocross_pts.pkl', 'rb') as f:
+        points = pickle.load(f)
 
+    points_x = points['p1x']
+    points_y = points['p1y']
+    points_x2 = points['p2x']
+    points_y2 = points['p2y']
 
-trk = spln.track(points_x, points_y, points_x2, points_y2)
-print(trk.get_cost())
-for i in range(len(points_x)):
-    plt.plot(points_x[i], points_y[i], marker='o') 
-    plt.plot(points_x2[i], points_y2[i], marker='o')
-trk.plot()
-plt.axis('equal')
-plt.show()
-#trk.adjust_track(1, 30)
-trk.adjust_track(30, 100)
-trk.adjust_track(30, 30)
-trk.adjust_track(15, 10)
+    trk = spln.track(points_x, points_y, points_x2, points_y2)
+    print(trk.get_cost())
+    trk.plot()
+    #trk.adjust_track(1, 30)
+    trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
-trk.plot()
-#print(trk.get_cost())
+    trk.plot()
+    #print(trk.get_cost())
 
-step = 0.0001
+    step = 0.0001
 
+    txt_input = ''
+    while (txt_input != 'y') and (txt_input != 'n'):
+        txt_input = input('save track?: ')
+    if txt_input == 'y':
+        with open('autocross_trk.pkl', 'wb') as f:
+            pickle.dump(trk, f)
+        print('[Track Saved.]')
+    else:
+        print('[Track Discarded.]')
 
-for i in range(len(points_x)):
-    plt.plot(points_x[i], points_y[i], marker='o') 
-    plt.plot(points_x2[i], points_y2[i], marker='o')
-
-
-plt.axis('equal')
-plt.show()
-
-
+else:
+    print('[Loading Track...]')
+    with open('autocross_trk.pkl', 'rb') as f:
+            trk = pickle.load(f)
+    with open('car_model.pkl', 'rb') as f:
+            car = pickle.load(f)
+    trk.plt_sim(car)
+    print(trk.t)
 
 
 

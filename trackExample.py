@@ -3,8 +3,8 @@ import numpy as np
 import trackModel
 import pickle
 
-with open('C:\\Users\\nbogd\\OneDrive\\Documents\\lapsim stuff - Copy\\trck.pkl', 'rb') as f:
-    points = pickle.load(f)
+#with open('C:\\Users\\nbogd\\OneDrive\\Documents\\lapsim stuff - Copy\\trck.pkl', 'rb') as f:
+#    points = pickle.load(f)
 
 def plot_the_track():
 
@@ -38,23 +38,23 @@ points_y2 = [800, 556.7, 548.9, 462,   136.1, -20,   8.3, -342.5, -448.9, -92.4,
 #points_x = [-700, -600.3, -300.2, -100.7, 200.3, 300.5, 284.2, -26, -178.2, -460.9, -670, -444.4, -504.68, -870]
 #points_y = [1000, 832.7, 548.9, 700, 500, -70, -292.3, -242.5, -548.9, -292.4, 182.2, 374.7, 460.4, 623.4]
 
-points_x = points['p1x']
-points_y = points['p1y']
-points_x2 = points['p2x']
-points_y2 = points['p2y']
+#points_x = points['p1x']
+#points_y = points['p1y']
+#points_x2 = points['p2x']
+#points_y2 = points['p2y']
 
 
-with open('comp_track.pkl', 'rb') as f:
-    track = pickle.load(f)
+#with open('comp_track.pkl', 'rb') as f:
+#    track = pickle.load(f)
 
-#track = trackModel.track(points_x, points_y, points_x2, points_y2)
+track = trackModel.track(points_x, points_y, points_x2, points_y2)
 plot_the_track()
-track.adjust_course(10)
+track.adjust_course(80)
 plot_the_track()
 plot_the_sim()
 
 
-if input("save?: ") == 'y':
-    with open('C:\\Users\\nbogd\\OneDrive\\Documents\\lapsim stuff - Copy\\comp_track.pkl', 'wb') as f:
-        pickle.dump(track, f)
-    print('[Track Saved.]')
+#if input("save?: ") == 'y':
+#    with open('C:\\Users\\nbogd\\OneDrive\\Documents\\lapsim stuff - Copy\\comp_track.pkl', 'wb') as f:
+#        pickle.dump(track, f)
+#    print('[Track Saved.]')
