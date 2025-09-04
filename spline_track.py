@@ -281,10 +281,10 @@ class track():
             self.len += new_len
             self.rad += new_rad
         #print(np.sum(self.len))
-        self.sim = lapsim.sm_bullshit(self.len, self.rad, car, nodes)
+        self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run()
-        #print(self.t)
-    
+        print(f'Total Travel Time: {self.t}')
+
     def update_track(self):
         for i in self.nds:
             i.update_shift()
@@ -293,6 +293,10 @@ class track():
 
     def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
         self.run_sim(car, nodes, start, end)
+        plt.title('Simulation Results:')
+        plt.xlabel('Position (ft)')
+        plt.ylabel('Vehicle Speed (mph)')
+        plt.grid()
         plt.plot(self.nodes, self.v3)
         plt.show()
     
