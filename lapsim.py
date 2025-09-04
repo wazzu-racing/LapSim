@@ -7,7 +7,7 @@ pi = np.pi
 
 
 
-class sm_bullshit:
+class four_wheel:
     def __init__ (self, t_len_tot, t_rad, car, n):
         print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))

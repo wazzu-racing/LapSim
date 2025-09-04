@@ -40,11 +40,11 @@ if False:
     plt.grid()
     plt.show()
 
-if False:
+if True:
     for i in range(660, 470, -20):
         car.adjust_weight(i)
         car.adjust_height(14/713*i)
-        track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car, 5000)
+        track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car, 5000)
         nds, v3, t = track.run()
         print(t)
         times.append(t)
@@ -58,13 +58,13 @@ if False:
 
 if False:
     drives = np.linspace(2, 6, 41)
-    #track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car_model.car(final_drive = 4), 1500)
+    #track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car_model.car(final_drive = 4), 1500)
     times = []
     #track.car = car_model.car(final_drive = 3)
     for i in drives:
         car.drivetrain = drivetrain(i)
         car.drivetrain.shift_time = 0.5
-        track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 9999999999999999], car, 500)
+        track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 9999999999999999], car, 500)
         nds, v3, t = track.run()
         print(f'final drive = {i}\tacceleration time = {t}')
         times.append(t)
@@ -78,7 +78,7 @@ if False:
 
 if False:
     drives = np.linspace(2, 6, 41)
-    #track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car_model.car(final_drive = 4), 1500)
+    #track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car_model.car(final_drive = 4), 1500)
     times = []
     #track.car = car_model.car(final_drive = 3)
     for i in drives:
@@ -97,7 +97,7 @@ if False:
 
 if False:
     drives = np.linspace(2, 6, 41)
-    #track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car_model.car(final_drive = 4), 1500)
+    #track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car_model.car(final_drive = 4), 1500)
     times = []
     #track.car = car_model.car(final_drive = 3)
     for i in drives:
@@ -117,7 +117,7 @@ if False:
 if False:
     car.drivetrain = drivetrain(3.1)
     car.drivetrain.shift_time = 0.5
-    track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 9999999999999999], car, 500)
+    track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 9999999999999999], car, 500)
     nds, v3, t = track.run()
     plt.plot(nds, v3)
     plt.xlabel('Position (ft)')
@@ -126,7 +126,7 @@ if False:
     plt.show()
 
 if False:
-    track = lpsm.sm_bullshit([246*3, 246*3, 246*3, 246*3], [99999999, 99999999, 99999999, 99999999], car_model.car(final_drive = 4.8), 1500)
+    track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [99999999, 99999999, 99999999, 99999999], car_model.car(final_drive = 4.8), 1500)
     times = []
     #track.car = car_model.car(final_drive = 3)
     nds, v3, t = track.run()
