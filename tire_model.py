@@ -72,7 +72,6 @@ class magic_curve():
         return magic_func(x, *self.coeff)
 
 
-
 # stores a section of data and finds the average and standard devation of each list of data
 class data_section():
     def __init__(self, data):
@@ -205,6 +204,8 @@ class tire():
         corner_titles = [] # empty array for the titles of each cornering dataset
         corner_units = []  # empty array for units of each cornering dataset
 
+        if cornering_data_file == None: pass
+
         # organizing cornering into a 2D array
         with open(cornering_data_file, newline='') as dat_file:
             reader = csv.reader(dat_file, delimiter='\t')
@@ -220,7 +221,7 @@ class tire():
                         corner_units = line # defining units using third line in reader
                 else:
                     corner_data.append(np.array(line).astype(float)) # appending all lines after line 3 to the corner_data
-        
+
         # transposing corner_data: this makes each row correspond to the equal index titles and units in corner_titles and corner_units
         corner_data = np.transpose(corner_data)
 
@@ -689,8 +690,8 @@ class tire():
 
 
 if False:
-    cornering_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_Cornering_ASCII_USCS_Round9\\A2356run32.dat'
-    accel_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_DriveBrake_ASCII_USCS_Round9\\A2356run72.dat'
+    cornering_data = 'cornering_data.dat'
+    accel_data = 'acceleration_data.dat'
 
     wheel = tire(cornering_data, accel_data)
     wheel.SA_FY_plot(0)

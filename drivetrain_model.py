@@ -5,7 +5,7 @@ import pickle as pkl
 
 class drivetrain:
     
-    def __init__(self, final_drive = 4.8):
+    def __init__(self, final_drive = 4.8, engine_data = ""):
         self.engn_rpm = [] # engine crankshaft rpm
         self.hp = [] # horsepower
         self.engn_T = [] # Torque supplied from engine (ft*lb)
@@ -25,8 +25,10 @@ class drivetrain:
         self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
         self.shift_time = 0 # seconds
 
+        if engine_data == "": pass
+
         # importing engine data
-        engine_data = 'engine_array.csv' # engine file location
+        engine_data = engine_data
         delim = '\t' # csv delimiter
 
         with open(engine_data, newline='') as dat_file:
@@ -110,12 +112,23 @@ class drivetrain:
         else:
             return (self.gear_T[gear][indx]*(1-ratio) + self.gear_T[gear][indx+1]*ratio) / self.wheel_radius
 
-train = drivetrain()
-x = train.engn_rpm
-y = []
-for i in x:
-    y.append(train.get_engn_pwr(i))
+    # Plotting engine rpm vs engine power
+    def engn_rpm_pwr_plot(self):
+        x = self.engn_rpm
+        y = []
+        for i in x:
+            y.append(self.get_engn_pwr(i))
 
-plt.plot(x, y)
-plt.grid()
-plt.show()
+        plt.plot(x, y)
+        plt.grid()
+        plt.show()
+
+# train = drivetrain()
+# x = train.engn_rpm
+# y = []
+# for i in x:
+#     y.append(train.get_engn_pwr(i))
+#
+# plt.plot(x, y)
+# plt.grid()
+# plt.show()

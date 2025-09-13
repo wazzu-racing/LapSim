@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pickle as pkl
 import tire_model
-import drivetrain_model
+from drivetrain_model import drivetrain
 import csv
 import time
 
@@ -486,7 +486,6 @@ class car():
         plt.grid()
         plt.show()
 
-
-#racecar = car()
-#print('fuck you')
-#racecar.traction_curve()
+racecar = car()
+print('fuck you')
+racecar.traction_curve()
