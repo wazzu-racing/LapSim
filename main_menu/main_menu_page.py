@@ -2,9 +2,7 @@ import os
 import tkinter
 from PIL import Image, ImageTk
 
-import create_new_tire_page
 from main_menu.manage_data_page import run_manage_data_page
-from main_menu.plot_data_page import run_plot_data_page
 
 # For testing and debugging purposes, set this to True if running the main menu page
 # Set to False when running another page from this file

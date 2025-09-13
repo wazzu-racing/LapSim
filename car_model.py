@@ -1,14 +1,17 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import pickle as pkl
-import tire_model
-from drivetrain_model import drivetrain
 import csv
-import time
 
-#print('bitch')
+from main_menu.files import get_save_files_folder_abs_dir
+
+aero_csv_file_path = f"{get_save_files_folder_abs_dir()}/aero_array.csv"
+tire_file_path = f"{get_save_files_folder_abs_dir()}/18x6-10_R20.pkl"
+drivetrain_file_path = f"{get_save_files_folder_abs_dir()}/drivetrain.pkl"
+
 class car():
-    
+    global aero_csv_file_path, tire_file_path, drivetrain_file_path
+
     # weight over front left wheel
     W_1 = 185.7365 * 0.7223
     # weight over front right wheel
@@ -63,15 +66,15 @@ class car():
     # in, CG height to roll axis
     H = h - (a*z_rf + b*z_rr)/l
 
-    # tire model file path
-    tire_file = '18x6-10_R20.pkl'
-    # drivetrain_model
-    drivetrain_file = 'drivetrain.pkl'
-    # aero data array file path
-    aero_csv = 'aero_array.csv' # contains drag force (lb) acting on vehicle at different speeds (index = mph)
+    # Set the aero_csv variable to the saved_files dir
+    aero_csv = aero_csv_file_path
+    # Set the tire_file variable to the saved_files dir
+    tire_file = tire_file_path
+    # Set the drivetrain_file variable to the saved_files dir
+    drivetrain_file = drivetrain_file_path
     # aero csv file delimiter
     aero_delimiter = ';'
-    
+
     # importing tire model
     with open(tire_file, 'rb') as f:
         tires = pkl.load(f)
@@ -485,7 +488,3 @@ class car():
         plt.ylabel('Axial Acceleration (g\'s)')
         plt.grid()
         plt.show()
-
-racecar = car()
-print('fuck you')
-racecar.traction_curve()

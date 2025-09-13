@@ -2,8 +2,8 @@ import tkinter
 from tkinter import filedialog
 import pickle as pkl
 import os
-from pathlib import Path
 
+from main_menu.files import get_save_files_folder_abs_dir
 from tire_model import tire
 
 cornering_check = None
@@ -16,11 +16,23 @@ acceleration_file = None
 
 back_function = None
 
+initial_dir = ""
+
+# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
+def set_initial_dir():
+    global initial_dir
+
+    initial_dir = get_save_files_folder_abs_dir()
+
+set_initial_dir()
+
 # The user selects a file and the path is stored in the appropriate variable
 def select_file(is_cornering_file):
-    global cornering_file, acceleration_file, cornering_check, acceleration_check, save_tire_button
+    global cornering_file, acceleration_file, cornering_check, acceleration_check, save_tire_button, initial_dir
 
-    file_path = filedialog.askopenfilename(title="Select a file", initialdir="/Users/jacobmckee/Documents/Wazzu Racing/LapSim", filetypes=[("Data files", "*.dat")])
+    # Asks the user to choose a dat file to create the tire object with.
+    file_path = filedialog.askopenfilename(title="Select a file", initialdir=initial_dir, filetypes=[("Data files", "*.dat")])
+    # if the file_path is not nothing, the cornering/acceleration file is saved and the user is alerted that it is saved.
     if file_path:
         # Store the file path in the appropriate variable and show that the file has been imported
         if is_cornering_file:
@@ -36,28 +48,19 @@ def select_file(is_cornering_file):
     else:
         print("No file selected")
 
+# Saves the tire in a dir
 def save_file():
+    global cornering_file, acceleration_file
 
     # Create and save tire object into saved_files dir using imported files
     Tire = tire(cornering_file, acceleration_file)
 
-    # Get path to main_menu directory
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Find the index of the last slash in the working_dir string
-    slash_index = 0
-    for (index, char) in enumerate(working_dir):
-        if char == "/":
-            slash_index = index
-
-    # Create path to saved_files directory and open save dialog in that directory
-    lapsim_dir = working_dir[0:slash_index]
-    initial_dir = os.path.join(lapsim_dir, "saved_files")
     file_path = filedialog.asksaveasfilename(title="Save Tire Object", initialdir=initial_dir, defaultextension=".pkl", filetypes=[("Pickle files", "*.pkl")])
 
-    # saving tire object
-    with open(file_path, 'wb') as f:
-        pkl.dump(Tire, f)
+    if file_path:
+        # saving tire object
+        with open(file_path, 'wb') as f:
+            pkl.dump(Tire, f)
 
     # Close the create new tire window and go back to the import tire files page
     back_function()

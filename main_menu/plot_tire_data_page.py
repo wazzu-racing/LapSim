@@ -5,6 +5,7 @@ from create_new_tire_page import run_create_new_tire_page
 import os
 import pickle as pkl
 
+from main_menu.files import get_save_files_folder_abs_dir
 from tire_model import tire
 
 window = None
@@ -13,27 +14,17 @@ tire_file_path = ""
 
 plot_button = None
 dropdown = None
-import_check_label = None
+tire_file_check = None
 
 import_check = False
 
 initial_dir = ""
 
+# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
 def set_initial_dir():
     global initial_dir
 
-    # Get path to main_menu directory
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Find the index of the last slash in the working_dir string
-    slash_index = 0
-    for (index, char) in enumerate(working_dir):
-        if char == "/":
-            slash_index = index
-
-    # Create path to saved_files directory
-    lapsim_dir = working_dir[0:slash_index]
-    initial_dir = os.path.join(lapsim_dir, "saved_files")
+    initial_dir = get_save_files_folder_abs_dir()
 
 set_initial_dir()
 
@@ -41,12 +32,14 @@ set_initial_dir()
 def select_file(root):
     global tire_file_path, plot_button
 
+    # Open file dialog to select tire file
     tire_file_path = filedialog.askopenfilename(title="Open Tire File", initialdir=initial_dir, defaultextension=".pkl", filetypes=[("Pickle files", "*.pkl")])
 
+    # If the path that the user chooses is not empty, then allow the user to plot data.
     if tire_file_path:
         plot_button.configure(state="normal")
         reveal_dropdown(root)
-        import_check_label.grid(row=2, column=2, pady=(100, 10))
+        tire_file_check.grid(row=2, column=2, pady=(100, 10))
     else:
         print("No file selected")
 
@@ -56,8 +49,9 @@ def plot_tire_data(option):
     # Load tire object from file
     tire = pkl.load(open(tire_file_path, 'rb'))
 
+    # Match the users choice of graph with the graph's corresponding function.
     match option:
-        case "Select file":
+        case "Select graph":
             print("No option selected")
         case "FX to Slip Ratio":
             tire.SR_FX_plot(0)
@@ -73,13 +67,13 @@ def plot_tire_data(option):
 def reveal_dropdown(root):
     global dropdown
 
-    options = ["Select file", "FX to Slip Ratio", "FY to Slip Angle", "MZ to Camber Angle 0°", "MZ to Camber Angle 2°", "MZ to Camber Angle 4°"]
+    options = ["Select graph", "FX to Slip Ratio", "FY to Slip Angle", "MZ to Camber Angle 0°", "MZ to Camber Angle 2°", "MZ to Camber Angle 4°"]
     dropdown = ttk.Combobox(root, values=options, font=("Ariel", 24), state="readonly")
     dropdown.current(0)
     dropdown.grid(row=5, column=1, pady=(20, 0))
 
 def run_import_tire_files_page(root):
-    global plot_button, import_check_label, dropdown
+    global plot_button, tire_file_check, dropdown
 
     # Clear existing widgets
     for widget in root.winfo_children():
@@ -96,7 +90,7 @@ def run_import_tire_files_page(root):
     cornering_button.grid(row=2, column=1, pady=(100, 10))
 
     # Make and pack check label widget for "Import Saved Tire" button above.
-    import_check_label = tkinter.Label(root, text="File imported!", bg="Black", fg="Green", )
+    tire_file_check = tkinter.Label(root, text="File imported!", bg="Black", fg="Green", )
 
     #  Make and pack "Import New Tire" button
     acceleration_button = tkinter.Button(root, text="Create New Tire", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: run_create_new_tire_page(root, lambda: run_import_tire_files_page(root)))

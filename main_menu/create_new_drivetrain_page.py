@@ -2,11 +2,11 @@ import tkinter
 from tkinter import filedialog
 import pickle as pkl
 import os
-from pathlib import Path
 
 from drivetrain_model import drivetrain
+from main_menu.files import get_save_files_folder_abs_dir
 
-engine_array_check = None
+drivetrain_file_check = None
 engine_array_file_path = ""
 
 save_drivetrain_button = None
@@ -15,29 +15,21 @@ initial_dir = ""
 
 back_function = None
 
+# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
 def set_initial_dir():
     global initial_dir
 
-    # Get path to main_menu directory
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Find the index of the last slash in the working_dir string
-    slash_index = 0
-    for (index, char) in enumerate(working_dir):
-        if char == "/":
-            slash_index = index
-
-    # Create path to saved_files directory and open save dialog in that directory
-    lapsim_dir = working_dir[0:slash_index]
-    initial_dir = os.path.join(lapsim_dir, "saved_files")
+    initial_dir = get_save_files_folder_abs_dir()
 
 set_initial_dir()
 
 # The user selects a file and the path is stored in the appropriate variable
 def select_file():
-    global engine_array_file_path, engine_array_check, save_drivetrain_button
+    global engine_array_file_path, drivetrain_file_check, save_drivetrain_button
 
+    # Asks the user to point to a csv file to create the drivetrain with.
     file_path = filedialog.askopenfilename(title="Select a file", initialdir=initial_dir, filetypes=[("CSV files", "*.csv")])
+    # If file_path is not nothing, the file is saved, the user is shown that it has been saved, and they can create the drivetrain.
     if file_path:
         engine_array_file_path = file_path
         engine_array_check.grid(row=2, column=2, pady=(100, 10))
@@ -45,23 +37,26 @@ def select_file():
     else:
         print("No file selected")
 
+# Saves the drivetrain in a dir
 def save_file():
-    global engine_array_file_path
+    global engine_array_file_path, initial_dir
 
     # Create and save tire object into saved_files dir using imported files
     train = drivetrain(engine_data=engine_array_file_path)
 
+    # Ask the user where they want to store the drivetrain object
     file_path = filedialog.asksaveasfilename(title="Save Drivetrain File", initialdir=initial_dir, defaultextension=".pkl")
 
-    # saving tire object
-    with open(file_path, 'wb') as f:
-        pkl.dump(train, f)
+    if file_path:
+        # saving tire object
+        with open(file_path, 'wb') as f:
+            pkl.dump(train, f)
 
     # Close the create new tire window and go back to the import tire files page
     back_function()
 
 def run_create_new_drivetrain_page(root, function):
-    global engine_array_check, save_drivetrain_button, engine_array_file_path, back_function
+    global drivetrain_file_check, save_drivetrain_button, engine_array_file_path, back_function
 
     back_function = function
 
