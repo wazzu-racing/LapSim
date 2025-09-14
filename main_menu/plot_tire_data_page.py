@@ -1,23 +1,25 @@
 import tkinter
 from tkinter import filedialog
 from tkinter import ttk
-from create_new_tire_page import run_create_new_tire_page
 import os
 import pickle as pkl
 
 from main_menu.files import get_save_files_folder_abs_dir
 from tire_model import tire
 
-window = None
-
-tire_file_path = ""
-
-plot_button = None
-dropdown = None
+# Widget that is gridded once the user inputs the correct file
 tire_file_check = None
 
-import_check = False
+# Widget that lets the user graph the data
+plot_button = None
 
+# Widget that appears once the user has selected the correct files
+dropdown = None
+
+# The file path of the tire object used to make the graphs. Selected by the user.
+tire_file_path = ""
+
+# Absolute path to saved_files folder.
 initial_dir = ""
 
 # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
@@ -72,45 +74,44 @@ def reveal_dropdown(root):
     dropdown.current(0)
     dropdown.grid(row=5, column=1, pady=(20, 0))
 
-def run_import_tire_files_page(root):
-    global plot_button, tire_file_check, dropdown
+class PlotTireDataPage(tkinter.Frame):
 
-    # Clear existing widgets
-    for widget in root.winfo_children():
-        widget.destroy()
+    def __init__(self, parent, controller):
+        global plot_button, tire_file_check, dropdown
 
-    root.title("Vehicle Dynamics - Plot Tire Data")
+        # Init to initialize itself as a Frame
+        super().__init__(parent)
 
-    # Make and pack "Import Tire Files" label
-    label = tkinter.Label(root, text="Plot Tire Data", font=("Ariel", 48), bg="Black")
-    label.grid(row=1, column=1)
+        controller.title("Vehicle Dynamics - Plot Tire Data")
 
-    #  Make and pack "Import Saved Tire" button
-    cornering_button = tkinter.Button(root, text="Import Saved Tire", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(root))
-    cornering_button.grid(row=2, column=1, pady=(100, 10))
+        # Make and pack "Import Tire Files" label
+        label = tkinter.Label(self, text="Plot Tire Data", font=("Ariel", 48), bg="Black")
+        label.grid(row=1, column=1)
 
-    # Make and pack check label widget for "Import Saved Tire" button above.
-    tire_file_check = tkinter.Label(root, text="File imported!", bg="Black", fg="Green", )
+        #  Make and pack "Import Saved Tire" button
+        cornering_button = tkinter.Button(self, text="Import Saved Tire", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
+        cornering_button.grid(row=2, column=1, pady=(100, 10))
 
-    #  Make and pack "Import New Tire" button
-    acceleration_button = tkinter.Button(root, text="Create New Tire", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: run_create_new_tire_page(root, lambda: run_import_tire_files_page(root)))
-    acceleration_button.grid(row=3, column=1, pady=(0, 10))
+        # Make and pack check label widget for "Import Saved Tire" button above.
+        tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green", )
 
-    #  Make and pack "Plot Data" button
-    plot_button = tkinter.Button(root, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_tire_data(dropdown.get()))
-    plot_button.grid(row=4, column=1, pady=(100, 0))
+        #  Make and pack "Import New Tire" button
+        acceleration_button = tkinter.Button(self, text="Create New Tire", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("CreateNewTirePage"))
+        acceleration_button.grid(row=3, column=1, pady=(0, 10))
 
-    # Configure grid to center all widgets
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_rowconfigure(1, weight=0)
-    root.grid_rowconfigure(2, weight=0)
-    root.grid_rowconfigure(3, weight=0)
-    root.grid_rowconfigure(4, weight=0)
-    root.grid_rowconfigure(5, weight=0)
-    root.grid_rowconfigure(6, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-    root.grid_columnconfigure(1, weight=0)
-    root.grid_columnconfigure(2, weight=0)
-    root.grid_columnconfigure(4, weight=1)
+        #  Make and pack "Plot Data" button
+        plot_button = tkinter.Button(self, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_tire_data(dropdown.get()))
+        plot_button.grid(row=4, column=1, pady=(100, 0))
 
-    root.mainloop()
+        # Configure grid to center all widgets
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=0)
+        self.grid_rowconfigure(4, weight=0)
+        self.grid_rowconfigure(5, weight=0)
+        self.grid_rowconfigure(6, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=0)
+        self.grid_columnconfigure(4, weight=1)

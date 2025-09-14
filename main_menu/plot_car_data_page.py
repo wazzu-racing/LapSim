@@ -4,15 +4,21 @@ from tkinter import ttk
 import os
 import pickle as pkl
 
-from main_menu.create_new_car_page import run_create_new_car_page
 from main_menu.files import get_save_files_folder_abs_dir
 
+# Widget that is gridded once the user inputs the correct file
 car_file_check = None
+
+# Widget that lets the user graph the data
 plot_button = None
+
+# Widget that appears once the user has selected the correct files
 dropdown = None
 
+# The file path of the car object used to make the graphs. Selected by the user.
 car_file_path = ""
 
+# Absolute path to saved_files folder.
 initial_dir = ""
 
 # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
@@ -61,45 +67,44 @@ def reveal_dropdown(root):
     dropdown.current(0)
     dropdown.grid(row=5, column=1, pady=(20, 0))
 
-def run_plot_car_data_page(root):
-    global car_file_check, plot_button, dropdown
+class PlotCarDataPage(tkinter.Frame):
 
-    # Clear existing widgets
-    for widget in root.winfo_children():
-        widget.destroy()
+    def __init__(self, parent, controller):
+        global car_file_check, plot_button, dropdown
 
-    root.title("Vehicle Dynamics - Plot Car Data")
+        # Init to initialize itself as a Frame
+        super().__init__(parent)
 
-    # Make and pack "Plot Car Data" label
-    label = tkinter.Label(root, text="Plot Car Data", font=("Ariel", 48), bg="Black")
-    label.grid(row=1, column=1)
+        controller.title("Vehicle Dynamics - Plot Car Data")
 
-    #  Make and pack "Import Saved Car" button
-    engine_array_button = tkinter.Button(root, text="Import Saved Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(root))
-    engine_array_button.grid(row=2, column=1, pady=(100, 10))
+        # Make and pack "Plot Car Data" label
+        label = tkinter.Label(self, text="Plot Car Data", font=("Ariel", 48), bg="Black")
+        label.grid(row=1, column=1)
 
-    # Make and pack check label widget for "Import Saved Car" button above.
-    car_file_check = tkinter.Label(root, text="File imported!", bg="Black", fg="Green")
+        #  Make and pack "Import Saved Car" button
+        engine_array_button = tkinter.Button(self, text="Import Saved Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
+        engine_array_button.grid(row=2, column=1, pady=(100, 10))
 
-    #  Make and pack "Create New Car" button
-    engine_array_button = tkinter.Button(root, text="Create New Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: run_create_new_car_page(root, lambda: run_plot_car_data_page(root)))
-    engine_array_button.grid(row=3, column=1, pady=(0, 10))
+        # Make and pack check label widget for "Import Saved Car" button above.
+        car_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
-    #  Make and pack "Plot Data" button
-    plot_button = tkinter.Button(root, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_car_data(dropdown.get()))
-    plot_button.grid(row=4, column=1, pady=(100, 0))
+        #  Make and pack "Create New Car" button
+        engine_array_button = tkinter.Button(self, text="Create New Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("CreateNewCarPage"))
+        engine_array_button.grid(row=3, column=1, pady=(0, 10))
 
-    # Configure grid to center all widgets
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_rowconfigure(1, weight=0)
-    root.grid_rowconfigure(2, weight=0)
-    root.grid_rowconfigure(3, weight=0)
-    root.grid_rowconfigure(4, weight=0)
-    root.grid_rowconfigure(5, weight=0)
-    root.grid_rowconfigure(6, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-    root.grid_columnconfigure(1, weight=0)
-    root.grid_columnconfigure(2, weight=0)
-    root.grid_columnconfigure(3, weight=1)
+        #  Make and pack "Plot Data" button
+        plot_button = tkinter.Button(self, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_car_data(dropdown.get()))
+        plot_button.grid(row=4, column=1, pady=(100, 0))
 
-    root.mainloop()
+        # Configure grid to center all widgets
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=0)
+        self.grid_rowconfigure(4, weight=0)
+        self.grid_rowconfigure(5, weight=0)
+        self.grid_rowconfigure(6, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=0)
+        self.grid_columnconfigure(3, weight=1)

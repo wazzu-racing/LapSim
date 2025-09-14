@@ -6,14 +6,17 @@ import os
 from drivetrain_model import drivetrain
 from main_menu.files import get_save_files_folder_abs_dir
 
+# Widget that is gridded once the user inputs the correct file
 drivetrain_file_check = None
-engine_array_file_path = ""
 
+# Widget that lets the user save the drivetrain object
 save_drivetrain_button = None
 
+# Absolute path to saved_files folder.
 initial_dir = ""
 
-back_function = None
+# File path to the user-selected engine array file.
+engine_array_file_path = ""
 
 # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
 def set_initial_dir():
@@ -32,13 +35,13 @@ def select_file():
     # If file_path is not nothing, the file is saved, the user is shown that it has been saved, and they can create the drivetrain.
     if file_path:
         engine_array_file_path = file_path
-        engine_array_check.grid(row=2, column=2, pady=(100, 10))
+        drivetrain_file_check.grid(row=2, column=2, pady=(100, 10))
         save_drivetrain_button.configure(state="normal")
     else:
         print("No file selected")
 
 # Saves the drivetrain in a dir
-def save_file():
+def save_file(controller):
     global engine_array_file_path, initial_dir
 
     # Create and save tire object into saved_files dir using imported files
@@ -53,43 +56,40 @@ def save_file():
             pkl.dump(train, f)
 
     # Close the create new tire window and go back to the import tire files page
-    back_function()
+    controller.go_back()
 
-def run_create_new_drivetrain_page(root, function):
-    global drivetrain_file_check, save_drivetrain_button, engine_array_file_path, back_function
+class CreateNewDrivetrainPage(tkinter.Frame):
 
-    back_function = function
+    def __init__(self, parent, controller):
+        global drivetrain_file_check, save_drivetrain_button, engine_array_file_path, back_function
 
-    # Clear existing widgets
-    for widget in root.winfo_children():
-        widget.destroy()
+        # Init to initialize itself as a Frame
+        super().__init__(parent)
 
-    root.title("Vehicle Dynamics - Create New Drivetrain")
+        controller.title("Vehicle Dynamics - Create New Drivetrain")
 
-    # Make and pack "Create New Drivetrain" label
-    label = tkinter.Label(root, text="Create New Drivetrain", font=("Ariel", 48), bg="Black")
-    label.grid(row=1, column=1)
+        # Make and pack "Create New Drivetrain" label
+        label = tkinter.Label(self, text="Create New Drivetrain", font=("Ariel", 48), bg="Black")
+        label.grid(row=1, column=1)
 
-    #  Make and pack "Import Engine Array Data" button
-    import_engine_array_button = tkinter.Button(root, text="Import Engine Array Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file())
-    import_engine_array_button.grid(row=2, column=1, pady=(100, 10))
+        #  Make and pack "Import Engine Array Data" button
+        import_engine_array_button = tkinter.Button(self, text="Import Engine Array Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file())
+        import_engine_array_button.grid(row=2, column=1, pady=(100, 10))
 
-    # Make and pack check label to import engine array data
-    engine_array_check = tkinter.Label(root, text="File imported!", bg="Black", fg="Green")
+        # Make and pack check label to import engine array data
+        drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
-    #  Make and pack "Save Drivetrain" button
-    save_drivetrain_button = tkinter.Button(root, text="Save Drivetrain", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file())
-    save_drivetrain_button.grid(row=3, column=1, pady=(100, 0))
+        #  Make and pack "Save Drivetrain" button
+        save_drivetrain_button = tkinter.Button(self, text="Save Drivetrain", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
+        save_drivetrain_button.grid(row=3, column=1, pady=(100, 0))
 
-    # Configure grid to center all widgets
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_rowconfigure(1, weight=0)
-    root.grid_rowconfigure(2, weight=0)
-    root.grid_rowconfigure(3, weight=0)
-    root.grid_rowconfigure(4, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-    root.grid_columnconfigure(1, weight=0)
-    root.grid_columnconfigure(2, weight=0)
-    root.grid_columnconfigure(3, weight=1)
-
-    root.mainloop()
+        # Configure grid to center all widgets
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=0)
+        self.grid_rowconfigure(4, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=0)
+        self.grid_columnconfigure(3, weight=1)

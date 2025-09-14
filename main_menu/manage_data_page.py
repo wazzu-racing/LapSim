@@ -1,21 +1,27 @@
 import tkinter
 
-from main_menu.plot_data_page import run_plot_data_page
+class ManageDataPage(tkinter.Frame):
 
+    def __init__(self, parent, controller):
 
-def run_manage_data_page(root):
-    # Clear existing widgets
-    for widget in root.winfo_children():
-        widget.destroy()
+        # Init to initialize itself as a Frame
+        super().__init__(parent)
 
-    root.title("Vehicle Dynamics - Manage Data")
-    
-    # Make and pack "Manage Data" label
-    label = tkinter.Label(root, text="Manage Data", font=("Ariel", 48), bg="Black")
-    label.pack(pady=0)
+        controller.title("Vehicle Dynamics - Manage Data")
 
-    #  Make and pack "Plot Data" button
-    button = tkinter.Button(root, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: run_plot_data_page(root))
-    button.pack(pady=(50, 10))
+        # Make and pack "Manage Data" label
+        label = tkinter.Label(self, text="Manage Data", font=("Ariel", 48), bg="Black")
+        label.grid(row=1, column=1, pady=0)
 
-    root.mainloop()
+        #  Make and pack "Plot Data" button
+        button = tkinter.Button(self, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("PlotDataPage"))
+        button.grid(row=2, column=1, pady=(50, 10))
+
+        # Configure grid to center all widgets
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
