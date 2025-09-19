@@ -1,10 +1,9 @@
 import tkinter
 from tkinter import filedialog
 import pickle as pkl
-import os
 
 from drivetrain_model import drivetrain
-from main_menu.files import get_save_files_folder_abs_dir
+from main_menu.manage_data.files import get_save_files_folder_abs_dir
 
 # Widget that is gridded once the user inputs the correct file
 drivetrain_file_check = None

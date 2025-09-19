@@ -12,8 +12,6 @@ class four_wheel:
         print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))
         y = np.linspace(len(x), 0, len(x))
-        #plt.plot(x, y)
-        #plt.show()
         self.t_len_tot = np.array(t_len_tot)
         self.t_rad = np.array(t_rad)
         self.car = car
@@ -32,7 +30,7 @@ class four_wheel:
         # nodespace
         nds = np.linspace(0,track,int(n+1))
 
-        # Determining maximum lateral acceleration for every turn
+        # Determining maximum lateral acceleration for every turn; length = # of arcs in track
         self.t_vel = np.sqrt(max_corner*self.t_rad)
 
         # List showing radius at every node. Used to calculate maximum tangential acceleration
@@ -70,15 +68,28 @@ class four_wheel:
         shift_time = self.car.drivetrain.shift_time # shifting time (seconds)
         shifting = False # Set to true while shifting
         for i in np.arange(n):
+
+            # Find which arc segment each node belongs to and grab lateral acceleration
+            t_vel_value = 0
+            for seg in range(len(self.arc_beginning_node) - 1):
+                if self.arc_beginning_node[seg] <= i < self.arc_beginning_node[seg + 1]:
+                    t_vel_value = self.t_vel[seg]
+                    break
+
             # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i+1)] <= v1[int(i)]:
                 v1[int(i+1)] = v2[int(i+1)]
                 gear = self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)] # changes to the optimal gear when braking
                 shifting = False # sets to False so the car doesn't shift when it stops braking
+
             else:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)]) and not shifting:
                     a_tan = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)
+
+                    # Calculate and record data
+                    self.car.accel(t_vel_value, a_tan)
+                    self.car.append_data_arrays(t_vel_value, a_tan, i)
                 else:
                     shifting = True
                     #a_tan = self.car.curve_idle(v1[int(i)])
@@ -90,7 +101,9 @@ class four_wheel:
                         shifting = False
                 if (np.sqrt(v1[int(i)]**2 + 2*a_tan*dx) < v1[int(i+1)]) or (v1[int(i+1)] == 0.):
                     v1[int(i+1)] = np.sqrt(v1[int(i)]**2 + 2*a_tan*dx)
-        
+
+        print(f"Vertical displacement contains {len(self.car.D_1_dis)} data points.")
+
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n+1))
         for i in np.arange(int(n+1)):

@@ -1,9 +1,8 @@
 import tkinter
 from tkinter import filedialog
 import pickle as pkl
-import os
 
-from main_menu.files import get_save_files_folder_abs_dir
+from main_menu.manage_data.files import get_save_files_folder_abs_dir
 from tire_model import tire
 
 # Widgets that are gridded once the user inputs the correct file

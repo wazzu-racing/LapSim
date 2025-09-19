@@ -209,7 +209,7 @@ class track():
         for i in self.nds:
             i.start_v()
 
-        self.arcs = []        
+        self.arcs = []
         for i in self.nds:
             self.arcs.append(curve(i, i.next_nd))
             i.next_arc = self.arcs[-1]
@@ -298,6 +298,43 @@ class track():
         plt.ylabel('Vehicle Speed (mph)')
         plt.grid()
         plt.plot(self.nodes, self.v3)
+
+        # sub = plt.subplots()
+        # plot = sub.plot(self.nodes, self.v3)
+        # annot = sub.annotate("", accel=(0,0), text=(20,20), textcoords="offset points", bbox=dict(boxstyle="round,pad=0.5", fc="yellow", alpha=0.5),arrowprops=dict(arrowstyle="->"))
+        #
+        # def update_annot(lat, axi):
+        #     annot.xy = (lat, axi)
+        #     text = f"Lateral acceleration: {lat:.2f}\nAxial Acceleration: {axi:.2f}"
+        #     annot.set_text(text)
+        #
+        # def on_hover(event):
+        #     if event.inaxes == sub:
+        #         # Find the nearest data point
+        #         contains, info = plot.contains(event)
+        #         if contains:
+        #             ind = info['ind'][0] # Get the index of the closest point
+        #
+        #             # Find corresponding lateral and axial acceleration with node the user is hovering over
+        #             lat = 0
+        #             axi = 0
+        #             for l in car.lat_accel:
+        #                 if l[1] == ind:
+        #                     lat = l[0]
+        #                     break
+        #             for a in car.axi_accel:
+        #                 if a[1] == ind:
+        #                     axi = a[1]
+        #                     break
+        #
+        #             update_annot(lat, axi)
+        #             annot.set_visible(True)
+        #             sub.canvas.draw_idle()
+        #         else:
+        #             if annot.get_visible():
+        #                 annot.set_visible(False)
+        #                 sub.canvas.draw_idle()
+
         plt.show()
     
     def refine_track(self):

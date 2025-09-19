@@ -2,14 +2,16 @@ import os
 import tkinter
 from PIL import Image, ImageTk
 
-from main_menu.create_new_car_page import CreateNewCarPage
-from main_menu.create_new_drivetrain_page import CreateNewDrivetrainPage
-from main_menu.create_new_tire_page import CreateNewTirePage
-from main_menu.manage_data_page import ManageDataPage
-from main_menu.plot_car_data_page import PlotCarDataPage
-from main_menu.plot_data_page import PlotDataPage
-from main_menu.plot_drivetrain_data_page import PlotDrivetrainDataPage
-from main_menu.plot_tire_data_page import PlotTireDataPage
+from main_menu.lapsim.create_import_track_page import CreateImportTrackPage
+from main_menu.lapsim.manage_lapsim_page import ManageLapSimPage
+from main_menu.manage_data.create_new_car_page import CreateNewCarPage
+from main_menu.manage_data.create_new_drivetrain_page import CreateNewDrivetrainPage
+from main_menu.manage_data.create_new_tire_page import CreateNewTirePage
+from main_menu.manage_data.manage_data_page import ManageDataPage
+from main_menu.manage_data.plot_car_data_page import PlotCarDataPage
+from main_menu.manage_data.plot_data_page import PlotDataPage
+from main_menu.manage_data.plot_drivetrain_data_page import PlotDrivetrainDataPage
+from main_menu.manage_data.plot_tire_data_page import PlotTireDataPage
 
 # For testing and debugging purposes, set this to True if running the main menu page
 # Set to False when running another page from this file
@@ -37,7 +39,7 @@ class PageStack(tkinter.Tk):
 
         # stores the pages
         self.frames = {}
-        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage,CreateNewDrivetrainPage, CreateNewCarPage):
+        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, CreateImportTrackPage):
             # Basic Setup for each page
             page_name = F.__name__
             frame = F(parent=container, controller=self)
@@ -97,7 +99,7 @@ class MainMenuPage(tkinter.Frame):
         button.grid(row=3, column=1, pady=(50, 10))
 
         #  Make and pack "LapSim" button
-        button = tkinter.Button(self, text="LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24))
+        button = tkinter.Button(self, text="LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ManageLapSimPage"))
         button.grid(row=4, column=1, pady=0)
 
         # Configure grid to center all widgets
