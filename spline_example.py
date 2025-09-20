@@ -8,7 +8,7 @@ while (txt_input != 'y') and (txt_input != 'n'):
     txt_input = input('load track?: ')
 
 if txt_input == 'n':
-    with open('C:autocross_pts.pkl', 'rb') as f:
+    with open('autocross_pts.pkl', 'rb') as f:
         points = pickle.load(f)
 
     points_x = points['p1x']
@@ -41,7 +41,7 @@ else:
     print('[Loading Track...]')
     with open('autocross_trk.pkl', 'rb') as f:
             trk = pickle.load(f)
-    with open('car_model.pkl', 'rb') as f:
+    with open('saved_files/car.pkl', 'rb') as f:
             car = pickle.load(f)
     trk.plot()
     trk.plt_sim(car)

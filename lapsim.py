@@ -37,11 +37,12 @@ class four_wheel:
         self.nd_rad = np.zeros(int(n+1))
 
         # Each line sets the maximum velocity for each 
-        self.arc_beginning_node = []
+        self.arc_beginning_node = [] # Stores the beginning node
         for i in np.arange(len(self.t_len_tot)):
             self.nd_rad[int(np.ceil(np.sum(self.t_len_tot[0:i])/dx)):int(np.ceil(np.sum(self.t_len_tot[0:i+1])/dx))] = self.t_rad[i]
             self.arc_beginning_node.append(int(np.ceil(np.sum(self.t_len_tot[0:i])/dx)))
         self.arc_beginning_node.append(n+1)
+        print(f"length: {len(self.arc_beginning_node)}")
 
         self.t_rad[-1] = self.t_rad[-2]
 
@@ -69,13 +70,6 @@ class four_wheel:
         shifting = False # Set to true while shifting
         for i in np.arange(n):
 
-            # Find which arc segment each node belongs to and grab lateral acceleration
-            t_vel_value = 0
-            for seg in range(len(self.arc_beginning_node) - 1):
-                if self.arc_beginning_node[seg] <= i < self.arc_beginning_node[seg + 1]:
-                    t_vel_value = self.t_vel[seg]
-                    break
-
             # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i+1)] <= v1[int(i)]:
                 v1[int(i+1)] = v2[int(i+1)]
@@ -86,10 +80,13 @@ class four_wheel:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)]) and not shifting:
                     a_tan = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)
+                    a_lat = v1[int(i)]**2/self.nd_rad[int(i)]
 
                     # Calculate and record data
-                    self.car.accel(t_vel_value, a_tan)
-                    self.car.append_data_arrays(t_vel_value, a_tan, i)
+                    self.car.accel(a_lat, a_tan)
+                    self.car.append_data_arrays(a_lat, a_tan, i)
+                    print(f"lateral accel: {a_lat}, axi accel: {a_tan}")
+                    print(f'velocity {v1[int(i)]}')
                 else:
                     shifting = True
                     #a_tan = self.car.curve_idle(v1[int(i)])

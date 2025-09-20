@@ -250,7 +250,53 @@ class car():
             break
         print(time.time() - start_time)
         '''
-        
+
+    # just returns lateral and axial acceleration at the specified node index for now
+    def gather_data(self, node_index):
+        lat = 0
+        axi = 0
+        wfo = 0
+        wfi = 0
+        wro = 0
+        wri = 0
+        lfo = 0
+        lfi = 0
+        lro = 0
+        lri = 0
+        afo = 0
+        afi = 0
+        aro = 0
+        ari = 0
+        d1 = 0
+        d2 = 0
+        d3 = 0
+        d4 = 0
+        for l in self.lat_accel:
+            if l[1] == node_index:
+                lat = l[0]
+                break
+        for a in self.axi_accel:
+            if a[1] == node_index:
+                axi = a[0]
+                break
+        for w in self.W_out_f_array:
+            if w[1] == node_index:
+                wfo = w[0]
+                break
+        for w in self.W_in_f_array:
+            if w[1] == node_index:
+                wfi = w[0]
+                break
+        for w in self.W_out_r_array:
+            if w[1] == node_index:
+                wro = w[0]
+                break
+        for w in self.W_in_r_array:
+            if w[1] == node_index:
+                wri = w[0]
+                break
+        return lat, axi, wfo, wfi, wro, wri, lfo, lfi, lro, lri, afo, afi, aro, ari, d1 , d2, d3, d4
+
     def append_data_arrays(self, lat, axi, index):
         # Collect lateral and axial acceleration of car
         self.lat_accel.append((lat, index))
@@ -312,6 +358,7 @@ class car():
         W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
 
         roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
+        print(f"roll: {roll}")
         W_shift_x = roll * self.H # lateral shift in center of mass (in)
 
         W_out_f = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # vertical force on front outter wheel
@@ -579,4 +626,5 @@ class car():
         plt.grid()
         plt.show()
 
-Car = car()
+racecar = car()
+racecar.traction_curve()

@@ -1,8 +1,21 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import time
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+from numpy.ma.core import remainder
+
 import lapsim
 import pickle
+import tkinter
+
+root = tkinter.Tk() # For window of graph and viewable values
+root.title("Graph")
+
+fig = Figure(figsize=(5, 4), dpi=100) # Adjust figsize and dpi as needed
+subplot = fig.add_subplot(111) # Add a subplot to the figure
+canvas = FigureCanvasTkAgg(fig, master=root)
 
 car_rad = 29
 v_min = 0
@@ -177,7 +190,7 @@ class curve():
                 d_dom = 5 * (self.ds_dA[j][i] * self.dy[i]) * (self.dx[i]**2 + self.dy[i]**2)**1.5
                 dc = (d_num * dom - d_dom * num) / dom**2
                 self.dcy[j] += dc / self.elem
-        
+
     def interpolate(self):
         len = []
         rad = []
@@ -188,15 +201,15 @@ class curve():
         return(len, rad)
     
     def plot(self):
-        plt.plot(self.x, self.y)
-        #plt.plot(self.dx, self.dy)
-    
-
+        subplot.plot(self.x, self.y)
+        #subplot.plot(self.dx, self.dy)
 
 
 class track():
 
     def __init__(self, p1x, p1y, p2x, p2y):
+        self.car = None
+
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i]))
@@ -205,7 +218,7 @@ class track():
             self.nds[i].prev_nd = self.nds[i-1]
             self.nds[i].next_nd = self.nds[i+1]
             self.nds[i].start_shift()
-        
+
         for i in self.nds:
             i.start_v()
 
@@ -214,8 +227,9 @@ class track():
             self.arcs.append(curve(i, i.next_nd))
             i.next_arc = self.arcs[-1]
             i.next_nd.prev_arc = self.arcs[-1]
-        
+
     def plot(self):
+
         for i in self.arcs:
             i.plot()
         
@@ -227,11 +241,60 @@ class track():
                 case 2: col = 'black'
                 case 3: col = 'magenta'
                 case 4: col = 'orange'
-            plt.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
-            plt.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
-        
-        plt.axis('equal')
-        plt.show()
+            subplot.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
+            subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
+
+        data_label = tkinter.Label(text=f"Lateral Acceleration: \nAxial Acceleration: \n\nV Force f outer: \nV Force f inner: \nV Force r outer: \nV Force r inner: \nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
+        data_label.pack(padx=(0, 0), side=tkinter.RIGHT, expand=False)
+
+        def on_hover(event):
+            if event.inaxes == subplot:
+                # Find the nearest data point
+                contains, info = subplot.contains(event)
+                if contains:
+                    x = event.xdata
+                    y = event.ydata
+
+                    # distance_between_nodes = total_track_length / target_node_count
+                    # remainder_length = 0
+                    # node_index = 0  # running global index across arcs
+                    #
+                    # for each arc in self.arcs:
+                    #     lengths, _ = arc.interpolate()
+                    #     arc_length = sum(lengths)
+                    #
+                    #     # Carry remainder from previous arc into this one
+                    #     effective_length = remainder_length + arc_length
+                    #
+                    #     # How many whole node spacings fit in this arc when including the carried remainder?
+                    #     num_nodes_in_arc = floor(effective_length / distance_between_nodes)
+                    #
+                    #     # If there is a carried remainder, the first node is offset into this arc by:
+                    #     # remainder_length_from_prev = effective_length - arc_length
+                    #     # first_node_offset = (distance_between_nodes - (remainder_length_from_prev))
+                    #
+                    #       # Compute new remainder to carry to the next arc
+                    #       remainder_length = effective_length - num_nodes_in_arc * distance_between_nodes
+
+                    #     # Map percent of arcs to arc coordinates x array and  y array using the cumulative lengths array from 'lengths'
+                    #     # interpolate x,y at each fraction and append to node list; increment node_index accordingly
+
+                    # Find corresponding lateral and axial acceleration with node the user is hovering over
+                    data = self.car.gather_data(index)
+                    lat_acc, axi_acc, wfo, wfi, wro, wri, _, _, _, _, _, _, _, _, _, _, _, _ = data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16], data[17]
+
+                    data_label = tkinter.Label(text=f"Lateral Acceleration: {lat_acc}\nAxial Acceleration: {axi_acc}\n\nV Force f outer: {wfo}\nV Force f inner: {wfi}\nV Force r outer: {wro}\nV Force r inner: {wri}\nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
+                    data_label.pack(padx=(500, 0), expand=True)
+
+        # Setup of graph of track
+        subplot.axis('equal')
+        subplot.grid()
+        toolbar = NavigationToolbar2Tk(canvas, root)
+        toolbar.update()
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True, padx=(0, 0))
+        canvas.mpl_connect("motion_notify_event", on_hover)
+        root.mainloop()
     
     def get_cost(self):
         cost = 0
@@ -292,50 +355,19 @@ class track():
             i.compute()
 
     def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
+        self.car = car
+
+        # setup for position vs velocity plot
         self.run_sim(car, nodes, start, end)
-        plt.title('Simulation Results:')
-        plt.xlabel('Position (ft)')
-        plt.ylabel('Vehicle Speed (mph)')
-        plt.grid()
-        plt.plot(self.nodes, self.v3)
-
-        # sub = plt.subplots()
-        # plot = sub.plot(self.nodes, self.v3)
-        # annot = sub.annotate("", accel=(0,0), text=(20,20), textcoords="offset points", bbox=dict(boxstyle="round,pad=0.5", fc="yellow", alpha=0.5),arrowprops=dict(arrowstyle="->"))
-        #
-        # def update_annot(lat, axi):
-        #     annot.xy = (lat, axi)
-        #     text = f"Lateral acceleration: {lat:.2f}\nAxial Acceleration: {axi:.2f}"
-        #     annot.set_text(text)
-        #
-        # def on_hover(event):
-        #     if event.inaxes == sub:
-        #         # Find the nearest data point
-        #         contains, info = plot.contains(event)
-        #         if contains:
-        #             ind = info['ind'][0] # Get the index of the closest point
-        #
-        #             # Find corresponding lateral and axial acceleration with node the user is hovering over
-        #             lat = 0
-        #             axi = 0
-        #             for l in car.lat_accel:
-        #                 if l[1] == ind:
-        #                     lat = l[0]
-        #                     break
-        #             for a in car.axi_accel:
-        #                 if a[1] == ind:
-        #                     axi = a[1]
-        #                     break
-        #
-        #             update_annot(lat, axi)
-        #             annot.set_visible(True)
-        #             sub.canvas.draw_idle()
-        #         else:
-        #             if annot.get_visible():
-        #                 annot.set_visible(False)
-        #                 sub.canvas.draw_idle()
-
-        plt.show()
+        subplot.set_title('Simulation Results:')
+        subplot.set_xlabel('Position (ft)')
+        subplot.set_ylabel('Vehicle Speed (mph)')
+        subplot.grid()
+        subplot.plot(self.nodes, self.v3)
+        subplot.axis('equal')
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+        root.mainloop()
     
     def refine_track(self):
         self.run_sim('single_point')

@@ -1,6 +1,6 @@
 import tkinter
 
-from main_menu.lapsim.create_import_track_page import CreateImportTrackPage
+from main_menu.lapsim.import_track_page import ImportTrackPage
 
 
 class ManageLapSimPage(tkinter.Frame):
