@@ -6,7 +6,6 @@ import drivetrain_model
 import csv
 import time
 
-#print('bitch')
 class car():
     
     # weight over front left wheel
@@ -391,14 +390,14 @@ class car():
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
         
         drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
-
+        
         A_tire = 0
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY:
                 # linearly interpolating self.A_brake to find the max acceleration at lateral acceleration AY
-                A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1]) * 32.2 * 12
+                A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1] - self.get_drag(v * 0.0568182))
                 break
-                
+        
         A_tire -= drag # incorporating drag
         A_tire *= 32.17 * 12 # Converting from G's to in/s^2
 
@@ -429,7 +428,7 @@ class car():
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY:
                 # linearly interpolating self.A_brake to find the braking acceleration at lateral acceleration AY
-                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_brake[i-1]
+                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1] )*self.A_brake[i-1]
                 break
         
         A_tire -= drag # incorporating drag
@@ -487,6 +486,4 @@ class car():
         plt.show()
 
 
-#racecar = car()
-#print('fuck you')
-#racecar.traction_curve()
+print('fuck you')
