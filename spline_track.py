@@ -228,11 +228,41 @@ class track():
             i.next_arc = self.arcs[-1]
             i.next_nd.prev_arc = self.arcs[-1]
 
+        # Keeps track of locations of data nodes
+        self.x_array = []
+        self.y_array = []
+
     def plot(self):
 
         for i in self.arcs:
             i.plot()
-        
+
+        total_track_length = sum(self.len)
+        total_data_node_count = len(self.car.W_out_f_array) # Amount of nodes does NOT correspond to self.nds or four_wheel.n. Amount of nodes corresponds to the amount of nodes that data was collected at during the simulation. The length is equal to the length of the arrays in append_data_arrays in car_model.py.
+        distance_between_nodes = total_track_length / total_data_node_count
+        remainder_length = 0
+        for arc in self.arcs:
+            lengths, _ = arc.interpolate()
+            arc_length = sum(lengths)
+            # Carry remainder from previous arc into this one
+            effective_length = remainder_length + arc_length
+
+            # How many whole node spacings fit in this arc when including the carried remainder?
+            num_nodes_in_arc = np.floor(effective_length / distance_between_nodes)
+
+            # If there is a carried remainder, the first node is offset into this arc by:
+            remainder_length_from_prev = effective_length - arc_length
+            first_node_offset = (distance_between_nodes - remainder_length_from_prev)
+
+            # Compute new remainder to carry to the next arc
+            remainder_length = effective_length - num_nodes_in_arc * distance_between_nodes
+
+            # Map percent of arcs to arc vars 'x' array and 'y' array using arc_length.
+            for i in range(num_nodes_in_arc):
+                xy_array_index_of_node = round(len(arc.x) * (i/num_nodes_in_arc))
+                self.x_array.append(arc.x[xy_array_index_of_node])
+                self.y_array.append(arc.y[xy_array_index_of_node])
+
         for i in range(len(self.nds)):
             nd = self.nds[i]
             match i % 5:
@@ -255,36 +285,28 @@ class track():
                     x = event.xdata
                     y = event.ydata
 
-                    # distance_between_nodes = total_track_length / target_node_count
-                    # remainder_length = 0
-                    # node_index = 0  # running global index across arcs
-                    #
-                    # for each arc in self.arcs:
-                    #     lengths, _ = arc.interpolate()
-                    #     arc_length = sum(lengths)
-                    #
-                    #     # Carry remainder from previous arc into this one
-                    #     effective_length = remainder_length + arc_length
-                    #
-                    #     # How many whole node spacings fit in this arc when including the carried remainder?
-                    #     num_nodes_in_arc = floor(effective_length / distance_between_nodes)
-                    #
-                    #     # If there is a carried remainder, the first node is offset into this arc by:
-                    #     # remainder_length_from_prev = effective_length - arc_length
-                    #     # first_node_offset = (distance_between_nodes - (remainder_length_from_prev))
-                    #
-                    #       # Compute new remainder to carry to the next arc
-                    #       remainder_length = effective_length - num_nodes_in_arc * distance_between_nodes
+                    # If not -1, the algorithm below found a relatively close by data node to extract information from and the index of that information is this (within arrays found in append_data_arrays).
+                    index = -1
 
-                    #     # Map percent of arcs to arc coordinates x array and  y array using the cumulative lengths array from 'lengths'
-                    #     # interpolate x,y at each fraction and append to node list; increment node_index accordingly
+                    # Find data point index that most closely aligns with x and y.
+                    closest_x = self.x_array[0]
+                    closest_y = self.y_array[0]
+                    estimated_closest_y_index = 0
+                    for i, index in enumerate(self.x_array):
+                        if abs(x - i) < closest_x:
+                            closest_x = i
+                            estimated_closest_y_index = index
+                    if abs(y - self.y_array[estimated_closest_y_index]) < 100: # Make sure that y in array is reasonably close to mouse's y
+                        closest_y = self.y_array[estimated_closest_y_index]
+                        index = estimated_closest_y_index
 
                     # Find corresponding lateral and axial acceleration with node the user is hovering over
-                    data = self.car.gather_data(index)
-                    lat_acc, axi_acc, wfo, wfi, wro, wri, _, _, _, _, _, _, _, _, _, _, _, _ = data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16], data[17]
+                    if index != -1: # Check to see if the algorithm above found a suitable data node.
+                        data = self.car.gather_data(index)
+                        lat_acc, axi_acc, wfo, wfi, wro, wri, _, _, _, _, _, _, _, _, _, _, _, _ = data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16], data[17]
 
-                    data_label = tkinter.Label(text=f"Lateral Acceleration: {lat_acc}\nAxial Acceleration: {axi_acc}\n\nV Force f outer: {wfo}\nV Force f inner: {wfi}\nV Force r outer: {wro}\nV Force r inner: {wri}\nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
-                    data_label.pack(padx=(500, 0), expand=True)
+                        data_label = tkinter.Label(text=f"Lateral Acceleration: {lat_acc}\nAxial Acceleration: {axi_acc}\n\nV Force f outer: {wfo}\nV Force f inner: {wfi}\nV Force r outer: {wro}\nV Force r inner: {wri}\nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
+                        data_label.pack(padx=(500, 0), expand=True)
 
         # Setup of graph of track
         subplot.axis('equal')

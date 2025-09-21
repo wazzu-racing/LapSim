@@ -18,6 +18,7 @@ points_y2 = points['p2y']
 # creating track object
 trk = spln.track(points_x, points_y, points_x2, points_y2)
 print(trk.get_cost())
+print(f"Number of nodes; {trk.car.lat_accel}")
 
 trk.plot() # displaying unoptimized track
 

@@ -86,7 +86,6 @@ class four_wheel:
                     self.car.accel(a_lat, a_tan)
                     self.car.append_data_arrays(a_lat, a_tan, i)
                     print(f"lateral accel: {a_lat}, axi accel: {a_tan}")
-                    print(f'velocity {v1[int(i)]}')
                 else:
                     shifting = True
                     #a_tan = self.car.curve_idle(v1[int(i)])
@@ -98,8 +97,6 @@ class four_wheel:
                         shifting = False
                 if (np.sqrt(v1[int(i)]**2 + 2*a_tan*dx) < v1[int(i+1)]) or (v1[int(i+1)] == 0.):
                     v1[int(i+1)] = np.sqrt(v1[int(i)]**2 + 2*a_tan*dx)
-
-        print(f"Vertical displacement contains {len(self.car.D_1_dis)} data points.")
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n+1))

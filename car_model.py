@@ -125,7 +125,6 @@ class car():
     with open(drivetrain_file, 'rb') as f:
         drivetrain = pkl.load(f)
 
-
     def __init__(self):
         self.aero_arr = [] # drag force acceleration (G's) emitted on vehicle (index = mph)
         with open(self.aero_csv, newline='') as f:
@@ -358,7 +357,6 @@ class car():
         W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
 
         roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
-        print(f"roll: {roll}")
         W_shift_x = roll * self.H # lateral shift in center of mass (in)
 
         W_out_f = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # vertical force on front outter wheel
@@ -534,7 +532,7 @@ class car():
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY:
                 # linearly interpolating self.A_brake to find the max axial acceleration at lateral acceleration AY
-                A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1]) * 32.2 * 12
+                A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1] - self.get_drag(v * 0.0568182))
                 break
 
         A_tire -= drag # incorporating drag
@@ -567,7 +565,7 @@ class car():
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY:
                 # linearly interpolating self.A_brake to find the braking acceleration at lateral acceleration AY
-                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_brake[i-1]
+                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1] )*self.A_brake[i-1]
                 break
         
         A_tire -= drag # incorporating drag
@@ -627,4 +625,3 @@ class car():
         plt.show()
 
 racecar = car()
-racecar.traction_curve()
