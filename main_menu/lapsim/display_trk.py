@@ -1,6 +1,8 @@
 import spline_track as spln
 import pickle
 
+car_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/saved_files/car.pkl'
+
 points_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/autocross_pts.pkl'
 
 save_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/autocross_trk.pkl'
@@ -9,16 +11,22 @@ save_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/autocross_trk.pkl'
 with open(points_file, 'rb') as f:
     points = pickle.load(f)
 
+with open(car_file, 'rb') as f:
+    car = pickle.load(f)
+
 # defining different points
 points_x = points['p1x']
 points_y = points['p1y']
 points_x2 = points['p2x']
 points_y2 = points['p2y']
 
+
 # creating track object
 trk = spln.track(points_x, points_y, points_x2, points_y2)
 print(trk.get_cost())
-print(f"Number of nodes; {trk.car.lat_accel}")
+
+#run sim to get data
+trk.run_sim(car, end=89)
 
 trk.plot() # displaying unoptimized track
 

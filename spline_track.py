@@ -1,14 +1,14 @@
 import numpy as np
-from matplotlib import pyplot as plt
-import time
+import math
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from numpy.ma.core import remainder
 
 import lapsim
 import pickle
 import tkinter
+
+import heapq
 
 root = tkinter.Tk() # For window of graph and viewable values
 root.title("Graph")
@@ -205,15 +205,32 @@ class curve():
         #subplot.plot(self.dx, self.dy)
 
 
+def k_closest(points, mouse_pos):
+    closest_point = None
+    closest_dist = float('inf')
+    closest_index = None
+
+    # Push points onto the heap, maintaining the size at most k
+    for index, point in enumerate(points):
+        distance = math.sqrt((point[0] - mouse_pos[0])**2 + (point[1] - mouse_pos[1])**2)
+        if closest_dist > distance:
+            closest_dist = distance
+            closest = point
+            closest_index = index
+
+    return closest_index
+
+
 class track():
 
     def __init__(self, p1x, p1y, p2x, p2y):
-        self.car = None
+
+        self.len = []
 
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i]))
-        
+
         for i in range(-1, len(self.nds)-1):
             self.nds[i].prev_nd = self.nds[i-1]
             self.nds[i].next_nd = self.nds[i+1]
@@ -232,36 +249,88 @@ class track():
         self.x_array = []
         self.y_array = []
 
+        # For the text that displays data to remain one variable
+        self.data_label = None
+
     def plot(self):
 
-        for i in self.arcs:
-            i.plot()
+        self.data_label = None
 
-        total_track_length = sum(self.len)
-        total_data_node_count = len(self.car.W_out_f_array) # Amount of nodes does NOT correspond to self.nds or four_wheel.n. Amount of nodes corresponds to the amount of nodes that data was collected at during the simulation. The length is equal to the length of the arrays in append_data_arrays in car_model.py.
-        distance_between_nodes = total_track_length / total_data_node_count
-        remainder_length = 0
+        for i in self.arcs:
+            i.plot() # Plot lines on graph (path of car)
+
+        arc_lengths = []
         for arc in self.arcs:
             lengths, _ = arc.interpolate()
+            arc_lengths.append(sum(lengths))
+
+        total_track_length = sum(arc_lengths)
+        total_data_node_count = len(self.sim.nds) # Amount of nodes does correspond to self.sim.nds
+        distance_between_nodes = total_track_length / total_data_node_count
+        remainder_length = 0
+        prev_node_location = 0
+        for index, arc in enumerate(self.arcs):
+            print(f"arc {index}")
+            lengths, _ = arc.interpolate()
             arc_length = sum(lengths)
+            # array of cumulative distances along the arc
+            cum = np.cumsum(lengths) # shape ~ (len(arc.x),) hehe
+
             # Carry remainder from previous arc into this one
             effective_length = remainder_length + arc_length
 
             # How many whole node spacings fit in this arc when including the carried remainder?
-            num_nodes_in_arc = np.floor(effective_length / distance_between_nodes)
+            num_nodes_in_arc = math.floor(effective_length / distance_between_nodes)
 
-            # If there is a carried remainder, the first node is offset into this arc by:
+            # How far to the first node from the start of this arc
             remainder_length_from_prev = effective_length - arc_length
-            first_node_offset = (distance_between_nodes - remainder_length_from_prev)
+            node_offset = distance_between_nodes - remainder_length_from_prev
 
             # Compute new remainder to carry to the next arc
             remainder_length = effective_length - num_nodes_in_arc * distance_between_nodes
 
+            clamped_start = 0 # Make sure no nodes are repeating at the beginning of an arc.
             # Map percent of arcs to arc vars 'x' array and 'y' array using arc_length.
-            for i in range(num_nodes_in_arc):
-                xy_array_index_of_node = round(len(arc.x) * (i/num_nodes_in_arc))
-                self.x_array.append(arc.x[xy_array_index_of_node])
-                self.y_array.append(arc.y[xy_array_index_of_node])
+            for j in range(num_nodes_in_arc):
+                # target arc-length from start of this arc
+                node_location = node_offset + j * distance_between_nodes
+                if node_location <= 0: # if node location is before the start of the arc, skip this iteration and advance to the next location
+                    continue
+                if node_location > arc_length: # if node location is past the length of the arc
+                    break
+
+                # Find index to use for arc.x and arc.y positions where cumulative length of arc roughly equals node_location
+                node_index = round(len(arc.x) * (j/num_nodes_in_arc))
+
+                if node_index ==0:
+                    prev_node_location = 0.0
+                    ds = lengths[0]
+                    t = 0.0 if ds == 0 else (node_location - prev_node_location) / ds
+                    x = arc.x[0] + t * (arc.x[1] - arc.x[0])
+                    y = arc.y[0] + t * (arc.y[1] - arc.y[0])
+                elif node_index >= len(arc.x):
+                    x = arc.x[-1]
+                    y = arc.y[-1]
+                else:
+                    # linear interpolation between samples node_index-1 and node_index for smoother placement
+                    prev_node_location = cum[node_index-1]
+                    ds = lengths[node_index] # grab small portion of arc
+                    t = 0.0 if ds == 0 else (node_location - prev_node_location) / ds # get slope of previous node location compared to this node location.
+                    # Set final x and y coordinates for the node
+                    if not node_index+1 >= len(arc.x): # If the node index is at the end of the arc, just use the end of the arc.
+                        x = arc.x[node_index] + t * (arc.x[node_index+1] - arc.x[node_index]) # Add previous node x value onto approximated additional x value.
+                        y = arc.y[node_index] + t * (arc.y[node_index+1] - arc.y[node_index]) # Add previous node y value onto approximated additional y value.
+                    else:
+                        x = arc.x[-1]
+                        y = arc.y[-1]
+
+                if len(self.x_array) < len(self.sim.nds): # Make sure that the amount of data nodes does not exceed the amount of simulation nodes.
+                    self.x_array.append(x)
+                    self.y_array.append(y)
+                    # subplot.plot(x, y, marker='o', color='black', markersize=1)
+
+
+        print(f"length of x_array: {len(self.x_array)}")
 
         for i in range(len(self.nds)):
             nd = self.nds[i]
@@ -271,11 +340,19 @@ class track():
                 case 2: col = 'black'
                 case 3: col = 'magenta'
                 case 4: col = 'orange'
-            subplot.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
-            subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
+            if i != 0:
+                subplot.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
+                subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
+            else: # Pink dots mark where the track begins
+                subplot.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color='pink', markersize=6)
+                subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color='pink', markersize=6)
 
-        data_label = tkinter.Label(text=f"Lateral Acceleration: \nAxial Acceleration: \n\nV Force f outer: \nV Force f inner: \nV Force r outer: \nV Force r inner: \nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
-        data_label.pack(padx=(0, 0), side=tkinter.RIGHT, expand=False)
+        data_label_frame = tkinter.Frame(root, width=200, height=500, bg='black')
+        data_label_frame.pack(side=tkinter.RIGHT)
+        data_label_frame.pack_propagate(False)
+
+        self.data_label = tkinter.Label(data_label_frame, text=f"Lateral Acceleration: \nAxial Acceleration: \n\nV Force f outer: \nV Force f inner: \nV Force r outer: \nV Force r inner: \nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
+        self.data_label.pack(padx=(0, 0), side=tkinter.RIGHT, expand=True)
 
         def on_hover(event):
             if event.inaxes == subplot:
@@ -286,27 +363,22 @@ class track():
                     y = event.ydata
 
                     # If not -1, the algorithm below found a relatively close by data node to extract information from and the index of that information is this (within arrays found in append_data_arrays).
-                    index = -1
+                    closest_index = -1
 
-                    # Find data point index that most closely aligns with x and y.
-                    closest_x = self.x_array[0]
-                    closest_y = self.y_array[0]
-                    estimated_closest_y_index = 0
-                    for i, index in enumerate(self.x_array):
-                        if abs(x - i) < closest_x:
-                            closest_x = i
-                            estimated_closest_y_index = index
-                    if abs(y - self.y_array[estimated_closest_y_index]) < 100: # Make sure that y in array is reasonably close to mouse's y
-                        closest_y = self.y_array[estimated_closest_y_index]
-                        index = estimated_closest_y_index
+                    points = []
+                    for i in range(len(self.x_array)):
+                        points.append((self.x_array[i], self.y_array[i]))
+
+                    closest_index = k_closest(points, (x, y))
 
                     # Find corresponding lateral and axial acceleration with node the user is hovering over
-                    if index != -1: # Check to see if the algorithm above found a suitable data node.
-                        data = self.car.gather_data(index)
-                        lat_acc, axi_acc, wfo, wfi, wro, wri, _, _, _, _, _, _, _, _, _, _, _, _ = data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], data[10], data[11], data[12], data[13], data[14], data[15], data[16], data[17]
+                    if closest_index != -1: # Check to see if the algorithm above found a suitable data node.
+                        self.data_label.config(text=f"Index: {closest_index}\nLateral Acceleration: {round(self.sim.AY[closest_index], 2)}\nAxial Acceleration: {round(self.sim.AX[closest_index], 2)}\n\nV Force f outer: {round(self.sim.W_out_f_array[closest_index], 2)}\nV Force f inner: {round(self.sim.W_in_f_array[closest_index], 2)}\nV Force r outer: {round(self.sim.W_out_r_array[closest_index], 2)}\nV Force r inner: {round(self.sim.W_in_r_array[closest_index], 2)}\nL Force f outer: {round(self.sim.FY_out_f_array[closest_index], 2)}\nL Force f inner: {round(self.sim.FY_in_f_array[closest_index], 2)}\nL Force r outer: {round(self.sim.FY_out_r_array[closest_index], 2)}\nL Force r inner: {round(self.sim.FY_in_r_array[closest_index], 2)}\nA Force f outer: {round(self.sim.FX_out_f_array[closest_index], 2)}\nA Force f inner: {round(self.sim.FX_in_f_array[closest_index], 2)}\nA Force r outer: {round(self.sim.FX_out_r_array[closest_index], 2)}\nA Force r inner: {round(self.sim.FX_in_r_array[closest_index], 2)}\n\nDisplacement f outer: {round(self.sim.D_1_dis[closest_index], 2)}\n Displacement f inner: {round(self.sim.D_2_dis[closest_index], 2)}\nDisplacement r outer: {round(self.sim.D_3_dis[closest_index], 2)}\nDisplacement r inner: {round(self.sim.D_4_dis[closest_index], 2)}")
 
-                        data_label = tkinter.Label(text=f"Lateral Acceleration: {lat_acc}\nAxial Acceleration: {axi_acc}\n\nV Force f outer: {wfo}\nV Force f inner: {wfi}\nV Force r outer: {wro}\nV Force r inner: {wri}\nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
-                        data_label.pack(padx=(500, 0), expand=True)
+                    # Draw dot that indicates which data node the user is gathering information from
+                    subplot.lines[-1].remove()
+                    subplot.plot(self.x_array[closest_index], self.y_array[closest_index], marker='o', color='black', markersize=5)
+                    canvas.draw()
 
         # Setup of graph of track
         subplot.axis('equal')
@@ -317,7 +389,7 @@ class track():
         canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True, padx=(0, 0))
         canvas.mpl_connect("motion_notify_event", on_hover)
         root.mainloop()
-    
+
     def get_cost(self):
         cost = 0
         for i in self.arcs:
@@ -336,8 +408,8 @@ class track():
             grad_mag = 0
             for i in self.nds:
                 i.gradient()
-                grad_mag += i.d_vx**2 + i.d_vy**2 + i.d_shift**2            
-            
+                grad_mag += i.d_vx**2 + i.d_vy**2 + i.d_shift**2
+
             grad_mag = grad_mag**0.5
 
             for i in self.nds:
@@ -354,11 +426,13 @@ class track():
             progress_bar += '] ' + str(int((k+1.1) * 100 / len(s))) + '%\tcost = ' + str(self.get_cost())
             print(progress_bar, end='\r')
         print()
-    
+
     def run_sim(self, car, nodes = 5000, start = 0, end = 0):
+        self.car = car
+
         if end == 0:
             end = len(self.arcs)
-        
+
         self.len = []
         self.rad = []
         for i in self.arcs[start:end]:
