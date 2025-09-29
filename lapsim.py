@@ -116,8 +116,6 @@ class four_wheel:
         shifting = False # Set to true while shifting
         for i in np.arange(n):
 
-            lateral_changed = False
-
             # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i+1)] <= v1[int(i)]:
                 v1[int(i+1)] = v2[int(i+1)]
@@ -132,6 +130,7 @@ class four_wheel:
                 self.car.accel(a_lat, a_tan)
                 self.append_data_arrays(a_lat, a_tan, int(i))
                 print(f"Node {i}: axial accel: {a_tan}, lateral accel: {a_lat} BRAKING")
+
             else:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)]) and not shifting:

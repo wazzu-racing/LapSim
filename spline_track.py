@@ -220,6 +220,19 @@ def k_closest(points, mouse_pos):
 
     return closest_index
 
+def get_data_string(self, data_bools, index):
+    content = ""
+    if data_bools[0].get():
+        content += f"Lateradl Acceleration: {round(self.sim.AY[index], 2)}\nAxial Acceleration: {round(self.sim.AX[index], 2)}\n\n"
+    if data_bools[1].get():
+        content += f"V Force f outer: {round(self.sim.W_out_f_array[index], 2)}\nV Force f inner: {round(self.sim.W_in_f_array[index], 2)}\nV Force r outer: {round(self.sim.W_out_r_array[index], 2)}\nV Force r inner: {round(self.sim.W_in_r_array[index], 2)}\n\n"
+    if data_bools[2].get():
+        content += f"L Force f outer: {round(self.sim.FY_out_f_array[index], 2)}\nL Force f inner: {round(self.sim.FY_in_f_array[index], 2)}\nL Force r outer: {round(self.sim.FY_out_r_array[index], 2)}\nL Force r inner: {round(self.sim.FY_in_r_array[index], 2)}\n\n"
+    if data_bools[3].get():
+        content += f"A Force f outer: {round(self.sim.FX_out_f_array[index], 2)}\nA Force f inner: {round(self.sim.FX_in_f_array[index], 2)}\nA Force r outer: {round(self.sim.FX_out_r_array[index], 2)}\nA Force r inner: {round(self.sim.FX_in_r_array[index], 2)}\n\n"
+    if data_bools[4].get():
+        content += f"Displacement f outer: {round(self.sim.D_1_dis[index], 2)}\n Displacement f inner: {round(self.sim.D_2_dis[index], 2)}\nDisplacement r outer: {round(self.sim.D_3_dis[index], 2)}\nDisplacement r inner: {round(self.sim.D_4_dis[index], 2)}\n\n"
+    return content
 
 class track():
 
@@ -347,6 +360,23 @@ class track():
                 subplot.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color='pink', markersize=6)
                 subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color='pink', markersize=6)
 
+        # UI
+        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement"]
+        data_bools = [True, False, False, False, False]
+
+        menu_button = tkinter.Menubutton(root, text="Choose visible data", font=("Ariel", 12), bg="Black")
+        menu_button.pack(side=tkinter.RIGHT)
+
+        menu_button.menu = tkinter.Menu(menu_button, tearoff=0, bg="Black")
+        menu_button["menu"] = menu_button.menu
+
+        for option in data_options:
+            boolean = tkinter.BooleanVar()
+            boolean.set(data_bools[data_options.index(option)])
+            data_bools[data_options.index(option)] = boolean
+            menu_button.menu.add_checkbutton(label=option, variable=boolean)
+        menu_button.pack()
+
         data_label_frame = tkinter.Frame(root, width=200, height=500, bg='black')
         data_label_frame.pack(side=tkinter.RIGHT)
         data_label_frame.pack_propagate(False)
@@ -373,7 +403,8 @@ class track():
 
                     # Find corresponding lateral and axial acceleration with node the user is hovering over
                     if closest_index != -1: # Check to see if the algorithm above found a suitable data node.
-                        self.data_label.config(text=f"Index: {closest_index}\nLateral Acceleration: {round(self.sim.AY[closest_index], 2)}\nAxial Acceleration: {round(self.sim.AX[closest_index], 2)}\n\nV Force f outer: {round(self.sim.W_out_f_array[closest_index], 2)}\nV Force f inner: {round(self.sim.W_in_f_array[closest_index], 2)}\nV Force r outer: {round(self.sim.W_out_r_array[closest_index], 2)}\nV Force r inner: {round(self.sim.W_in_r_array[closest_index], 2)}\nL Force f outer: {round(self.sim.FY_out_f_array[closest_index], 2)}\nL Force f inner: {round(self.sim.FY_in_f_array[closest_index], 2)}\nL Force r outer: {round(self.sim.FY_out_r_array[closest_index], 2)}\nL Force r inner: {round(self.sim.FY_in_r_array[closest_index], 2)}\nA Force f outer: {round(self.sim.FX_out_f_array[closest_index], 2)}\nA Force f inner: {round(self.sim.FX_in_f_array[closest_index], 2)}\nA Force r outer: {round(self.sim.FX_out_r_array[closest_index], 2)}\nA Force r inner: {round(self.sim.FX_in_r_array[closest_index], 2)}\n\nDisplacement f outer: {round(self.sim.D_1_dis[closest_index], 2)}\n Displacement f inner: {round(self.sim.D_2_dis[closest_index], 2)}\nDisplacement r outer: {round(self.sim.D_3_dis[closest_index], 2)}\nDisplacement r inner: {round(self.sim.D_4_dis[closest_index], 2)}")
+                        self.data_label.config(text=get_data_string(self, data_bools, closest_index))
+                        print(f"data string: {get_data_string(self, data_bools, closest_index)}")
 
                     # Draw dot that indicates which data node the user is gathering information from
                     subplot.lines[-1].remove()
