@@ -223,15 +223,16 @@ def k_closest(points, mouse_pos):
 def get_data_string(self, data_bools, index):
     content = ""
     if data_bools[0].get():
-        content += f"Lateradl Acceleration: {round(self.sim.AY[index], 2)}\nAxial Acceleration: {round(self.sim.AX[index], 2)}\n\n"
+        content += f"Lateral Acceleration: {round(self.sim.AY[index], 2)}\nAxial Acceleration: {round(self.sim.AX[index], 2)}\n\n"
     if data_bools[1].get():
-        content += f"V Force f outer: {round(self.sim.W_out_f_array[index], 2)}\nV Force f inner: {round(self.sim.W_in_f_array[index], 2)}\nV Force r outer: {round(self.sim.W_out_r_array[index], 2)}\nV Force r inner: {round(self.sim.W_in_r_array[index], 2)}\n\n"
+        content += f"Vertical force on front outer tire: {round(self.sim.W_out_f_array[index], 2)}\nVertical force on front inner tire: {round(self.sim.W_in_f_array[index], 2)}\nVertical force on rear outer tire: {round(self.sim.W_out_r_array[index], 2)}\nVertical force on rear inner tire: {round(self.sim.W_in_r_array[index], 2)}\n\n"
     if data_bools[2].get():
-        content += f"L Force f outer: {round(self.sim.FY_out_f_array[index], 2)}\nL Force f inner: {round(self.sim.FY_in_f_array[index], 2)}\nL Force r outer: {round(self.sim.FY_out_r_array[index], 2)}\nL Force r inner: {round(self.sim.FY_in_r_array[index], 2)}\n\n"
+        content += f"Lateral force on front outer tire: {round(self.sim.FY_out_f_array[index], 2)}\nLateral force on front inner tire: {round(self.sim.FY_in_f_array[index], 2)}\nLateral force on rear outer tire: {round(self.sim.FY_out_r_array[index], 2)}\nLateral force on rear inner tire: {round(self.sim.FY_in_r_array[index], 2)}\n\n"
     if data_bools[3].get():
-        content += f"A Force f outer: {round(self.sim.FX_out_f_array[index], 2)}\nA Force f inner: {round(self.sim.FX_in_f_array[index], 2)}\nA Force r outer: {round(self.sim.FX_out_r_array[index], 2)}\nA Force r inner: {round(self.sim.FX_in_r_array[index], 2)}\n\n"
+        content += f"Axial force on front outer tire: {round(self.sim.FX_out_f_array[index], 2)}\nAxial force on front inner tire: {round(self.sim.FX_in_f_array[index], 2)}\nAxial force on rear outer tire: {round(self.sim.FX_out_r_array[index], 2)}\nAxial force on rear inner tire: {round(self.sim.FX_in_r_array[index], 2)}\n\n"
     if data_bools[4].get():
-        content += f"Displacement f outer: {round(self.sim.D_1_dis[index], 2)}\n Displacement f inner: {round(self.sim.D_2_dis[index], 2)}\nDisplacement r outer: {round(self.sim.D_3_dis[index], 2)}\nDisplacement r inner: {round(self.sim.D_4_dis[index], 2)}\n\n"
+        content += f"Vertical displacement of front outer tire: {round(self.sim.D_1_dis[index], 2)}\nVertical displacement of front inner tire: {round(self.sim.D_2_dis[index], 2)}\nVertical displacement of rear outer tire: {round(self.sim.D_3_dis[index], 2)}\nVertical displacement of rear inner tire: {round(self.sim.D_4_dis[index], 2)}\n\n"
+    content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."
     return content
 
 class track():
@@ -365,7 +366,6 @@ class track():
         data_bools = [True, False, False, False, False]
 
         menu_button = tkinter.Menubutton(root, text="Choose visible data", font=("Ariel", 12), bg="Black")
-        menu_button.pack(side=tkinter.RIGHT)
 
         menu_button.menu = tkinter.Menu(menu_button, tearoff=0, bg="Black")
         menu_button["menu"] = menu_button.menu
@@ -375,10 +375,10 @@ class track():
             boolean.set(data_bools[data_options.index(option)])
             data_bools[data_options.index(option)] = boolean
             menu_button.menu.add_checkbutton(label=option, variable=boolean)
-        menu_button.pack()
+        menu_button.grid(row=1, column=2, padx=0, pady=0)
 
-        data_label_frame = tkinter.Frame(root, width=200, height=500, bg='black')
-        data_label_frame.pack(side=tkinter.RIGHT)
+        data_label_frame = tkinter.Frame(root, width=300, height=450, bg='black')
+        data_label_frame.grid(row=2, column=2, padx=0, pady=0)
         data_label_frame.pack_propagate(False)
 
         self.data_label = tkinter.Label(data_label_frame, text=f"Lateral Acceleration: \nAxial Acceleration: \n\nV Force f outer: \nV Force f inner: \nV Force r outer: \nV Force r inner: \nL Force f outer: \nL Force f inner: \nL Force r outer: \nL Force r inner: \nA Force f outer: \nA Force f inner: \nA Force r outer: \nA Force r inner: \n\nDisplacement f outer: \n Displacement f inner: \nDisplacement r outer: \nDisplacement r inner: ", font=("Ariel", 12), bg="Black")
@@ -414,11 +414,22 @@ class track():
         # Setup of graph of track
         subplot.axis('equal')
         subplot.grid()
-        toolbar = NavigationToolbar2Tk(canvas, root)
+        toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
+        toolbar.grid(row=1, column=1, rowspan=2, sticky="S")
         toolbar.update()
         canvas.draw()
-        canvas.get_tk_widget().pack(side=tkinter.LEFT, fill=tkinter.BOTH, expand=True, padx=(0, 0))
+        canvas.get_tk_widget().grid(row=1, column=1, rowspan=2)
         canvas.mpl_connect("motion_notify_event", on_hover)
+
+        root.rowconfigure(0, weight=1)
+        root.rowconfigure(1, weight=0)
+        root.rowconfigure(2, weight=0)
+        root.rowconfigure(3, weight=1)
+        root.columnconfigure(0, weight=1)
+        root.columnconfigure(1, weight=0)
+        root.columnconfigure(2, weight=0)
+        root.columnconfigure(3, weight=1)
+
         root.mainloop()
 
     def get_cost(self):
