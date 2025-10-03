@@ -1,6 +1,5 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import spline_track as trk
 import pickle as pkl
 import lapsim as lpsm
 import car_model

@@ -1,47 +1,44 @@
-import spline_track as spln
+from main_menu.lapsim import spline_track as spln
 import pickle
 
-car_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/saved_files/car.pkl'
+class DisplayTrack:
 
-points_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/autocross_pts.pkl'
+    def __init__(self, pts_file, cr_file):
 
-save_file = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/autocross_trk.pkl'
+        # loading points
+        with open(pts_file, 'rb') as f:
+            points = pickle.load(f)
 
-# loading points
-with open(points_file, 'rb') as f:
-    points = pickle.load(f)
+        with open(cr_file, 'rb') as f:
+            car = pickle.load(f)
 
-with open(car_file, 'rb') as f:
-    car = pickle.load(f)
+        # defining different points
+        points_x = points['p1x']
+        points_y = points['p1y']
+        points_x2 = points['p2x']
+        points_y2 = points['p2y']
 
-# defining different points
-points_x = points['p1x']
-points_y = points['p1y']
-points_x2 = points['p2x']
-points_y2 = points['p2y']
+        # creating track object
+        trk = spln.track(points_x, points_y, points_x2, points_y2)
+        print(trk.get_cost())
 
+        #run sim to get data
+        trk.run_sim(car)
 
-# creating track object
-trk = spln.track(points_x, points_y, points_x2, points_y2)
-print(trk.get_cost())
+        trk.plot() # displaying unoptimized track
 
-#run sim to get data
-trk.run_sim(car, end=89)
+        # optimizing track
+        trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
-trk.plot() # displaying unoptimized track
+        trk.plot() # displaying optimized track
 
-# optimizing track
-trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
-
-trk.plot() # displaying optimized track
-
-# saving track. Type 'y' to save, 'n' to discard
-txt_input = ''
-while (txt_input != 'y') and (txt_input != 'n'):
-    txt_input = input('save track?: ')
-if txt_input == 'y':
-    with open(save_file, 'wb') as f:
-        pickle.dump(trk, f)
-    print('[Track Saved.]')
-else:
-    print('[Track Discarded.]')
+        # saving track. Type 'y' to save, 'n' to discard
+        # txt_input = ''
+        # while (txt_input != 'y') and (txt_input != 'n'):
+        #     txt_input = input('save track?: ')
+        # if txt_input == 'y':
+        #     with open(save_file, 'wb') as f:
+        #         pickle.dump(trk, f)
+        #     print('[Track Saved.]')
+        # else:
+        #     print('[Track Discarded.]')

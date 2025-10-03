@@ -1,7 +1,10 @@
 import os
 import tkinter
+from doctest import master
+
 from PIL import Image, ImageTk
 
+from main_menu.lapsim.import_track_image_page import ImportTrackImagePage
 from main_menu.lapsim.import_track_page import ImportTrackPage
 from main_menu.lapsim.manage_lapsim_page import ManageLapSimPage
 from main_menu.manage_data.create_new_car_page import CreateNewCarPage
@@ -12,10 +15,6 @@ from main_menu.manage_data.plot_car_data_page import PlotCarDataPage
 from main_menu.manage_data.plot_data_page import PlotDataPage
 from main_menu.manage_data.plot_drivetrain_data_page import PlotDrivetrainDataPage
 from main_menu.manage_data.plot_tire_data_page import PlotTireDataPage
-
-# For testing and debugging purposes, set this to True if running the main menu page
-# Set to False when running another page from this file
-running_from_main = True
 
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
@@ -39,7 +38,7 @@ class PageStack(tkinter.Tk):
 
         # stores the pages
         self.frames = {}
-        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, ImportTrackPage):
+        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, ImportTrackPage, ImportTrackImagePage):
             # Basic Setup for each page
             page_name = F.__name__
             frame = F(parent=container, controller=self)
@@ -85,7 +84,7 @@ class MainMenuPage(tkinter.Frame):
 
         # Create and pack the Wazzu Racing image
         pil_image = Image.open(image_path)
-        self.tk_image = ImageTk.PhotoImage(pil_image)
+        self.tk_image = ImageTk.PhotoImage(master=self, image=pil_image)
 
         image_label = tkinter.Label(self, image=self.tk_image, bg="Black")
         image_label.grid(row=1, column=1, pady=(0, 0))
@@ -94,11 +93,11 @@ class MainMenuPage(tkinter.Frame):
         label = tkinter.Label(self, text="Vehicle Dynamics", font=("Ariel", 48), bg="Black")
         label.grid(row=2, column=1, pady=0)
 
-        #  Make and pack "Manage Data" button
+        # Make and pack "Manage Data" button
         button = tkinter.Button(self, text="Manage Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
         button.grid(row=3, column=1, pady=(50, 10))
 
-        #  Make and pack "LapSim" button
+        # Make and pack "LapSim" button
         button = tkinter.Button(self, text="LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ManageLapSimPage"))
         button.grid(row=4, column=1, pady=0)
 
@@ -113,14 +112,6 @@ class MainMenuPage(tkinter.Frame):
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
 
-# if running main menu directly, run the main menu
-if running_from_main:
-    # Start the Tkinter event loop
-    page_stack = PageStack()
-    page_stack.go_to_page("MainMenuPage")
-    page_stack.mainloop()
-
-
-# if running another page (for testing), run that page
-if not running_from_main:
-    import_tire_files_page.run_import_tire_files_page(root)
+page_stack = PageStack()
+page_stack.go_to_page("MainMenuPage")
+page_stack.mainloop()

@@ -5,9 +5,9 @@ import csv
 
 from main_menu.manage_data.files import get_save_files_folder_abs_dir
 
-aero_csv_file_path = f"{get_save_files_folder_abs_dir()}/aero_array.csv"
-tire_file_path = f"{get_save_files_folder_abs_dir()}/18x6-10_R20.pkl"
-drivetrain_file_path = f"{get_save_files_folder_abs_dir()}/drivetrain.pkl"
+aero_csv_file_path = f"{get_save_files_folder_abs_dir()}/DEFAULT_AERO_ARRAY.csv"
+tire_file_path = f"{get_save_files_folder_abs_dir()}/DEFAULT_TIRE(18x6-10_R20).pkl"
+drivetrain_file_path = f"{get_save_files_folder_abs_dir()}/DEFAULT_DRIVETRAIN.pkl"
 
 class car():
     global aero_csv_file_path, tire_file_path, drivetrain_file_path

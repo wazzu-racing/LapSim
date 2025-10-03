@@ -15,9 +15,9 @@ drivetrain_file_check = None
 save_car_button = None
 
 # sets path vars to the default car
-aero_array_file_path = f"{get_save_files_folder_abs_dir()}/aero_array.csv"
+aero_array_file_path = f"{get_save_files_folder_abs_dir()}/DEFAULT_AERO_ARRAY.csv"
 tire_file_path = f"{get_save_files_folder_abs_dir()}/18x6-10_R20.pkl"
-drivetrain_file_path = f"{get_save_files_folder_abs_dir()}/drivetrain.pkl"
+drivetrain_file_path = f"{get_save_files_folder_abs_dir()}/DEFAULT_DRIVETRAIN.pkl"
 
 # Absolute path to saved_files folder.
 initial_dir = ""
