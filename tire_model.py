@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit
+import scipy
 import numpy as np
 import csv
 import pickle as pkl
@@ -10,9 +10,9 @@ def magic_func(x, B, C, D, E):
     return D * np.sin(C * np.arctan(B*x - E * (B*x - np.arctan(B*x))))
 
 class magic_curve():
-    def __init__(self, x, y, center_vertical=False, data_cutoff=False):
+    def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1):
         x = copy.deepcopy(x)
-        y = copy.deepcopy(y)
+        y = copy.deepcopy(y) * coeff
 
         if data_cutoff:
             x = x[int(len(x)*0.15) : int(len(x)*0.85)]
@@ -63,7 +63,7 @@ class magic_curve():
         B0 = slope / D0 / C0
 
         # evaluating coeffecients using curve_fit method from scipy
-        popt, pcov = curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
+        popt, pcov = scipy.optimize.curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
 
         self.coeff = popt
         self.max = abs(popt[2])
@@ -94,7 +94,7 @@ class data_section():
 
 
 class curve_set():
-    def __init__(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False):
+    def __init__(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False, coeff=1):
         if (data_type == 'corner') or (data_type == 'cornering'):
             titles = parent.corner_titles
             loads = parent.corner_loads
@@ -121,7 +121,7 @@ class curve_set():
                     section = data_sets[parent.find_section('accel', [['IA', i], ['FZ', -j], ['SA', 0], ['P', 12]])]
                 
                 x = section.data[x_index]
-                y = section.data[y_index]
+                y = section.data[y_index] * coeff
                 self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
         
         self.loads = loads
@@ -315,7 +315,7 @@ class tire():
         self.corner_loads = corner_loads
         self.corner_camber_angles = [0, 2, 4]
         
-        self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101))
+        self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101), coeff=0.5)
         self.aligning_torque = curve_set(self, 'corner', 'SA', 'MZ', np.linspace(-15, 15, 101), center_vertical=True, data_cutoff=True)
 
         self.max_lateral_forces = []
@@ -437,7 +437,7 @@ class tire():
         self.accel_loads = accel_loads
         self.accel_camber_angles = [0, 2, 4]
 
-        self.FX_curves = curve_set(self, 'accel', 'SR', 'FX', np.linspace(-0.3, 0.3, 101))
+        self.FX_curves = curve_set(self, 'accel', 'SR', 'FX', np.linspace(-0.3, 0.3, 101), coeff=0.6)
 
         self.max_axial_forces = []
         for i in range(len(self.accel_camber_angles)):
@@ -594,7 +594,7 @@ class tire():
                 c_bias = (camber-camber_arr[i])/(camber_arr[i+1]-camber_arr[i]) 
                 break
         
-        return ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias) + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 0.8
+        return ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias) + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 1.1
     
     ''' ======================================================= '''
     ''' ========== Cornering Data Graphing Functions ========== '''
@@ -693,6 +693,4 @@ if False:
     accel_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_DriveBrake_ASCII_USCS_Round9\\A2356run72.dat'
 
     wheel = tire(cornering_data, accel_data)
-    wheel.SA_FY_plot(0)
-    wheel.SA_MZ_plot(2)
-    wheel.SA_MZ_plot(4)
+    wheel.SA_MZ_plot(0)
