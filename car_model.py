@@ -9,17 +9,17 @@ import time
 class car():
     
     # weight over front left wheel
-    W_1 = 185.7365 * 0.7223
+    W_1 = 185.7365
     # weight over front right wheel
-    W_2 = 185.7365 * 0.7223
+    W_2 = 185.7365
     # weight over rear left wheel
-    W_3 = 170.7635 * 0.7223
+    W_3 = 170.7635
     # weight over rear right wheel
-    W_4 = 170.7635 * 0.7223
+    W_4 = 170.7635
     # length of wheelbase (in)
     l = 60.04
     # vertical center of gravity (in)
-    h = 13
+    h = 9
     # in, CG height to roll axis
     H = 10.521
     # in, roll axis height, front and rear
@@ -75,10 +75,6 @@ class car():
     with open(tire_file, 'rb') as f:
         tires = pkl.load(f)
 
-    # importing drivetrain model
-    with open(drivetrain_file, 'rb') as f:
-        drivetrain = pkl.load(f)
-
 
     def __init__(self):
         self.aero_arr = [] # drag force acceleration (G's) emitted on vehicle (index = mph)
@@ -87,6 +83,10 @@ class car():
             for line in reader:
                 for i in line:
                     self.aero_arr.append(float(i)/self.W_car)
+        
+        # importing drivetrain model
+        with open(self.drivetrain_file, 'rb') as f:
+            self.drivetrain = pkl.load(f)
         
         self.aero_arr.reverse()
         self.compute_traction()
@@ -265,9 +265,6 @@ class car():
         # checking if the car can generate enough lateral force
         if (FY_f > FY_out_f+FY_in_f) or (FY_r > FY_out_r+FY_in_r): return False
 
-        if bitch:
-            print((W_in_f + W_out_f) / (W_out_f + W_out_r + W_in_f + W_in_r))
-
         if AX == 0: return True # returning true if no axial acceleration
 
         f_factor = ((FY_out_f + FY_in_f)**2 - FY_f**2)**0.5 / (FY_out_f + FY_in_f)
@@ -284,6 +281,12 @@ class car():
         else:
             FX = FX_out_f + FX_in_f + FX_out_r + FX_in_r
         
+        if bitch:
+            print(FX_out_f / W_out_f)
+            print(FX_in_f / W_in_f)
+            print(FX_out_r / W_out_r)
+            print(FX_in_r / W_in_r)
+
         # Checking if the car can generate the necessary axial tire traction
         if abs(FX/self.W_car) < abs(AX): return False
         else: return True
@@ -484,6 +487,3 @@ class car():
         plt.ylabel('Axial Acceleration (g\'s)')
         plt.grid()
         plt.show()
-
-
-print('fuck you')
