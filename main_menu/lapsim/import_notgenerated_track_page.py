@@ -43,7 +43,7 @@ def select_file(is_car_file=False):
     else:
         print("No file selected")
 
-class ImportTrackPage(tkinter.Frame):
+class ImportNotGeneratedTrackPage(tkinter.Frame):
 
     def __init__(self, parent, controller):
         global run_lapsim_button, track_check, car_check
@@ -72,7 +72,7 @@ class ImportTrackPage(tkinter.Frame):
         car_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Run LapSim" button
-        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(pts_file=track_file, cr_file=car_file))
+        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, pts_file=track_file, cr_file=car_file))
         run_lapsim_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets

@@ -36,7 +36,7 @@ class LapSimUI:
         # Only allow the user to hide the window, not close it
         track_root.protocol("WM_DELETE_WINDOW", track_root.withdraw)
 
-    def load_lapsim(self):
+    def load_lapsim(self, save_file_func=None):
         global track_root, track_subplot, track_canvas, data_bools, data_label
 
         track_root.deiconify() # Show the window
@@ -61,6 +61,10 @@ class LapSimUI:
 
         data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), bg="Black")
         data_label.pack(padx=(0, 0), side=tkinter.RIGHT, expand=True)
+
+        if save_file_func is not None:
+            track_root.bind("<s>", lambda event: save_file_func())
+            print("bound")
 
     def load_track(self):
         global track_subplot, track_canvas, track_root
@@ -332,7 +336,7 @@ class track():
         self.x_array = []
         self.y_array = []
 
-    def plot(self):
+    def plot(self, save_file_func=None):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label
 
         for i in self.arcs:
@@ -427,7 +431,7 @@ class track():
                 track_subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color='pink', markersize=6)
 
         # Load lapsim ui
-        ui.load_lapsim()
+        ui.load_lapsim(save_file_func)
 
         # Function that converts the position of the users mouse into data from the nearest data node
         def on_hover(event):

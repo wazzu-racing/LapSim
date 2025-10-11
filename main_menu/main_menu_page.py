@@ -1,12 +1,15 @@
 import os
 import tkinter
 from doctest import master
+import matplotlib as mat
 
 from PIL import Image, ImageTk
 
+from main_menu.lapsim.import_generated_track_page import ImportGeneratedTrackPage
 from main_menu.lapsim.import_track_image_page import ImportTrackImagePage
-from main_menu.lapsim.import_track_page import ImportTrackPage
+from main_menu.lapsim.import_notgenerated_track_page import ImportNotGeneratedTrackPage
 from main_menu.lapsim.manage_lapsim_page import ManageLapSimPage
+from main_menu.lapsim.track_import_method_page import TrackImportMethodPage
 from main_menu.manage_data.create_new_car_page import CreateNewCarPage
 from main_menu.manage_data.create_new_drivetrain_page import CreateNewDrivetrainPage
 from main_menu.manage_data.create_new_tire_page import CreateNewTirePage
@@ -19,8 +22,11 @@ from main_menu.manage_data.plot_tire_data_page import PlotTireDataPage
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
     def __init__(self):
-        # Init to initialize itself as a Tk
+        # Init to initxialize itself as a Tk
         super().__init__()
+
+        # Make sure that plots open in a new window and not in the tkinter window.
+        mat.use('TkAgg')
 
         # Basic setup
         self.title("Vehicle Dynamics - Main Menu")
@@ -38,7 +44,7 @@ class PageStack(tkinter.Tk):
 
         # stores the pages
         self.frames = {}
-        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, ImportTrackPage, ImportTrackImagePage):
+        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, TrackImportMethodPage, ImportNotGeneratedTrackPage, ImportGeneratedTrackPage, ImportTrackImagePage):
             # Basic Setup for each page
             page_name = F.__name__
             frame = F(parent=container, controller=self)

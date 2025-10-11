@@ -31,7 +31,7 @@ class ManageLapSimPage(tkinter.Frame):
         button.grid(row=3, column=1, pady=(0, 10))
 
         #  Make and pack "Run LapSim" button
-        button = tkinter.Button(self, text="Run LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ImportTrackPage"))
+        button = tkinter.Button(self, text="Run LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("TrackImportMethodPage"))
         button.grid(row=4, column=1, pady=(0, 10))
 
         # Configure grid to center all widgets

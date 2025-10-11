@@ -5,7 +5,7 @@ from PIL import ImageTk, Image
 import pickle
 
 from main_menu.manage_data.files import get_save_files_folder_abs_dir
-
+from main_menu.manage_data.files import get_file_from_user
 
 class LapSimGoCrazy:
 
@@ -131,7 +131,7 @@ class LapSimGoCrazy:
         # Set redo line button widget to connect to reset_line function
         self.redo_line_button_widget = tkinter.Button(self.go_crazy_root, text="Redo Line", command=self.reset_line)
 
-        bind_keys(self.go_crazy_root, self)
+        bind_go_crazy_keys(self.go_crazy_root, self)
 
         self.initial_dir = ""
         self.set_initial_dir()
@@ -272,7 +272,7 @@ class LapSimGoCrazy:
                             'can_drag_image' : self.can_drag_image,
                             'textboxDisplayed' : self.textboxDisplayed,
                             'image_path_saved' : self.image_path_saved}
-                    with open(get_file_from_user(self), 'wb') as f:
+                    with open(get_file_from_user(self, file_types=[("Pickle files", "*.pkl")]), 'wb') as f:
                         pickle.dump(obj=data, file=f)
                     print('[Track points saved]')
                     print(f"points_x: {self.points_x}")
@@ -390,17 +390,7 @@ class LapSimGoCrazy:
             x2, y2 = (new_x + 3), (new_y + 3)
             self.dots.append(self.panel.create_oval(x1, y1, x2, y2, fill=col))
 
-def get_file_from_user(self):
-    # Asks the user to choose an image file to create the track with.
-    file_path = filedialog.asksaveasfilename(title="Select a place to save the track", initialdir=self.initial_dir, filetypes=[("Pickle files", "*.pkl")])
-    # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
-    if file_path:
-        return file_path
-    else:
-        print("No file selected")
-        return None
-
-def bind_keys(root, self):
+def bind_go_crazy_keys(root, self):
     root.bind("<ButtonPress-1>", self.record_click)
     root.bind("<ButtonRelease-1>", self.record_release)
     root.bind("<Return>", self.return_key)
