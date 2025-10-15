@@ -1,5 +1,7 @@
+import pickle
+
 from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit
+import scipy
 import numpy as np
 import csv
 import pickle as pkl
@@ -10,9 +12,9 @@ def magic_func(x, B, C, D, E):
     return D * np.sin(C * np.arctan(B*x - E * (B*x - np.arctan(B*x))))
 
 class magic_curve():
-    def __init__(self, x, y, center_vertical=False, data_cutoff=False):
+    def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1):
         x = copy.deepcopy(x)
-        y = copy.deepcopy(y)
+        y = copy.deepcopy(y) * coeff
 
         if data_cutoff:
             x = x[int(len(x)*0.15) : int(len(x)*0.85)]
@@ -63,13 +65,14 @@ class magic_curve():
         B0 = slope / D0 / C0
 
         # evaluating coeffecients using curve_fit method from scipy
-        popt, pcov = curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
+        popt, pcov = scipy.optimize.curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
 
         self.coeff = popt
         self.max = abs(popt[2])
     
     def eval(self, x):
         return magic_func(x, *self.coeff)
+
 
 
 # stores a section of data and finds the average and standard devation of each list of data
@@ -93,7 +96,7 @@ class data_section():
 
 
 class curve_set():
-    def __init__(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False):
+    def __init__(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False, coeff=1):
         if (data_type == 'corner') or (data_type == 'cornering'):
             titles = parent.corner_titles
             loads = parent.corner_loads
@@ -120,7 +123,7 @@ class curve_set():
                     section = data_sets[parent.find_section('accel', [['IA', i], ['FZ', -j], ['SA', 0], ['P', 12]])]
                 
                 x = section.data[x_index]
-                y = section.data[y_index]
+                y = section.data[y_index] * coeff
                 self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
         
         self.loads = loads
@@ -204,8 +207,6 @@ class tire():
         corner_titles = [] # empty array for the titles of each cornering dataset
         corner_units = []  # empty array for units of each cornering dataset
 
-        if cornering_data_file == None: pass
-
         # organizing cornering into a 2D array
         with open(cornering_data_file, newline='') as dat_file:
             reader = csv.reader(dat_file, delimiter='\t')
@@ -221,7 +222,7 @@ class tire():
                         corner_units = line # defining units using third line in reader
                 else:
                     corner_data.append(np.array(line).astype(float)) # appending all lines after line 3 to the corner_data
-
+        
         # transposing corner_data: this makes each row correspond to the equal index titles and units in corner_titles and corner_units
         corner_data = np.transpose(corner_data)
 
@@ -316,7 +317,7 @@ class tire():
         self.corner_loads = corner_loads
         self.corner_camber_angles = [0, 2, 4]
         
-        self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101))
+        self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101), coeff=0.5)
         self.aligning_torque = curve_set(self, 'corner', 'SA', 'MZ', np.linspace(-15, 15, 101), center_vertical=True, data_cutoff=True)
 
         self.max_lateral_forces = []
@@ -438,7 +439,7 @@ class tire():
         self.accel_loads = accel_loads
         self.accel_camber_angles = [0, 2, 4]
 
-        self.FX_curves = curve_set(self, 'accel', 'SR', 'FX', np.linspace(-0.3, 0.3, 101))
+        self.FX_curves = curve_set(self, 'accel', 'SR', 'FX', np.linspace(-0.3, 0.3, 101), coeff=0.6)
 
         self.max_axial_forces = []
         for i in range(len(self.accel_camber_angles)):
@@ -595,7 +596,7 @@ class tire():
                 c_bias = (camber-camber_arr[i])/(camber_arr[i+1]-camber_arr[i]) 
                 break
         
-        return ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias) + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 0.8
+        return ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias) + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 1.1
     
     ''' ======================================================= '''
     ''' ========== Cornering Data Graphing Functions ========== '''
@@ -689,11 +690,13 @@ class tire():
         plt.show()
 
 
-if False:
-    cornering_data = 'cornering_data.dat'
-    accel_data = 'acceleration_data.dat'
+if True:
+    cornering_data = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/cornering_data.dat'
+    accel_data = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/acceleration_data.dat'
 
     wheel = tire(cornering_data, accel_data)
-    wheel.SA_FY_plot(0)
-    wheel.SA_MZ_plot(2)
-    wheel.SA_MZ_plot(4)
+
+    with(open("/Users/jacobmckee/Documents/Wazzu Racing/LapSim/saved_files/DEFAULT_TIRE(18x6-10_R20).pkl", "wb") as f):
+        pickle.dump(wheel, f)
+
+    # wheel.SA_MZ_plot(0)

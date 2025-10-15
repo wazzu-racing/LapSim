@@ -2,16 +2,15 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pickle as pkl
 import lapsim as lpsm
-import car_model
 from drivetrain_model import drivetrain
 
 # with open('endurance_trk.pkl', 'rb') as f:
-#     endurance = pkl.load(f)
+#     endurance = pkl.load(f)ß
 
 with open('autocross_trk.pkl', 'rb') as f:
     autocross = pkl.load(f)
 
-with open('car.pkl', 'rb') as f:
+with open('/Users/jacobmckee/Documents/Wazzu Racing/LapSim/saved_files/DEFAULT_CAR.pkl', 'rb') as f:
     car = pkl.load(f)
 
 times = []

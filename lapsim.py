@@ -5,8 +5,6 @@ import car_model
 import copy
 pi = np.pi
 
-
-
 class four_wheel:
 
     # Arrays for lateral and axial acceleration of car
@@ -32,7 +30,7 @@ class four_wheel:
     D_4_dis = []
 
     def __init__ (self, t_len_tot, t_rad, car, n):
-        print(min(t_rad))
+        # print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))
         y = np.linspace(len(x), 0, len(x))
         self.t_len_tot = np.array(t_len_tot)
@@ -108,6 +106,7 @@ class four_wheel:
 
         for i in np.arange(len(self.t_len_tot)):
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i])/dx)):int(np.ceil(np.sum(self.t_len_tot[0:i+1])/dx))] = self.t_vel[i]
+
         v1[0] = 0
         v1[-1] = v1[-2]
 
@@ -122,14 +121,18 @@ class four_wheel:
                 gear = self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)] # changes to the optimal gear when braking
                 shifting = False # sets to False so the car doesn't shift when it stops braking
 
-                a_tan = self.car.curve_brake(v1[int(i)], self.nd_rad[int(i)]) # in pounds
-                v1[int(i+1)] = np.sqrt(v1[int(i)]**2 + 2*a_tan*dx)
+                a_tan = self.car.curve_brake(v2[int(i)], self.nd_rad[int(i)]) # in/s^2
+
+                # Make sure car does not go backwards when setting v2 for each index.
+                if v2[int(i)]**2 + 2*a_tan*dx >= 0:
+                    v2[int(i+1)] = np.sqrt(v2[int(i)]**2 + 2*a_tan*dx)
+                else:
+                    v2[int(i+1)] = v2[int(i)]
 
                 a_tan /= (32.17 * 12) # in g's
-                a_lat = v1[int(i)]**2/self.nd_rad[int(i)] / 32.2 / 12 # in g's
+                a_lat = v2[int(i)]**2/self.nd_rad[int(i)] / 32.2 / 12 # in g's
                 self.car.accel(a_lat, a_tan)
                 self.append_data_arrays(a_lat, a_tan, int(i))
-                print(f"Node {i}: axial accel: {a_tan}, lateral accel: {a_lat} BRAKING")
 
             else:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
@@ -153,7 +156,7 @@ class four_wheel:
                     # Calculate and record data
                     self.car.accel(a_lat, a_tan)
                     self.append_data_arrays(a_lat, a_tan, int(i))
-                    print(f"Node {i}: axial accel: {a_tan}, lateral accel: {a_lat}")
+                    # print(f"Node {i}: axial accel: {a_tan}, lateral accel: {a_lat}")
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n+1))
@@ -167,6 +170,7 @@ class four_wheel:
         t = 0
         for i in np.arange(1, len(v2)-1):
             t += dx/np.average([v3[i], v3[i+1]])
+        print(t)
         
         self.dx = dx
         self.n = n
@@ -178,6 +182,14 @@ class four_wheel:
 
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
+
+        # Print values for lateral and axial acceleration:
+        # for index, i in enumerate(self.AY):
+        #     print(i)
+
+        # print("Axial accel (g):")
+        # for i in self.AX:
+        #     print(i)
         
         return nds/12, v1/17.6, t
 

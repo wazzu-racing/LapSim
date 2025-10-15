@@ -296,7 +296,7 @@ def k_closest(points, mouse_pos):
 def get_data_string(self, data_bools, index):
     content = ""
     if data_bools[0].get():
-        content += f"Lateral Acceleration: {round(self.sim.AY[index], 2)}\nAxial Acceleration: {round(self.sim.AX[index], 2)}\n\n"
+        content += f"Lateral Acceleration: {round(self.sim.AY[index], 6)}\nAxial Acceleration: {round(self.sim.AX[index], 6)}\n\n"
     if data_bools[1].get():
         content += f"Vertical force on front outer tire: {round(self.sim.W_out_f_array[index], 2)}\nVertical force on front inner tire: {round(self.sim.W_in_f_array[index], 2)}\nVertical force on rear outer tire: {round(self.sim.W_out_r_array[index], 2)}\nVertical force on rear inner tire: {round(self.sim.W_in_r_array[index], 2)}\n\n"
     if data_bools[2].get():
@@ -519,7 +519,7 @@ class track():
         #print(np.sum(self.len))
         self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run()
-        print(f'Total Travel Time: {self.t}')
+        # print(f'Total Travel Time: {self.t}')
 
     def update_track(self):
         for i in self.nds:

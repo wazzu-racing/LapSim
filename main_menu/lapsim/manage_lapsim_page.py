@@ -1,6 +1,8 @@
+import pickle
 import tkinter
 from tkinter import filedialog
 
+import car_model
 from main_menu.lapsim.lapsim_go_crazy import LapSimGoCrazy
 from main_menu.manage_data.files import get_save_files_folder_abs_dir
 

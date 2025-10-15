@@ -2,9 +2,12 @@ import tkinter
 from tkinter import filedialog
 import pickle as pkl
 
+from main_menu.manage_data.car_settings_window import CarSettingsWindow
 from main_menu.manage_data.files import get_save_files_folder_abs_dir
 from car_model import car
 import car_model
+
+racecar = car()
 
 # Widgets that are gridded once the user inputs the correct file
 aero_array_check = None
@@ -57,16 +60,22 @@ def select_file(file_type, file):
     else:
         print("No file selected")
 
+def set_window_settings_car_to_car():
+    global racecar
+    racecar = settings_window.car
+
 # Saves the car in a dir
 def save_file(controller):
-    global aero_array_file_path, initial_dir
+    global aero_array_file_path, initial_dir, racecar
+
+    # Apply changes made by user to car object
+    settings_window.apply_changes()
+    racecar = settings_window.car
 
     # Create and save car object into saved_files dir using imported files after setting car_model paths equal to user selection
-    car_model.aero_csv_file_path = aero_array_file_path
-    car_model.tire_file_path = tire_file_path
-    car_model.drivetrain_file_path = drivetrain_file_path
-
-    racecar = car()
+    racecar.aero_csv_file_path = aero_array_file_path
+    racecar.tire_file_path = tire_file_path
+    racecar.drivetrain_file_path = drivetrain_file_path
 
     # Ask the user where they want to save the car object
     file_path = filedialog.asksaveasfilename(title="Save Car File", initialdir=initial_dir, defaultextension=".pkl")
@@ -78,6 +87,8 @@ def save_file(controller):
 
     # Close the create new tire window and go back to the import tire files page
     controller.go_back()
+
+settings_window = CarSettingsWindow(racecar, car_file_path="", save_car=set_window_settings_car_to_car)
 
 # The "CreateNewCarPage" page.
 class CreateNewCarPage(tkinter.Frame):
@@ -97,26 +108,30 @@ class CreateNewCarPage(tkinter.Frame):
         import_aero_array_button = tkinter.Button(self, text="Import Aero Array Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="csv", file="aero_array"))
         import_aero_array_button.grid(row=2, column=1, pady=(100, 10))
 
-        # Make and pack check label to import aero array data
+        # Make check label to import aero array data
         aero_array_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Import Tire File" button
         import_tire_file_button = tkinter.Button(self, text="Import Tire File", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="pkl", file="tire_file"))
         import_tire_file_button.grid(row=3, column=1, pady=(0, 10))
 
-        # Make and pack check label to import Tire file
+        # Make check label to import Tire file
         tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Import Drivetrain File" button
         import_drivetrain_file_button = tkinter.Button(self, text="Import Drivetrain File", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="pkl", file="drivetrain_file"))
         import_drivetrain_file_button.grid(row=4, column=1, pady=(0, 0))
 
-        # Make and pack check label to import drivetrain file
+        # Make check label to import drivetrain file
         drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
+
+        # Make and pack button to change car settings
+        car_settings_button = tkinter.Button(self, text="Car Settings", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: settings_window.open_window())
+        car_settings_button.grid(row=5, column=1, pady=(10, 0))
 
         #  Make and pack "Save Car" button
         save_car_button = tkinter.Button(self, text="Save Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
-        save_car_button.grid(row=5, column=1, pady=(100, 0))
+        save_car_button.grid(row=6, column=1, pady=(50, 0))
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
@@ -125,7 +140,8 @@ class CreateNewCarPage(tkinter.Frame):
         self.grid_rowconfigure(3, weight=0)
         self.grid_rowconfigure(4, weight=0)
         self.grid_rowconfigure(5, weight=0)
-        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(6, weight=0)
+        self.grid_rowconfigure(7, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=0)

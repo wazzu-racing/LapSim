@@ -1,7 +1,10 @@
+import pickle
+
 from matplotlib import pyplot as plt
 import numpy as np
 import pickle as pkl
 import csv
+import tire_model
 
 from main_menu.manage_data.files import get_save_files_folder_abs_dir
 
@@ -13,17 +16,17 @@ class car():
     global aero_csv_file_path, tire_file_path, drivetrain_file_path
 
     # weight over front left wheel
-    W_1 = 185.7365 * 0.7223
+    W_1 = 185.7365 + 3
     # weight over front right wheel
-    W_2 = 185.7365 * 0.7223
+    W_2 = 185.7365 + 3
     # weight over rear left wheel
-    W_3 = 170.7635 * 0.7223
+    W_3 = 170.7635 + 3
     # weight over rear right wheel
-    W_4 = 170.7635 * 0.7223
+    W_4 = 170.7635 + 3
     # length of wheelbase (in)
     l = 60.04
     # vertical center of gravity (in)
-    h = 13
+    h = 9
     # in, CG height to roll axis
     H = 10.521
     # in, roll axis height, front and rear
@@ -304,9 +307,6 @@ class car():
         # checking if the car can generate enough lateral force
         if (FY_f > FY_out_f+FY_in_f) or (FY_r > FY_out_r+FY_in_r): return False
 
-        if bitch:
-            print((W_in_f + W_out_f) / (W_out_f + W_out_r + W_in_f + W_in_r))
-
         if AX == 0: return True # returning true if no axial acceleration
 
         f_factor = ((FY_out_f + FY_in_f)**2 - FY_f**2)**0.5 / (FY_out_f + FY_in_f)
@@ -330,7 +330,7 @@ class car():
             FX = FX_out_f + FX_in_f + FX_out_r + FX_in_r
         
         # Checking if the car can generate the necessary axial tire traction
-        if abs(FX/self.W_car) < abs(AX): return False
+        if abs(FX/self.W_car) < abs(AX):return False
         else: return True
 
     # modified accel function, currently unfinished. Will account for tire orientation
@@ -466,14 +466,14 @@ class car():
             AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
-        
+
         drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
 
         A_tire = 0
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY:
                 # linearly interpolating self.A_brake to find the braking acceleration at lateral acceleration AY
-                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1] )*self.A_brake[i-1]
+                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_brake[i-1]
                 break
         
         A_tire -= drag # incorporating drag
@@ -496,6 +496,7 @@ class car():
             # finding drag by linearly interpolating the aero array
             ratio = mph % 1
             return self.aero_arr[int(mph)]*(1-ratio) + self.aero_arr[int(mph)+1]*ratio
+
     
     def adjust_weight(self, w):
         ratio = w / self.W_car
@@ -567,4 +568,5 @@ class car():
         with open("brake_data.pkl", 'wb') as f:
             pkl.dump(stuff, f)
 
-racecar = car()
+    def get_AX_AY_values(self):
+        pass
