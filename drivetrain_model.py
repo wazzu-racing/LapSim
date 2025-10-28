@@ -26,7 +26,7 @@ class drivetrain:
         self.shift_time = 0 # seconds
 
         # importing engine data
-        engine_data = 'engine_array.csv' # engine file location
+        engine_data = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/engine_array.csv' # engine file location
         delim = '\t' # csv delimiter
 
         with open(engine_data, newline='') as dat_file:
@@ -116,6 +116,6 @@ y = []
 for i in x:
     y.append(train.get_engn_pwr(i))
 
-plt.plot(x, y)
-plt.grid()
-plt.show()
+# plt.plot(x, y)
+# plt.grid()
+# plt.show()
