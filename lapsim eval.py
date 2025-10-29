@@ -1,18 +1,16 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import spline_track as trk
 import pickle as pkl
 import lapsim as lpsm
-import car_model
 from drivetrain_model import drivetrain
 
-with open('endurance_trk.pkl', 'rb') as f:
-    endurance = pkl.load(f)
+# with open('endurance_trk.pkl', 'rb') as f:
+#     endurance = pkl.load(f)ß
 
 with open('autocross_trk.pkl', 'rb') as f:
     autocross = pkl.load(f)
 
-with open('car.pkl', 'rb') as f:
+with open('/Users/jacobmckee/Documents/Wazzu Racing/LapSim/saved_files/DEFAULT_CAR.pkl', 'rb') as f:
     car = pkl.load(f)
 
 times = []
@@ -40,7 +38,7 @@ if False:
     plt.grid()
     plt.show()
 
-if True:
+if False:
     for i in range(660, 470, -20):
         car.adjust_weight(i)
         car.adjust_height(14/713*i)
@@ -55,6 +53,11 @@ if True:
     plt.ylabel('Acceleration Time (s)')
     plt.grid()
     plt.show()
+
+if False:
+    track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 0], car, 5000)
+    nds, v3, t = track.run()
+    print(t)
 
 if False:
     drives = np.linspace(2, 6, 41)

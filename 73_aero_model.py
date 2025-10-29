@@ -29,5 +29,5 @@ print(aero_array_lb)
 variables = {'aero_array': aero_array_lb}
 
 # Pickling the dictionary
-with open('C:/Users/maxwe/Downloads/FSAE/2023-2024 Car/Repo/aero_model.pkl', 'wb') as f:
+with open('aero_model.pkl', 'wb') as f:
     pickle.dump(variables, f)

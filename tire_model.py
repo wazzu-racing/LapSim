@@ -1,3 +1,5 @@
+import pickle
+
 from matplotlib import pyplot as plt
 import scipy
 import numpy as np
@@ -693,4 +695,6 @@ if False:
     accel_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_DriveBrake_ASCII_USCS_Round9\\A2356run72.dat'
 
     wheel = tire(cornering_data, accel_data)
-    wheel.SA_MZ_plot(0)
+    wheel.SA_FY_plot(0)
+    wheel.SA_MZ_plot(2)
+    wheel.SA_MZ_plot(4)
