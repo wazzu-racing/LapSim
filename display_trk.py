@@ -26,10 +26,21 @@ class DisplayTrack:
                 car = pickle.load(f)
 
             # defining different points
-            points_x = points['p1x']
-            points_y = points['p1y']
-            points_x2 = points['p2x']
-            points_y2 = points['p2y']
+            try: # try-except to account for different point storage formats (this first one is the newer format)
+                points_x = points['p1x']
+                points_y = points['p1y']
+                points_x2 = points['p2x']
+                points_y2 = points['p2y']
+            except TypeError: # Older format - not in use anymore but kept for backwards compatibility
+                points_x = []
+                points_y = []
+                points_x2 = []
+                points_y2 = []
+                for i in points.nds:
+                    points_x.append(i.x1)
+                    points_y.append(i.y1)
+                    points_x2.append(i.x2)
+                    points_y2.append(i.y2)
 
             # creating track object
             self.trk = spln.track(points_x, points_y, points_x2, points_y2)

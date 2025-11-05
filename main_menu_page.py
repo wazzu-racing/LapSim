@@ -84,7 +84,7 @@ class MainMenuPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Main Menu")
 
         # Get the directory of relative path to images
-        image_path = "images/wazzu_racing_logo.PNG"
+        image_path = "Images/wazzu_racing_logo.PNG"
 
         # Create and pack the Wazzu Racing image
         pil_image = Image.open(image_path)

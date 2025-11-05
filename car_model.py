@@ -9,21 +9,9 @@ import tire_model
 
 from files import get_save_files_folder_abs_dir
 
-aero_csv_file_path = "Data/pkl/DEFAULT_AERO_ARRAY.csv"
+aero_csv_file_path = "Data/csv/DEFAULT_AERO_ARRAY.csv"
 tire_file_path = "Data/pkl/DEFAULT_TIRE(18x6-10_R20).pkl"
 drivetrain_file_path = "Data/pkl/DEFAULT_DRIVETRAIN.pkl"
-
-cornering_data = 'Data/dat/cornering_data.dat'
-accel_data = 'Data/dat/acceleration_data.dat'
-
-wheel = tire_model.tire(cornering_data, accel_data)
-with open('Data/pkl/DEFAULT_TIRE(18x6-10_R20).pkl', 'wb') as f:
-    pickle.dump(wheel, f)
-
-train = drivetrain_model.drivetrain(engine_data="Data/csv/engine_array.csv")
-
-with open("Data/pkl/DEFAULT_DRIVETRAIN.pkl", 'wb') as f:
-    pickle.dump(train, f)
 
 class car():
     
@@ -111,13 +99,8 @@ class car():
     # aero csv file delimiter
     aero_delimiter = ';'
 
-    # importing tire model
-    with open(tire_file, 'rb') as f:
-        tires = pkl.load(f)
-
-    # importing drivetrain model
-    with open(drivetrain_file, 'rb') as f:
-        drivetrain = pkl.load(f)
+    tires = None
+    train = None
 
     def __init__(self):
         self.aero_arr = [] # drag force acceleration (G's) emitted on vehicle (index = mph)
@@ -126,7 +109,28 @@ class car():
             for line in reader:
                 for i in line:
                     self.aero_arr.append(float(i)/self.W_car)
-        
+
+        # importing tire model
+        try:
+            with open(self.tire_file, 'rb') as f:
+                self.tires = pkl.load(f)
+        except Exception:
+            cornering_data = 'Data/dat/cornering_data.dat'
+            accel_data = 'Data/dat/acceleration_data.dat'
+            self.tires = tire_model.tire(cornering_data, accel_data)
+            with open('Data/pkl/DEFAULT_TIRE(18x6-10_R20).pkl', 'wb') as f:
+                pickle.dump(self.tires, f)
+
+        # importing drivetrain model
+        try:
+            with open(self.drivetrain_file, 'rb') as f:
+                self.drivetrain = pkl.load(f)
+        except Exception:
+            self.drivetrain = drivetrain_model.drivetrain(engine_data="Data/csv/engine_array.csv")
+            with open("Data/pkl/DEFAULT_DRIVETRAIN.pkl", 'wb') as f:
+                pickle.dump(self.drivetrain, f)
+
+
         self.aero_arr.reverse()
         self.compute_traction()
 

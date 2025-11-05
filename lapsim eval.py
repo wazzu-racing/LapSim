@@ -7,7 +7,7 @@ from drivetrain_model import drivetrain
 # with open('endurance_trk.pkl', 'rb') as f:
 #     endurance = pkl.load(f)ß
 
-with open('Data/pkl/tracks/autocross_trk.pkl', 'rb') as f:
+with open('Data/pkl/Tracks/autocross_trk.pkl', 'rb') as f:
     autocross = pkl.load(f)
 
 with open('/saved_files/DEFAULT_CAR.pkl', 'rb') as f:

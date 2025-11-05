@@ -688,12 +688,3 @@ class tire():
         plt.grid()
         plt.legend(leg)
         plt.show()
-
-
-if False:
-    cornering_data = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/Data/dat/cornering_data.dat'
-    accel_data = '/Users/jacobmckee/Documents/Wazzu Racing/LapSim/Data/dat/acceleration_data.dat'
-
-    wheel = tire(cornering_data, accel_data)
-    with open('/Users/jacobmckee/Documents/Wazzu Racing/LapSim/Saved_Files/DEFAULT_TIRE(18x6-10_R20).pkl', 'wb') as f:
-        pickle.dump(wheel, f)
