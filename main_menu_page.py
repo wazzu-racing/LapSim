@@ -60,6 +60,8 @@ class PageStack(tkinter.Tk):
         else:
             self.bind("<ButtonPress-3>", self.go_back)
 
+        self.protocol("WM_DELETE_WINDOW", self.kill_window)
+
     # Raises the frame that corresponds with the page_name to the top of PageStack
     def go_to_page(self, page_name):
         # raise the frame selected by inputting a page_name string
@@ -67,6 +69,11 @@ class PageStack(tkinter.Tk):
         frame.tkraise()
         self.current_page = page_name
         self.page_history.append(page_name)
+
+    # Forces the window to close when the user presses X in the upper right corner.
+    def kill_window(self):
+        self.destroy()
+        os._exit(0)
 
     # Go back to the previous page
     def go_back(self, event=None):     # Since binding go_back requires it to take in an event parameter, go_back must have an event parameter.
