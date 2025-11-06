@@ -19,19 +19,19 @@ class ManageLapSimPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Manage LapSim")
 
         # Make and pack "Manage LapSim" label
-        label = tkinter.Label(self, text="Manage LapSim", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Manage LapSim", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1, pady=0)
 
         #  Make and pack "Create Track" button
-        button = tkinter.Button(self, text="Create Track", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: (controller.go_to_page("ImportTrackImagePage")))
+        button = tkinter.Button(self, text="Create Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: (controller.go_to_page("ImportTrackImagePage")))
         button.grid(row=2, column=1, pady=(50, 10))
 
         #  Make and pack "Edit Track" button
-        button = tkinter.Button(self, text="Edit Track", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: self.run_lapsim_go_crazy())
+        button = tkinter.Button(self, text="Edit Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: self.run_lapsim_go_crazy())
         button.grid(row=3, column=1, pady=(0, 10))
 
         #  Make and pack "Run LapSim" button
-        button = tkinter.Button(self, text="Run LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("TrackImportMethodPage"))
+        button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("TrackImportMethodPage"))
         button.grid(row=4, column=1, pady=(0, 10))
 
         # Configure grid to center all widgets

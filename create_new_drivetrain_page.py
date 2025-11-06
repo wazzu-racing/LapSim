@@ -68,18 +68,18 @@ class CreateNewDrivetrainPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Create New Drivetrain")
 
         # Make and pack "Create New Drivetrain" label
-        label = tkinter.Label(self, text="Create New Drivetrain", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Create New Drivetrain", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Engine Array Data" button
-        import_engine_array_button = tkinter.Button(self, text="Import Engine Array Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file())
+        import_engine_array_button = tkinter.Button(self, text="Import Engine Array Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file())
         import_engine_array_button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label to import engine array data
         drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Save Drivetrain" button
-        save_drivetrain_button = tkinter.Button(self, text="Save Drivetrain", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
+        save_drivetrain_button = tkinter.Button(self, text="Save Drivetrain", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
         save_drivetrain_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets

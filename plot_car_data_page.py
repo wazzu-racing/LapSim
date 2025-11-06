@@ -77,22 +77,22 @@ class PlotCarDataPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Plot Car Data")
 
         # Make and pack "Plot Car Data" label
-        label = tkinter.Label(self, text="Plot Car Data", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Plot Car Data", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Saved Car" button
-        engine_array_button = tkinter.Button(self, text="Import Saved Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
+        engine_array_button = tkinter.Button(self, text="Import Saved Car", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
         engine_array_button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Saved Car" button above.
         car_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Create New Car" button
-        engine_array_button = tkinter.Button(self, text="Create New Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("CreateNewCarPage"))
+        engine_array_button = tkinter.Button(self, text="Create New Car", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("CreateNewCarPage"))
         engine_array_button.grid(row=3, column=1, pady=(0, 10))
 
         #  Make and pack "Plot Data" button
-        plot_button = tkinter.Button(self, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_car_data(dropdown.get()))
+        plot_button = tkinter.Button(self, text="Plot Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_car_data(dropdown.get()))
         plot_button.grid(row=4, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets

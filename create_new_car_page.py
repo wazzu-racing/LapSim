@@ -100,36 +100,36 @@ class CreateNewCarPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Create New Car")
 
         # Make and pack "Create New Car" label
-        label = tkinter.Label(self, text="Create New Car", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Create New Car", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Aero Array Data" button
-        import_aero_array_button = tkinter.Button(self, text="Import Aero Array Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="csv", file="aero_array"))
+        import_aero_array_button = tkinter.Button(self, text="Import Aero Array Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="csv", file="aero_array"))
         import_aero_array_button.grid(row=2, column=1, pady=(100, 10))
 
         # Make check label to import aero array data
         aero_array_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Import Tire File" button
-        import_tire_file_button = tkinter.Button(self, text="Import Tire File", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="pkl", file="tire_file"))
+        import_tire_file_button = tkinter.Button(self, text="Import Tire File", bg="White",  fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="pkl", file="tire_file"))
         import_tire_file_button.grid(row=3, column=1, pady=(0, 10))
 
         # Make check label to import Tire file
         tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Import Drivetrain File" button
-        import_drivetrain_file_button = tkinter.Button(self, text="Import Drivetrain File", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="pkl", file="drivetrain_file"))
+        import_drivetrain_file_button = tkinter.Button(self, text="Import Drivetrain File", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(file_type="pkl", file="drivetrain_file"))
         import_drivetrain_file_button.grid(row=4, column=1, pady=(0, 0))
 
         # Make check label to import drivetrain file
         drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         # Make and pack button to change car settings
-        car_settings_button = tkinter.Button(self, text="Car Settings", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: settings_window.open_window())
+        car_settings_button = tkinter.Button(self, text="Car Settings", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: settings_window.open_window())
         car_settings_button.grid(row=5, column=1, pady=(10, 0))
 
         #  Make and pack "Save Car" button
-        save_car_button = tkinter.Button(self, text="Save Car", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
+        save_car_button = tkinter.Button(self, text="Save Car", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
         save_car_button.grid(row=6, column=1, pady=(50, 0))
 
         # Configure grid to center all widgets

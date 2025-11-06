@@ -3,6 +3,7 @@ import tkinter
 import matplotlib as mat
 
 from PIL import Image, ImageTk
+import platform
 
 from import_generated_track_page import ImportGeneratedTrackPage
 from import_track_image_page import ImportTrackImagePage
@@ -52,8 +53,12 @@ class PageStack(tkinter.Tk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         # If the user right clicks or presses the escape key, the previous page is raised to the top of PageStack
-        self.bind("<ButtonPress-2>", self.go_back)
         self.bind("<Escape>", self.go_back)
+        # Mac has a different right-click bind than Windows and Linux
+        if platform.system() == "Darwin":
+            self.bind("<ButtonPress-2>", self.go_back)
+        else:
+            self.bind("<ButtonPress-3>", self.go_back)
 
     # Raises the frame that corresponds with the page_name to the top of PageStack
     def go_to_page(self, page_name):
@@ -94,15 +99,15 @@ class MainMenuPage(tkinter.Frame):
         image_label.grid(row=1, column=1, pady=(0, 0))
 
         # Make and pack "Vehicle Dynamics" label
-        label = tkinter.Label(self, text="Vehicle Dynamics", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Vehicle Dynamics", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=2, column=1, pady=0)
 
         # Make and pack "Manage Data" button
-        button = tkinter.Button(self, text="Manage Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
+        button = tkinter.Button(self, text="Manage Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
         button.grid(row=3, column=1, pady=(50, 10))
 
         # Make and pack "LapSim" button
-        button = tkinter.Button(self, text="LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ManageLapSimPage"))
+        button = tkinter.Button(self, text="LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ManageLapSimPage"))
         button.grid(row=4, column=1, pady=0)
 
         # Configure grid to center all widgets

@@ -78,11 +78,11 @@ class CreateNewTirePage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Create New Tire")
 
         # Make and pack "Create New Tire" label
-        label = tkinter.Label(self, text="Create New Tire", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Create New Tire", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Cornering Data" button
-        cornering_button = tkinter.Button(self, text="Import Cornering Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(
+        cornering_button = tkinter.Button(self, text="Import Cornering Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(
             is_cornering_file=True))
         cornering_button.grid(row=2, column=1, pady=(100, 10))
 
@@ -90,7 +90,7 @@ class CreateNewTirePage(tkinter.Frame):
         cornering_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green", )
 
         #  Make and pack "Import Acceleration Data" button
-        acceleration_button = tkinter.Button(self, text="Import Acceleration Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(
+        acceleration_button = tkinter.Button(self, text="Import Acceleration Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(
             is_cornering_file=False))
         acceleration_button.grid(row=3, column=1, pady=(0, 10))
 
@@ -98,7 +98,7 @@ class CreateNewTirePage(tkinter.Frame):
         acceleration_check = tkinter.Label(self,text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Plot Data" button
-        save_tire_button = tkinter.Button(self, text="Save Tire", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
+        save_tire_button = tkinter.Button(self, text="Save Tire", bg="White", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: save_file(controller))
         save_tire_button.grid(row=4, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets

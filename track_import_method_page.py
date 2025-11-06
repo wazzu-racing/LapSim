@@ -10,15 +10,15 @@ class TrackImportMethodPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Choose Track Import Method")
 
         # Make and pack "Choose Track Import Method" label
-        label = tkinter.Label(self, text="Choose Track Import Method", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Choose Track Import Method", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Generated Track" button
-        button = tkinter.Button(self, text="Import Generated Track", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ImportGeneratedTrackPage"))
+        button = tkinter.Button(self, text="Import Generated Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ImportGeneratedTrackPage"))
         button.grid(row=2, column=1, pady=(100, 10))
 
         #  Make and pack "Import Not Generated Track" button
-        car_button = tkinter.Button(self, text="Import Not Generated Track", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ImportNotGeneratedTrackPage"))
+        car_button = tkinter.Button(self, text="Import Not Generated Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ImportNotGeneratedTrackPage"))
         car_button.grid(row=3, column=1, pady=(10, 100))
 
         # Configure grid to center all widgets

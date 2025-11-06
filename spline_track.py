@@ -59,7 +59,7 @@ class LapSimUI:
             menu_button.menu.add_checkbutton(label=option, variable=boolean)
         menu_button.grid(row=1, column=2, padx=0, pady=0)
 
-        data_label_frame = tkinter.Frame(track_root, width=300, height=378, bg='white')
+        data_label_frame = tkinter.Frame(track_root, width=400, height=500, bg='white')
         data_label_frame.grid(row=2, column=2, padx=0, pady=0)
         data_label_frame.pack_propagate(False)
 

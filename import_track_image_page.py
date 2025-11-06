@@ -44,18 +44,18 @@ class ImportTrackImagePage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Import Track Image")
 
         # Make and pack "Import Image" label
-        label = tkinter.Label(self, text="Import Track Image", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Import Track Image", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Image" button
-        button = tkinter.Button(self, text="Import Image", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: select_file())
+        button = tkinter.Button(self, text="Import Image", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: select_file())
         button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Image" button above.
         image_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Plot Track" button
-        plot_button = tkinter.Button(self, text="Plot Track", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: LapSimGoCrazy(image_path=image_file))
+        plot_button = tkinter.Button(self, text="Plot Track", bg="White",  fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: LapSimGoCrazy(image_path=image_file))
         plot_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets

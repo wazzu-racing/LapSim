@@ -10,11 +10,11 @@ class ManageDataPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Manage Data")
 
         # Make and pack "Manage Data" label
-        label = tkinter.Label(self, text="Manage Data", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Manage Data", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1, pady=0)
 
         #  Make and pack "Plot Data" button
-        button = tkinter.Button(self, text="Plot Data", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("PlotDataPage"))
+        button = tkinter.Button(self, text="Plot Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("PlotDataPage"))
         button.grid(row=2, column=1, pady=(50, 10))
 
         # Configure grid to center all widgets

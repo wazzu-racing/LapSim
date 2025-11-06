@@ -43,18 +43,18 @@ class ImportGeneratedTrackPage(tkinter.Frame):
         controller.title("Vehicle Dynamics - Import Generated Track")
 
         # Make and pack "Import Generated Track"  label
-        label = tkinter.Label(self, text="Import Track", font=("Ariel", 48), bg="Black")
+        label = tkinter.Label(self, text="Import Track", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Generated Track" button
-        button = tkinter.Button(self, text="Import Generated Track", bg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: select_file())
+        button = tkinter.Button(self, text="Import Generated Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: select_file())
         button.grid(row=2, column=1, pady=(100, 0))
 
         # Make and pack check label widget for "Import Generated Track" button above.
         generated_track_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
         #  Make and pack "Run LapSim" button
-        display_lap_button = tkinter.Button(self, text="Run LapSim", bg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, gen_track_file=generated_track_file))
+        display_lap_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, gen_track_file=generated_track_file))
         display_lap_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets
