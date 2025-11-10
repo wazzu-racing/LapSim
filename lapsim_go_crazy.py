@@ -17,8 +17,8 @@ class LapSimGoCrazy:
             self.points_y = []
 
             self.p1x = []
-            self.p2x = []
             self.p1y = []
+            self.p2x = []
             self.p2y = []
 
             self.x1 = []
@@ -97,8 +97,24 @@ class LapSimGoCrazy:
         # Only allow the user to hide the window, not close it
         self.go_crazy_root.protocol("WM_DELETE_WINDOW", self.go_crazy_root.withdraw)
 
-        self.immage = Image.open(self.image_path_saved)
-        self.img = ImageTk.PhotoImage(self.immage)
+        if self.image_path_saved is not None:
+            self.immage = Image.open(self.image_path_saved)
+            self.img = ImageTk.PhotoImage(self.immage)
+
+            # Save image dimensions
+            self.img_width =  self.immage.width
+            self.img_height = self.immage.height
+            self.img_width_center = self.immage.width/2
+            self.img_height_center = self.immage.height/2
+            self.resize_img = ImageTk.PhotoImage(self.immage.resize((int(self.img_width*self.scale_factor), int(self.img_height*self.scale_factor))))
+        else:
+            self.immage = None
+            self.img = None
+            self.img_width =  1000
+            self.img_height = 1000
+            self.img_width_center = 500
+            self.img_height_center = 500
+            self.resize_img = None
         self.panel = tkinter.Canvas(master=self.go_crazy_root, width=self.p_width, height=self.p_height)
         self.image_item = self.panel.create_image(self.p_width/2, self.p_height/2, image=self.img)
         self.panel.pack(side = "bottom", fill = "both", expand = "yes")
@@ -107,13 +123,6 @@ class LapSimGoCrazy:
         self.entry_widget = tkinter.Entry(self.go_crazy_root, width=30)
         self.entry_text_widget = tkinter.Label(self.go_crazy_root, width=60, text="Enter the distance (in feet) between the two points you self.clicked, then press Enter")
         self.plot_text_widget = tkinter.Label(self.go_crazy_root, width=60, text="Click points to plot the track. Press 's' to save and 'z' to undo last point.")
-
-        # Save image dimensions
-        self.img_width =  self.immage.width
-        self.img_height = self.immage.height
-
-        self.img_width_center = self.immage.width/2
-        self.img_height_center = self.immage.height/2
 
         print(f"Image dimensions: {self.img_width} x {self.img_height}")
 
@@ -124,8 +133,8 @@ class LapSimGoCrazy:
             self.configure_label()
 
         # Zoom image in
-        self.resize_img = ImageTk.PhotoImage(self.immage.resize((int(self.img_width*self.scale_factor), int(self.img_height*self.scale_factor))))
-        self.panel.itemconfig(self.image_item, image=self.resize_img)
+        if self.resize_img is not None:
+            self.panel.itemconfig(self.image_item, image=self.resize_img)
 
         # Set redo line button widget to connect to reset_line function
         self.redo_line_button_widget = tkinter.Button(self.go_crazy_root, text="Redo Line", command=self.reset_line)
@@ -135,8 +144,9 @@ class LapSimGoCrazy:
         self.initial_dir = ""
         self.set_initial_dir()
 
-        self.go_crazy_root.mainloop()
+        # self.save_ungenerated_track()
 
+        self.go_crazy_root.mainloop()
 
     # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
     def set_initial_dir(self):
@@ -393,12 +403,36 @@ class LapSimGoCrazy:
     def clear_track(self):
         self.dot_positions.clear()
 
+    def save_custom_ungenerated_track(self):
+        data2 = {
+            'p1x' :  [0, 0],
+            'p1y' : [0, 3312],
+            'p2x' : [100, 100],
+            'p2y' : [0, 3312],
+            'points_x' : [0, 100, 0, 100],
+            'points_y' : [0, 0, 3312, 3312],
+            'dot_positions' : [(0, 0), (100, 0), (0, 3312), (100, 3312)],
+            'dots' : [],
+            'pxl_to_in' : 1,
+            'p_num' : 1,
+            'clicks' : 4,
+            'scale_factor' : 1,
+            'line_drawn' : True,
+            'can_drag_image' : True,
+            'textboxDisplayed' : False,
+            'image_path_saved' : ""
+        }
+        with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/acceleration_trk.pkl", 'wb') as f:
+            pickle.dump(obj=data2, file=f)
+
 def bind_go_crazy_keys(root, self):
     root.bind("<ButtonPress-1>", self.record_click)
     root.bind("<ButtonRelease-1>", self.record_release)
     root.bind("<Return>", self.return_key)
     root.bind("<Motion>", self.get_mouse_pos)
     root.bind("<Key>", self.key)
+
+# LapSimGoCrazy()
 
     # Uncompleted function to zoom in and out with mouse wheel. Issues w/ scaling the self.dots along the resized image.
     # def mouse_wheel(event):

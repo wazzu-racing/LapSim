@@ -14,7 +14,7 @@ tire_file_path = "Data/pkl/DEFAULT_TIRE(18x6-10_R20).pkl"
 drivetrain_file_path = "Data/pkl/DEFAULT_DRIVETRAIN.pkl"
 
 class car():
-    
+
     # weight over front left wheel
     W_1 = 185.7365
     # weight over front right wheel
@@ -559,6 +559,7 @@ class car():
         plt.show()
 
     def get_values(self):
+
         # For gas
         # print("GAS")
         # for index, lat in enumerate(self.AY):
@@ -578,20 +579,24 @@ class car():
             return new_array
 
         # For braking
-        print("BRAKING")
-        for index, lat in enumerate(self.AY):
-            car.accel(self, AY=lat, AX=self.A_brake[index])
-            car.append_data_arrays(self,lat=lat, axi=self.A_brake[index], index=0)
-        print(f"Lateral acceleration (g's): {self.AY}")
-        print(f"Axial acceleration (g's): {self.A_accel}")
-        print(f"Vertical: {racecar.W_out_r_array}")
-        print(f"Lateral: {racecar.FY_out_r_array}")
-        print(f"Axial: {racecar.FX_out_r_array}")
+        # for index, accel_AY in enumerate(self.AY):
+        car.accel(self, AY=0, AX=self.A_brake[0])
+        # car.get_data(self)
+            # racecar.append_data_arrays(self, lat=self.AY[index], axi=self.A_brake[index], index=0)
+        print(f"Axial acceleration (g's): {self.A_brake[0]}")
+        # print(f"Axial outer front: {car.axial_force_outer_front}")
+        # print(f"Axial inner front: {car.axial_force_inner_front}")
+        # print(f"Axial outer rear: {car.axial_force_outer_rear}")
+        # print(f"Axial inner rear: {car.axial_force_inner_rear}")
+        print(f"----------------------------")
 
-        stuff = {"Lateral Acceleration: ": self.AY, "Axial Acceleration: ": self.A_accel, "Vertical force: ": get_rid_of_zeros(racecar.W_out_r_array), "Lateral force: ": get_rid_of_zeros(racecar.FY_out_r_array), "Axial force: ": get_rid_of_zeros(racecar.FX_out_r_array)}
+        # stuff = {"Lateral Acceleration: ": self.AY, "Axial Acceleration: ": self.A_accel, "Vertical force: ": get_rid_of_zeros(racecar.W_out_r_array), "Lateral force: ": get_rid_of_zeros(racecar.FY_out_r_array), "Axial force: ": get_rid_of_zeros(racecar.FX_out_r_array)}
 
-        with open("../Data/pkl/brake_data.pkl", 'wb') as f:
-            pkl.dump(stuff, f)
+        # with open("../Data/pkl/brake_data.pkl", 'wb') as f:
+        #     pkl.dump(stuff, f)
 
     def get_AX_AY_values(self):
         pass
+
+racecar = car()
+racecar.get_values()

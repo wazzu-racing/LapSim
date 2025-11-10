@@ -3,7 +3,6 @@ import tkinter
 import matplotlib as mat
 
 from PIL import Image, ImageTk
-import platform
 
 from import_generated_track_page import ImportGeneratedTrackPage
 from import_track_image_page import ImportTrackImagePage
@@ -18,6 +17,8 @@ from plot_car_data_page import PlotCarDataPage
 from plot_data_page import PlotDataPage
 from plot_drivetrain_data_page import PlotDrivetrainDataPage
 from plot_tire_data_page import PlotTireDataPage
+
+import platform
 
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
@@ -52,6 +53,8 @@ class PageStack(tkinter.Tk):
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
+        self.protocol("WM_DELETE_WINDOW", self.kill_window)
+
         # If the user right clicks or presses the escape key, the previous page is raised to the top of PageStack
         self.bind("<Escape>", self.go_back)
         # Mac has a different right-click bind than Windows and Linux
@@ -62,6 +65,11 @@ class PageStack(tkinter.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self.kill_window)
 
+    # Forces the window to close when the user presses X in the upper right corner.
+    def kill_window(self):
+        self.destroy()
+        os._exit(0)
+
     # Raises the frame that corresponds with the page_name to the top of PageStack
     def go_to_page(self, page_name):
         # raise the frame selected by inputting a page_name string
@@ -69,11 +77,6 @@ class PageStack(tkinter.Tk):
         frame.tkraise()
         self.current_page = page_name
         self.page_history.append(page_name)
-
-    # Forces the window to close when the user presses X in the upper right corner.
-    def kill_window(self):
-        self.destroy()
-        os._exit(0)
 
     # Go back to the previous page
     def go_back(self, event=None):     # Since binding go_back requires it to take in an event parameter, go_back must have an event parameter.

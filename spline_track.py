@@ -414,7 +414,6 @@ class track():
                 if len(self.x_array) < len(self.sim.nds): # Make sure that the amount of data nodes does not exceed the amount of simulation nodes.
                     self.x_array.append(x)
                     self.y_array.append(y)
-                    print(f"Added data node at x: {x}, y: {y}, total nodes: {len(self.x_array)}")
                     # track_subplot.plot(x, y, marker='o', color='black', markersize=1)
 
 
@@ -460,7 +459,6 @@ class track():
                     # Find corresponding lateral and axial acceleration with node the user is hovering over
                     if closest_index != -1: # Check to see if the algorithm above found a suitable data node.
                         data_label.config(text=get_data_string(self, data_bools, closest_index))
-                        print(f"data string: {get_data_string(self, data_bools, closest_index)}")
 
                     # Draw dot that indicates which data node the user is gathering information from
                     track_subplot.lines[-1].remove()
