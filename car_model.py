@@ -85,10 +85,10 @@ class car():
     FX_out_r = 0 # max possible axial acceleration from rear outer wheel
     FX_in_r = 0  # max possible axial acceleration from rear inner wheel
     # in, displacement of tires in vertical based on change in weight on tires. Default to 0.
-    D_1 = 0 # Front outer wheel vertical displacement in inches
-    D_2 = 0 # Front inner wheel vertical displacement in inches
-    D_3 = 0 # Rear outer wheel vertical displacement in inches
-    D_4 = 0 # Rear inner wheel vertical displacement in inches
+    D_1 = 0 # Front inner wheel vertical displacement in inches
+    D_2 = 0 # Front outer wheel vertical displacement in inches
+    D_3 = 0 # Rear inner wheel vertical displacement in inches
+    D_4 = 0 # Rear outer wheel vertical displacement in inches
 
     # Set the aero_csv variable to the saved_files dir
     aero_csv = aero_csv_file_path

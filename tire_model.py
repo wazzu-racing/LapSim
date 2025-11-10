@@ -121,7 +121,7 @@ class curve_set():
                     section = data_sets[parent.find_section('cornering', [['IA', i], ['FZ', -j]], [['P', 9, 99]])]
                 elif (data_type == 'accel') or (data_type == 'acceleration'):
                     section = data_sets[parent.find_section('accel', [['IA', i], ['FZ', -j], ['SA', 0], ['P', 12]])]
-                
+
                 x = section.data[x_index]
                 y = section.data[y_index] * coeff
                 self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
@@ -489,7 +489,7 @@ class tire():
         for i in lim:
             indx = titles.index(i[0])
             for j in range(len(sets)):
-                for k in sets[j].data[indx]:
+                for k in sets[j].lapsim_data_storage[indx]:
                     if not(i[1] < k < i[2]):
                         cost[j] = 999999999999999
 

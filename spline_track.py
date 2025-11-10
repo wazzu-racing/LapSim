@@ -6,6 +6,9 @@ from matplotlib.figure import Figure
 
 import lapsim
 import tkinter
+import csv
+
+from lapsim import lapsim_data_storage
 
 # Create UI global vars
 track_root = None
@@ -30,13 +33,133 @@ class LapSimUI:
         # Hide this window until ready to show
         track_root.withdraw()
 
-        # Only allow the user to hide the window, not close it
-        track_root.protocol("WM_DELETE_WINDOW", self.close_window)
+        # Create a toplevel window for CSV download
+        self.init_CSV_window()
 
-    def close_window(self):
+        # Only allow the user to hide the LapSim UI and CSV windows, not close it
+        track_root.protocol("WM_DELETE_WINDOW", self.close_LapsimUI_window)
+        self.window.protocol("WM_DELETE_WINDOW", self.close_CSV_window)
+
+    def init_CSV_window(self):
+        # Create a toplevel window for CSV download
+        self.window = tkinter.Toplevel()
+        self.window.title("Download CSV")
+
+        # code copied from load_lapsim function to create data selection menu
+        data_bools = [True, False, False, False, False]
+        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement"]
+        menu_button = tkinter.Menubutton(self.window, text="Choose Data to Save", font=("Ariel", 12))
+
+        menu_button.menu = tkinter.Menu(menu_button, tearoff=0)
+        menu_button["menu"] = menu_button.menu
+
+        for option in data_options:
+            boolean = tkinter.BooleanVar()
+            boolean.set(data_bools[data_options.index(option)])
+            data_bools[data_options.index(option)] = boolean
+            menu_button.menu.add_checkbutton(label=option, variable=boolean)
+        menu_button.grid(row=1, column=1, padx=10, pady=10)
+
+        download_csv_button = tkinter.Button(self.window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
+        download_csv_button.grid(row=2, column=1, padx=10, pady=10)
+
+        self.window.grid_rowconfigure(0, weight=1)
+        self.window.grid_rowconfigure(1, weight=0)
+        self.window.grid_rowconfigure(2, weight=0)
+        self.window.grid_rowconfigure(3, weight=1)
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(1, weight=0)
+        self.window.grid_columnconfigure(2, weight=1)
+
+        self.window.withdraw()
+
+    def close_LapsimUI_window(self):
         global track_root, track_fig, track_subplot, track_canvas
         track_subplot.clear()
         track_root.withdraw()
+
+    def close_CSV_window(self):
+        self.window.withdraw()
+
+    def open_csv_window(self):
+        self.window.deiconify()
+
+    def download_csv(self, arr_bool):
+        print("Download CSV")
+        with(open("csv_file.csv", "w", newline='')) as csv_file:
+            writer = csv.writer(csv_file, dialect='unix')
+            header_array = []
+            writing_data = []
+            for i in range(len(arr_bool)): # Initialize writing_data with empty lists for each selected data type
+                writing_data.append([])
+            for i in range(len(arr_bool)):
+                if arr_bool[i].get():
+                    match i:
+                        case 0:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.AX):
+                                array = []
+                                array.append(str(lapsim_data_storage.AX[index]))
+                                array.append(str(lapsim_data_storage.AY[index]))
+                                array_2.append(array)
+                            writing_data[0] = array_2
+                            header_array.extend(["Axial Acceleration", "Lateral Acceleration"])
+                        case 1:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.W_out_f_array):
+                                array = []
+                                array.append(str(lapsim_data_storage.W_out_f_array[index]))
+                                array.append(str(lapsim_data_storage.W_in_f_array[index]))
+                                array.append(str(lapsim_data_storage.W_out_r_array[index]))
+                                array.append(str(lapsim_data_storage.W_in_r_array[index]))
+                                array_2.append(array)
+                            writing_data[1] = array_2
+                            header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"])
+                        case 2:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.FY_out_f_array):
+                                array = []
+                                array.append(str(lapsim_data_storage.FY_out_f_array[index]))
+                                array.append(str(lapsim_data_storage.FY_in_f_array[index]))
+                                array.append(str(lapsim_data_storage.FY_out_r_array[index]))
+                                array.append(str(lapsim_data_storage.FY_in_r_array[index]))
+                                array_2.append(array)
+                            writing_data[2] = array_2
+                            header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"])
+                        case 3:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.FX_out_f_array):
+                                array = []
+                                array.append(str(lapsim_data_storage.FX_out_f_array[index]))
+                                array.append(str(lapsim_data_storage.FX_in_f_array[index]))
+                                array.append(str(lapsim_data_storage.FX_out_r_array[index]))
+                                array.append(str(lapsim_data_storage.FX_in_r_array[index]))
+                                array_2.append(array)
+                            writing_data[3] = array_2
+                            header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"])
+                        case 4:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.D_1_dis):
+                                array = []
+                                array.append(str(lapsim_data_storage.D_2_dis[index]))
+                                array.append(str(lapsim_data_storage.D_1_dis[index]))
+                                array.append(str(lapsim_data_storage.D_4_dis[index]))
+                                array.append(str(lapsim_data_storage.D_3_dis[index]))
+                                array_2.append(array)
+                            writing_data[4] = array_2
+                            header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
+
+            writer.writerow(header_array)
+            master_array = []
+            for index in range(len(lapsim_data_storage.AX)):
+                array = []
+                for data_section in writing_data:
+                    if data_section:
+                        array.extend(data_section[index])
+                master_array.append(array)
+            writer.writerows(master_array)
+
+
 
     def load_lapsim(self, save_file_func=None):
         global track_root, track_subplot, track_canvas, data_bools, data_label
@@ -64,7 +187,10 @@ class LapSimUI:
         data_label_frame.pack_propagate(False)
 
         data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), bg="white", fg="black")
-        data_label.pack(padx=(0, 0), side=tkinter.RIGHT, expand=True)
+        data_label.grid(row=0, column=0, padx=0, pady=0, sticky="N")
+
+        download_csv_button = tkinter.Button(data_label_frame, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=self.open_csv_window)
+        download_csv_button.grid(row=1, column=0, padx=0, pady=0)
 
         if save_file_func is not None:
             track_root.bind("<s>", lambda event: save_file_func())
@@ -300,15 +426,15 @@ def k_closest(points, mouse_pos):
 def get_data_string(self, data_bools, index):
     content = ""
     if data_bools[0].get():
-        content += f"Lateral Acceleration: {round(self.sim.AY[index], 6)}\nAxial Acceleration: {round(self.sim.AX[index], 6)}\n\n"
+        content += f"Lateral Acceleration: {round(lapsim_data_storage.AY[index], 6)}\nAxial Acceleration: {round(lapsim_data_storage.AX[index], 6)}\n\n"
     if data_bools[1].get():
-        content += f"Vertical force on front outer tire: {round(self.sim.W_out_f_array[index], 2)}\nVertical force on front inner tire: {round(self.sim.W_in_f_array[index], 2)}\nVertical force on rear outer tire: {round(self.sim.W_out_r_array[index], 2)}\nVertical force on rear inner tire: {round(self.sim.W_in_r_array[index], 2)}\n\n"
+        content += f"Vertical force on front outer tire: {round(lapsim_data_storage.W_out_f_array[index], 2)}\nVertical force on front inner tire: {round(lapsim_data_storage.W_in_f_array[index], 2)}\nVertical force on rear outer tire: {round(lapsim_data_storage.W_out_r_array[index], 2)}\nVertical force on rear inner tire: {round(lapsim_data_storage.W_in_r_array[index], 2)}\n\n"
     if data_bools[2].get():
-        content += f"Lateral force on front outer tire: {round(self.sim.FY_out_f_array[index], 2)}\nLateral force on front inner tire: {round(self.sim.FY_in_f_array[index], 2)}\nLateral force on rear outer tire: {round(self.sim.FY_out_r_array[index], 2)}\nLateral force on rear inner tire: {round(self.sim.FY_in_r_array[index], 2)}\n\n"
+        content += f"Lateral force on front outer tire: {round(lapsim_data_storage.FY_out_f_array[index], 2)}\nLateral force on front inner tire: {round(lapsim_data_storage.FY_in_f_array[index], 2)}\nLateral force on rear outer tire: {round(lapsim_data_storage.FY_out_r_array[index], 2)}\nLateral force on rear inner tire: {round(lapsim_data_storage.FY_in_r_array[index], 2)}\n\n"
     if data_bools[3].get():
-        content += f"Axial force on front outer tire: {round(self.sim.FX_out_f_array[index], 2)}\nAxial force on front inner tire: {round(self.sim.FX_in_f_array[index], 2)}\nAxial force on rear outer tire: {round(self.sim.FX_out_r_array[index], 2)}\nAxial force on rear inner tire: {round(self.sim.FX_in_r_array[index], 2)}\n\n"
+        content += f"Axial force on front outer tire: {round(lapsim_data_storage.FX_out_f_array[index], 2)}\nAxial force on front inner tire: {round(lapsim_data_storage.FX_in_f_array[index], 2)}\nAxial force on rear outer tire: {round(lapsim_data_storage.FX_out_r_array[index], 2)}\nAxial force on rear inner tire: {round(lapsim_data_storage.FX_in_r_array[index], 2)}\n\n"
     if data_bools[4].get():
-        content += f"Vertical displacement of front outer tire: {round(self.sim.D_1_dis[index], 2)}\nVertical displacement of front inner tire: {round(self.sim.D_2_dis[index], 2)}\nVertical displacement of rear outer tire: {round(self.sim.D_3_dis[index], 2)}\nVertical displacement of rear inner tire: {round(self.sim.D_4_dis[index], 2)}\n\n"
+        content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.D_1_dis[index], 2)}\nVertical displacement of front inner tire: {round(lapsim_data_storage.D_2_dis[index], 2)}\nVertical displacement of rear outer tire: {round(lapsim_data_storage.D_3_dis[index], 2)}\nVertical displacement of rear inner tire: {round(lapsim_data_storage.D_4_dis[index], 2)}\n\n"
     content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."
     return content
 
