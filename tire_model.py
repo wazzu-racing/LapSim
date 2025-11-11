@@ -128,7 +128,12 @@ class curve_set():
         self.cambers = cambers
         self.curve_domain = curve_domain
         
-    def eval(self, x, load, camber):
+    def eval(self, x, load, camber): # slip angle, load, camber
+        """
+        :param x: The slip angle of the tire. (degrees)
+        :param load: load of the tire. (pounds)
+        :param camber: camber of the tire. (+ = outward tilt from the top, - = inward tilt from the top) (degrees)
+        """
         ld_list = [0] + self.loads
         for i in range(len(ld_list)-1):
             if (i >= len(ld_list)-2) or (ld_list[i+1] >= load):
