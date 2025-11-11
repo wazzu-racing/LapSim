@@ -597,6 +597,3 @@ class car():
 
     def get_AX_AY_values(self):
         pass
-
-racecar = car()
-racecar.get_values()

@@ -51,32 +51,6 @@ class LapSimUI:
         self.window = tkinter.Toplevel()
         self.window.title("Download CSV")
 
-        # code copied from load_lapsim function to create data selection menu
-        data_bools = [True, False, False, False, False]
-        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement"]
-        menu_button = tkinter.Menubutton(self.window, text="Choose Data to Save", font=("Ariel", 12))
-
-        menu_button.menu = tkinter.Menu(menu_button, tearoff=0)
-        menu_button["menu"] = menu_button.menu
-
-        for option in data_options:
-            boolean = tkinter.BooleanVar()
-            boolean.set(data_bools[data_options.index(option)])
-            data_bools[data_options.index(option)] = boolean
-            menu_button.menu.add_checkbutton(label=option, variable=boolean)
-        menu_button.grid(row=1, column=1, padx=10, pady=10)
-
-        download_csv_button = tkinter.Button(self.window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
-        download_csv_button.grid(row=2, column=1, padx=10, pady=10)
-
-        self.window.grid_rowconfigure(0, weight=1)
-        self.window.grid_rowconfigure(1, weight=0)
-        self.window.grid_rowconfigure(2, weight=0)
-        self.window.grid_rowconfigure(3, weight=1)
-        self.window.grid_columnconfigure(0, weight=1)
-        self.window.grid_columnconfigure(1, weight=0)
-        self.window.grid_columnconfigure(2, weight=1)
-
         self.window.withdraw()
 
     def close_LapsimUI_window(self):
@@ -88,7 +62,53 @@ class LapSimUI:
         self.window.withdraw()
 
     def open_csv_window(self):
+        # code copied from load_lapsim function to create data selection menu
+        data_bools = [True, False, False, False, False]
+        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement"]
+        menu_button = tkinter.Menubutton(self.window, text="Choose Data to Save", font=("Ariel", 12))
+
+        # switch data_bools to tkinter BooleanVars
+        for option in data_options:
+            boolean = tkinter.BooleanVar()
+            boolean.set(data_bools[data_options.index(option)])
+            data_bools[data_options.index(option)] = boolean
+
+        # Create checkbuttons and labels for each data option
+        accel_check = tkinter.Checkbutton(self.window, text=data_options[0], variable=data_bools[0], highlightthickness=0)
+        vertical_force_check = tkinter.Checkbutton(self.window, text=data_options[1], variable=data_bools[1])
+        lateral_force_check = tkinter.Checkbutton(self.window, text=data_options[2], variable=data_bools[2])
+        axial_force_check = tkinter.Checkbutton(self.window, text=data_options[3], variable=data_bools[3])
+        wheel_displacement_check = tkinter.Checkbutton(self.window, text=data_options[4], variable=data_bools[4])
+
+        # Label to tell users forces are on tires
+        forces_label = tkinter.Label(self.window, text="*All forces are on tires.", font=("Ariel", 12), fg="white")
+
+        # Place checkbuttons and labels in grid
+        accel_check.grid(row=1, column=1, padx=10, pady=5, sticky="W")
+        vertical_force_check.grid(row=2, column=1, padx=10, pady=5, sticky="W")
+        lateral_force_check.grid(row=3, column=1, padx=10, pady=5, sticky="W")
+        axial_force_check.grid(row=4, column=1, padx=10, pady=5, sticky="W")
+        wheel_displacement_check.grid(row=5, column=1, padx=10, pady=5, sticky="W")
+        forces_label.grid(row=6, column=1, padx=10, pady=5, sticky="W")
+
+        download_csv_button = tkinter.Button(self.window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
+        download_csv_button.grid(row=7, column=1, padx=10, pady=10)
+
+        self.window.grid_rowconfigure(0, weight=1)
+        self.window.grid_rowconfigure(1, weight=0)
+        self.window.grid_rowconfigure(2, weight=0)
+        self.window.grid_rowconfigure(3, weight=0)
+        self.window.grid_rowconfigure(4, weight=0)
+        self.window.grid_rowconfigure(5, weight=0)
+        self.window.grid_rowconfigure(6, weight=0)
+        self.window.grid_rowconfigure(7, weight=0)
+        self.window.grid_rowconfigure(8, weight=1)
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(1, weight=0)
+        self.window.grid_columnconfigure(2, weight=1)
+
         self.window.deiconify()
+        self.window.update()
 
     def download_csv(self, arr_bool):
         print("Download CSV")
