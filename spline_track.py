@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import math
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
@@ -8,6 +10,7 @@ import lapsim
 import tkinter
 import csv
 
+from files import get_file_from_user
 from lapsim import lapsim_data_storage
 
 # Create UI global vars
@@ -35,6 +38,9 @@ class LapSimUI:
 
         # Create a toplevel window for CSV download
         self.init_CSV_window()
+
+        # initialize dir that file dialogs open to
+        self.initial_dir = ""
 
         # Only allow the user to hide the LapSim UI and CSV windows, not close it
         track_root.protocol("WM_DELETE_WINDOW", self.close_LapsimUI_window)
@@ -86,7 +92,7 @@ class LapSimUI:
 
     def download_csv(self, arr_bool):
         print("Download CSV")
-        with(open("csv_file.csv", "w", newline='')) as csv_file:
+        with(open(get_file_from_user(self, file_types=[("CSV File", "*.csv")]), "w", newline='')) as csv_file:
             writer = csv.writer(csv_file, dialect='unix')
             header_array = []
             writing_data = []
