@@ -26,7 +26,8 @@ class LapSimData:
     D_2_dis = []
     D_3_dis = []
     D_4_dis = []
-
+    # Angle of accel force of car
+    theta_accel = []
 
 # init data storage
 lapsim_data_storage = LapSimData()
@@ -84,6 +85,8 @@ class four_wheel:
         lapsim_data_storage.D_2_dis = np.zeros(int(n + 1))
         lapsim_data_storage.D_3_dis = np.zeros(int(n + 1))
         lapsim_data_storage.D_4_dis = np.zeros(int(n + 1))
+        # Angle of accel force of car
+        lapsim_data_storage.theta_accel = np.zeros(int(n + 1))
 
         # Each line sets the maximum velocity for each 
         self.arc_beginning_node = []  # Stores the beginning node
@@ -228,3 +231,6 @@ class four_wheel:
         lapsim_data_storage.D_2_dis[index] = self.car.D_2
         lapsim_data_storage.D_3_dis[index] = self.car.D_3
         lapsim_data_storage.D_4_dis[index] = self.car.D_4
+
+        # Angle of accel force of car
+        lapsim_data_storage.theta_accel[index] = self.car.theta_accel

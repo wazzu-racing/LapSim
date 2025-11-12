@@ -1,3 +1,4 @@
+import math
 import pickle
 
 from matplotlib import pyplot as plt
@@ -89,6 +90,8 @@ class car():
     D_2 = 0 # Front outer wheel vertical displacement in inches
     D_3 = 0 # Rear inner wheel vertical displacement in inches
     D_4 = 0 # Rear outer wheel vertical displacement in inches
+    # degrees, theta of accel force of car
+    theta_accel = 0
 
     # Set the aero_csv variable to the saved_files dir
     aero_csv = aero_csv_file_path
@@ -341,6 +344,8 @@ class car():
         self.FX_in_f = FX_in_f
         self.FX_out_r = FX_out_r
         self.FX_in_r = FX_in_r
+
+        self.theta_accel = math.atan(AY/math.fabs(AX)) * 180/math.pi
 
         # Calculating max lateral acceleration from tire traction
         if AX > 0:

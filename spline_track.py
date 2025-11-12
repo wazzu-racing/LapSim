@@ -36,7 +36,7 @@ class LapSimUI:
         # Hide this window until ready to show
         track_root.withdraw()
 
-        # Create a toplevel window for CSV download
+        # Create a toplevel window for CSV download and graph download
         self.init_CSV_window()
 
         # initialize dir that file dialogs open to
@@ -44,14 +44,14 @@ class LapSimUI:
 
         # Only allow the user to hide the LapSim UI and CSV windows, not close it
         track_root.protocol("WM_DELETE_WINDOW", self.close_LapsimUI_window)
-        self.window.protocol("WM_DELETE_WINDOW", self.close_CSV_window)
+        self.csv_window.protocol("WM_DELETE_WINDOW", self.close_CSV_window)
 
     def init_CSV_window(self):
         # Create a toplevel window for CSV download
-        self.window = tkinter.Toplevel()
-        self.window.title("Download CSV")
+        self.csv_window = tkinter.Toplevel()
+        self.csv_window.title("Download CSV")
 
-        self.window.withdraw()
+        self.csv_window.withdraw()
 
     def close_LapsimUI_window(self):
         global track_root, track_fig, track_subplot, track_canvas
@@ -59,13 +59,13 @@ class LapSimUI:
         track_root.withdraw()
 
     def close_CSV_window(self):
-        self.window.withdraw()
+        self.csv_window.withdraw()
 
     def open_csv_window(self):
         # code copied from load_lapsim function to create data selection menu
-        data_bools = [True, False, False, False, False]
-        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement"]
-        menu_button = tkinter.Menubutton(self.window, text="Choose Data to Save", font=("Ariel", 12))
+        data_bools = [True, False, False, False, False, False]
+        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement", "Theta of Force on Car"]
+        menu_button = tkinter.Menubutton(self.csv_window, text="Choose Data to Save", font=("Ariel", 12))
 
         # switch data_bools to tkinter BooleanVars
         for option in data_options:
@@ -74,14 +74,15 @@ class LapSimUI:
             data_bools[data_options.index(option)] = boolean
 
         # Create checkbuttons and labels for each data option
-        accel_check = tkinter.Checkbutton(self.window, text=data_options[0], variable=data_bools[0], highlightthickness=0)
-        vertical_force_check = tkinter.Checkbutton(self.window, text=data_options[1], variable=data_bools[1])
-        lateral_force_check = tkinter.Checkbutton(self.window, text=data_options[2], variable=data_bools[2])
-        axial_force_check = tkinter.Checkbutton(self.window, text=data_options[3], variable=data_bools[3])
-        wheel_displacement_check = tkinter.Checkbutton(self.window, text=data_options[4], variable=data_bools[4])
+        accel_check = tkinter.Checkbutton(self.csv_window, text=data_options[0], variable=data_bools[0])
+        vertical_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[1], variable=data_bools[1])
+        lateral_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[2], variable=data_bools[2])
+        axial_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[3], variable=data_bools[3])
+        wheel_displacement_check = tkinter.Checkbutton(self.csv_window, text=data_options[4], variable=data_bools[4])
+        theta_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[5], variable=data_bools[5])
 
         # Label to tell users forces are on tires
-        forces_label = tkinter.Label(self.window, text="*All forces are on tires.", font=("Ariel", 12), fg="white")
+        forces_label = tkinter.Label(self.csv_window, text="*All forces are on tires.", font=("Ariel", 12), fg="white")
 
         # Place checkbuttons and labels in grid
         accel_check.grid(row=1, column=1, padx=10, pady=5, sticky="W")
@@ -89,26 +90,27 @@ class LapSimUI:
         lateral_force_check.grid(row=3, column=1, padx=10, pady=5, sticky="W")
         axial_force_check.grid(row=4, column=1, padx=10, pady=5, sticky="W")
         wheel_displacement_check.grid(row=5, column=1, padx=10, pady=5, sticky="W")
-        forces_label.grid(row=6, column=1, padx=10, pady=5, sticky="W")
+        theta_force_check.grid(row=6, column=1, padx=10, pady=5, sticky="W")
+        forces_label.grid(row=7, column=1, padx=10, pady=5, sticky="W")
 
-        download_csv_button = tkinter.Button(self.window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
-        download_csv_button.grid(row=7, column=1, padx=10, pady=10)
+        download_csv_button = tkinter.Button(self.csv_window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
+        download_csv_button.grid(row=8, column=1, padx=10, pady=10)
 
-        self.window.grid_rowconfigure(0, weight=1)
-        self.window.grid_rowconfigure(1, weight=0)
-        self.window.grid_rowconfigure(2, weight=0)
-        self.window.grid_rowconfigure(3, weight=0)
-        self.window.grid_rowconfigure(4, weight=0)
-        self.window.grid_rowconfigure(5, weight=0)
-        self.window.grid_rowconfigure(6, weight=0)
-        self.window.grid_rowconfigure(7, weight=0)
-        self.window.grid_rowconfigure(8, weight=1)
-        self.window.grid_columnconfigure(0, weight=1)
-        self.window.grid_columnconfigure(1, weight=0)
-        self.window.grid_columnconfigure(2, weight=1)
+        self.csv_window.grid_rowconfigure(0, weight=1)
+        self.csv_window.grid_rowconfigure(1, weight=0)
+        self.csv_window.grid_rowconfigure(2, weight=0)
+        self.csv_window.grid_rowconfigure(3, weight=0)
+        self.csv_window.grid_rowconfigure(4, weight=0)
+        self.csv_window.grid_rowconfigure(5, weight=0)
+        self.csv_window.grid_rowconfigure(6, weight=0)
+        self.csv_window.grid_rowconfigure(7, weight=0)
+        self.csv_window.grid_rowconfigure(8, weight=0)
+        self.csv_window.grid_rowconfigure(9, weight=1)
+        self.csv_window.grid_columnconfigure(0, weight=1)
+        self.csv_window.grid_columnconfigure(1, weight=0)
+        self.csv_window.grid_columnconfigure(2, weight=1)
 
-        self.window.deiconify()
-        self.window.update()
+        self.csv_window.deiconify()
 
     def download_csv(self, arr_bool):
         print("Download CSV")
@@ -174,6 +176,15 @@ class LapSimUI:
                                 array_2.append(array)
                             writing_data[4] = array_2
                             header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
+                        case 5:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.theta_accel):
+                                array = []
+                                array.append(str(lapsim_data_storage.theta_accel[index]))
+                                array_2.append(array)
+                            writing_data[5] = array_2
+                            header_array.extend(["Theta of Force on Car"])
+
 
             writer.writerow(header_array)
             master_array = []
@@ -185,16 +196,14 @@ class LapSimUI:
                 master_array.append(array)
             writer.writerows(master_array)
 
-
-
     def load_lapsim(self, save_file_func=None):
         global track_root, track_subplot, track_canvas, data_bools, data_label
 
         track_root.deiconify() # Show the window
 
-        data_bools = [True, False, False, False, False]
+        data_bools = [True, False, False, False, False, False]
 
-        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement"]
+        data_options = ["Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement", "Theta of Force on Car"]
 
         menu_button = tkinter.Menubutton(track_root, text="Choose visible data", font=("Ariel", 12))
 
@@ -461,6 +470,8 @@ def get_data_string(self, data_bools, index):
         content += f"Axial force on front outer tire: {round(lapsim_data_storage.FX_out_f_array[index], 2)}\nAxial force on front inner tire: {round(lapsim_data_storage.FX_in_f_array[index], 2)}\nAxial force on rear outer tire: {round(lapsim_data_storage.FX_out_r_array[index], 2)}\nAxial force on rear inner tire: {round(lapsim_data_storage.FX_in_r_array[index], 2)}\n\n"
     if data_bools[4].get():
         content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.D_1_dis[index], 2)}\nVertical displacement of front inner tire: {round(lapsim_data_storage.D_2_dis[index], 2)}\nVertical displacement of rear outer tire: {round(lapsim_data_storage.D_3_dis[index], 2)}\nVertical displacement of rear inner tire: {round(lapsim_data_storage.D_4_dis[index], 2)}\n\n"
+    if data_bools[5].get():
+        content += f"Theta of Force on Car: {round(lapsim_data_storage.theta_accel[index], 2)}\n\n"
     content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."
     return content
 
@@ -675,7 +686,8 @@ class track():
         self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run()
         # print(f'Total Travel Time: {self.t}')
-
+        for i in range(len(lapsim_data_storage.theta_accel)):
+            print(f"{lapsim_data_storage.theta_accel[i] * 180/math.pi:.2f}", end=', ')
     def update_track(self):
         for i in self.nds:
             i.update_shift()
