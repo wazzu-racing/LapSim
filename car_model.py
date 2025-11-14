@@ -1,5 +1,6 @@
 import math
 import pickle
+import os
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -10,9 +11,9 @@ import tire_model
 
 from files import get_save_files_folder_abs_dir
 
-aero_csv_file_path = "Data/csv/DEFAULT_AERO_ARRAY.csv"
-tire_file_path = "Data/pkl/Models/DEFAULT_TIRE(18x6-10_R20).pkl"
-drivetrain_file_path = "Data/pkl/Models/DEFAULT_DRIVETRAIN.pkl"
+aero_csv_file_path = os.path.join("Data", "csv", "DEFAULT_AERO_ARRAY.csv")
+tire_file_path = os.path.join("Data", "pkl", "Models", "DEFAULT_TIRE(18x6-10_R20).pkl")
+drivetrain_file_path = os.path.join("Data", "pkl", "Models", "DEFAULT_DRIVETRAIN.pkl")
 
 class car():
 
@@ -118,10 +119,10 @@ class car():
             with open(self.tire_file, 'rb') as f:
                 self.tires = pkl.load(f)
         except Exception:
-            cornering_data = 'Data/dat/cornering_data.dat'
-            accel_data = 'Data/dat/acceleration_data.dat'
+            cornering_data = os.path.join("Data", "dat", "cornering_data.dat")
+            accel_data = os.path.join("Data", "dat", "acceleration_data.dat")
             self.tires = tire_model.tire(cornering_data, accel_data)
-            with open('Data/pkl/Models/DEFAULT_TIRE(18x6-10_R20).pkl', 'wb') as f:
+            with open(os.path.join("Data", "pkl", "Models", "DEFAULT_TIRE(18x6-10_R20).pkl"), 'wb') as f:
                 pickle.dump(self.tires, f)
 
         # importing drivetrain model
@@ -129,8 +130,8 @@ class car():
             with open(self.drivetrain_file, 'rb') as f:
                 self.drivetrain = pkl.load(f)
         except Exception:
-            self.drivetrain = drivetrain_model.drivetrain(engine_data="Data/csv/engine_array.csv")
-            with open("Data/pkl/Models/DEFAULT_DRIVETRAIN.pkl", 'wb') as f:
+            self.drivetrain = drivetrain_model.drivetrain(engine_data=os.path.join("Data", "csv", "engine_array.csv"))
+            with open(os.path.join("Data", "pkl", "Models", "DEFAULT_DRIVETRAIN.pkl"), 'wb') as f:
                 pickle.dump(self.drivetrain, f)
 
 

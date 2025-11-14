@@ -185,7 +185,6 @@ class LapSimUI:
                             writing_data[5] = array_2
                             header_array.extend(["Theta of Force on Car"])
 
-
             writer.writerow(header_array)
             master_array = []
             for index in range(len(lapsim_data_storage.AX)):
@@ -229,7 +228,6 @@ class LapSimUI:
 
         if save_file_func is not None:
             track_root.bind("<s>", lambda event: save_file_func())
-            print("bound")
 
     def load_track(self):
         global track_subplot, track_canvas, track_root
@@ -520,7 +518,6 @@ class track():
         remainder_length = 0
         prev_node_location = 0
         for index, arc in enumerate(self.arcs):
-            print(f"arc {index}")
             lengths, _ = arc.interpolate()
             arc_length = sum(lengths)
             # array of cumulative distances along the arc
@@ -686,8 +683,6 @@ class track():
         self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run()
         # print(f'Total Travel Time: {self.t}')
-        for i in range(len(lapsim_data_storage.theta_accel)):
-            print(f"{lapsim_data_storage.theta_accel[i] * 180/math.pi:.2f}", end=', ')
     def update_track(self):
         for i in self.nds:
             i.update_shift()

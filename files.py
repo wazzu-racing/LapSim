@@ -4,7 +4,7 @@ from tkinter import filedialog
 
 # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
 def get_save_files_folder_abs_dir():
-    return os.getcwd() + "/Data"
+    return os.path.join(os.getcwd(), "Data")
 
     # Get path to main_menu directory
     working_dir = os.path.dirname(os.path.abspath(__file__))
