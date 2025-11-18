@@ -21,8 +21,12 @@ track_canvas = None
 data_bools = [True, False, False, False, False]
 data_label = None
 
+x_array = []
+y_array = []
+
 class LapSimUI:
 
+    # MAKE AN INIT FUNCTION FOR THIS CONSTRUCTOR TO CLEAR FIGURE WHEN CLOSING WINDOW
     def __init__(self):
         global track_root, track_fig, track_subplot, track_canvas, data_bools
 
@@ -54,9 +58,11 @@ class LapSimUI:
         self.csv_window.withdraw()
 
     def close_LapsimUI_window(self):
-        global track_root, track_fig, track_subplot, track_canvas
+        global track_root, track_fig, track_subplot, track_canvas, x_array, y_array
         track_subplot.clear()
         track_root.withdraw()
+        x_array = []
+        y_array = []
 
     def close_CSV_window(self):
         self.csv_window.withdraw()
@@ -475,13 +481,19 @@ def get_data_string(self, data_bools, index):
 
 class track():
 
+    global x_array, y_array
+
     def __init__(self, p1x, p1y, p2x, p2y):
+        global x_array, y_array
+
+        print(f"created track")
 
         self.len = []
 
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i]))
+        print(f"nodes: {len(self.nds)}")
 
         for i in range(-1, len(self.nds)-1):
             self.nds[i].prev_nd = self.nds[i-1]
@@ -498,11 +510,13 @@ class track():
             i.next_nd.prev_arc = self.arcs[-1]
 
         # Keeps track of locations of data nodes
-        self.x_array = []
-        self.y_array = []
+        x_array = []
+        y_array = []
 
     def plot(self, save_file_func=None):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label
+
+        print("plotting")
 
         for i in self.arcs:
             i.plot() # Plot lines on graph (path of car)
@@ -513,7 +527,7 @@ class track():
             arc_lengths.append(sum(lengths))
 
         total_track_length = sum(arc_lengths)
-        total_data_node_count = len(self.sim.nds) # Amount of nodes does correspond to self.sim.nds
+        total_data_node_count = len(self.sim.nds)
         distance_between_nodes = total_track_length / total_data_node_count
         remainder_length = 0
         prev_node_location = 0
@@ -536,7 +550,6 @@ class track():
             # Compute new remainder to carry to the next arc
             remainder_length = effective_length - num_nodes_in_arc * distance_between_nodes
 
-            clamped_start = 0 # Make sure no nodes are repeating at the beginning of an arc.
             # Map percent of arcs to arc vars 'x' array and 'y' array using arc_length.
             for j in range(num_nodes_in_arc):
                 # target arc-length from start of this arc
@@ -571,13 +584,12 @@ class track():
                         x = arc.x[-1]
                         y = arc.y[-1]
 
-                if len(self.x_array) < len(self.sim.nds): # Make sure that the amount of data nodes does not exceed the amount of simulation nodes.
-                    self.x_array.append(x)
-                    self.y_array.append(y)
+                if len(x_array) < len(self.sim.nds): # Make sure that the amount of data nodes does not exceed the amount of simulation nodes.
+                    x_array.append(x)
+                    y_array.append(y)
                     # track_subplot.plot(x, y, marker='o', color='black', markersize=1)
 
-
-        print(f"length of x_array: {len(self.x_array)}")
+        print(f"length of x_array: {len(x_array)}")
 
         for i in range(len(self.nds)):
             nd = self.nds[i]
@@ -611,8 +623,8 @@ class track():
                     closest_index = -1
 
                     points = []
-                    for i in range(len(self.x_array)):
-                        points.append((self.x_array[i], self.y_array[i]))
+                    for i in range(len(x_array)):
+                        points.append((x_array[i], y_array[i]))
 
                     closest_index = k_closest(points, (x, y))
 
@@ -622,7 +634,7 @@ class track():
 
                     # Draw dot that indicates which data node the user is gathering information from
                     track_subplot.lines[-1].remove()
-                    track_subplot.plot(self.x_array[closest_index], self.y_array[closest_index], marker='o', color='black', markersize=5)
+                    track_subplot.plot(x_array[closest_index], y_array[closest_index], marker='o', color='black', markersize=5)
                     track_canvas.draw()
 
         # Connect the mouse movement event to the on_hover function

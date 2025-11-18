@@ -5,29 +5,58 @@ pi = np.pi
 
 
 class LapSimData:
-    # Arrays for lateral and axial acceleration of car
-    AX = []
-    AY = []
-    # Arrays for vertical force, lateral force, and axial forces on wheels
-    W_out_f_array = []
-    W_in_f_array = []
-    W_out_r_array = []
-    W_in_r_array = []
-    FY_out_f_array = []
-    FY_in_f_array = []
-    FY_out_r_array = []
-    FY_in_r_array = []
-    FX_out_f_array = []
-    FX_in_f_array = []
-    FX_out_r_array = []
-    FX_in_r_array = []
-    # Arrays for vertical displacement of wheels
-    D_1_dis = []
-    D_2_dis = []
-    D_3_dis = []
-    D_4_dis = []
-    # Angle of accel force of car
-    theta_accel = []
+    def __init__(self):
+        # Arrays for lateral and axial acceleration of car
+        self.AY = []
+        self.AX = []
+        # Arrays for vertical force, lateral force, and axial forces on wheels
+        self.W_out_f_array = []
+        self.W_in_f_array = []
+        self.W_out_r_array = []
+        self.W_in_r_array = []
+        self.FY_out_f_array = []
+        self.FY_in_f_array = []
+        self.FY_out_r_array = []
+        self.FY_in_r_array = []
+        self.FX_out_f_array = []
+        self.FX_in_f_array = []
+        self.FX_out_r_array = []
+        self.FX_in_r_array = []
+        # Arrays for vertical displacement of wheels
+        self.D_1_dis = []
+        self.D_2_dis = []
+        self.D_3_dis = []
+        self.D_4_dis = []
+        # Angle of accel force of car
+        self.theta_accel = []
+
+    def clear_data(self):
+        self.AY = []
+        self.AX = []
+        # Arrays for vertical force, lateral force, and axial forces on wheels
+        self.W_out_f_array = []
+        self.W_in_f_array = []
+        self.W_out_r_array = []
+        self.W_in_r_array = []
+        self.FY_out_f_array = []
+        self.FY_in_f_array = []
+        self.FY_out_r_array = []
+        self.FY_in_r_array = []
+        self.FX_out_f_array = []
+        self.FX_in_f_array = []
+        self.FX_out_r_array = []
+        self.FX_in_r_array = []
+        # Arrays for vertical displacement of wheels
+        self.D_1_dis = []
+        self.D_2_dis = []
+        self.D_3_dis = []
+        self.D_4_dis = []
+        # Angle of accel force of car
+        self.theta_accel = []
+
+    def print_lengths(self):
+        print('AY: ', len(self.AY))
+        print('AX: ', len(self.AX))
 
 # init data storage
 lapsim_data_storage = LapSimData()
@@ -46,6 +75,9 @@ class four_wheel:
 
     def run(self):
         global lapsim_data_storage
+
+        lapsim_data_storage.clear_data()
+
         # Finding total length of track
         track = np.sum(self.t_len_tot)
 

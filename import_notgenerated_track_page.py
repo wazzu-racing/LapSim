@@ -33,7 +33,7 @@ def select_file(is_car_file=False):
         # Store the file path in the appropriate variable and show that the file has been imported
         if is_car_file:
             car_file = file_path
-            car_check.grid(row=3, column=2, pady=(0, 100))
+            car_check.grid(row=3, column=2, pady=(0, 0))
         # Store the file path in the appropriate variable and show that the file has been imported
         else:
             track_file = file_path
@@ -85,7 +85,7 @@ class ImportNotGeneratedTrackPage(tkinter.Frame):
         default_label.grid(row=5, column=1, pady=(0,0))
 
         #  Make and pack "Run LapSim" button
-        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, pts_file=track_file, cr_file=car_file, nodes=int(node_entry.get())))
+        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, pts_file=track_file, cr_file=car_file, nodes=int(node_entry.get()) if node_entry.get() != "" and int(node_entry.get()) > 9 else 5000))
         run_lapsim_button.grid(row=6, column=1, pady=(50, 0))
 
         # Configure grid to center all widgets
@@ -95,7 +95,8 @@ class ImportNotGeneratedTrackPage(tkinter.Frame):
         self.grid_rowconfigure(3, weight=0)
         self.grid_rowconfigure(4, weight=0)
         self.grid_rowconfigure(5, weight=0)
-        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(6, weight=0)
+        self.grid_rowconfigure(7, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=0)
