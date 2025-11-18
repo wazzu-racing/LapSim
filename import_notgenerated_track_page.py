@@ -67,21 +67,35 @@ class ImportNotGeneratedTrackPage(tkinter.Frame):
 
         #  Make and pack "Import Car" button
         car_button = tkinter.Button(self, text="Import Car", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: select_file(is_car_file=True))
-        car_button.grid(row=3, column=1, pady=(10, 100))
+        car_button.grid(row=3, column=1, pady=(10, 0))
 
         # Make and pack check label widget for "Import Car" button above.
         car_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
 
+        node_frame = tkinter.Frame(self, borderwidth=0, highlightthickness=0, bg="Black")
+        node_frame.grid(row=4, column=1)
+
+        node_label = tkinter.Label(node_frame, text="Nodes:", bg="Black", fg="White", font=("Ariel", 16), borderwidth=0, highlightthickness=0)
+        node_label.grid(row=0, column=0, pady=(10,0))
+
+        node_entry = tkinter.Entry(node_frame, bg="White", fg="Black", font=("Ariel", 12), width=10)
+        node_entry.grid(row=0, column=1, pady=(10,0))
+
+        default_label = tkinter.Label(self, text="Default: 5000 nodes.", font=("Ariel", 10), bg="Black", fg="White")
+        default_label.grid(row=5, column=1, pady=(0,0))
+
         #  Make and pack "Run LapSim" button
-        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, pts_file=track_file, cr_file=car_file))
-        run_lapsim_button.grid(row=3, column=1, pady=(100, 0))
+        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, pts_file=track_file, cr_file=car_file, nodes=int(node_entry.get())))
+        run_lapsim_button.grid(row=6, column=1, pady=(50, 0))
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
         self.grid_rowconfigure(2, weight=0)
         self.grid_rowconfigure(3, weight=0)
-        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(4, weight=0)
+        self.grid_rowconfigure(5, weight=0)
+        self.grid_rowconfigure(6, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=0)

@@ -6,9 +6,10 @@ from files import get_file_from_user, get_save_files_folder_abs_dir
 
 class DisplayTrack:
 
-    def __init__(self, frame, pts_file=None, cr_file=None, gen_track_file=None):
+    def __init__(self, frame, pts_file=None, cr_file=None, gen_track_file=None, nodes = 5000):
 
         print("[Displaying Track...]")
+        print(f"nodes: {nodes}")
 
         self.trk = None
 
@@ -47,7 +48,7 @@ class DisplayTrack:
             print(self.trk.get_cost())
 
             #run sim to get data
-            self.trk.run_sim(car)
+            self.trk.run_sim(car, nodes=nodes)
 
             self.trk.plot(self.save_track) # displaying unoptimized track
 
