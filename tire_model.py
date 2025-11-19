@@ -1,3 +1,5 @@
+import pickle
+
 from matplotlib import pyplot as plt
 import scipy
 import numpy as np
@@ -119,7 +121,7 @@ class curve_set():
                     section = data_sets[parent.find_section('cornering', [['IA', i], ['FZ', -j]], [['P', 9, 99]])]
                 elif (data_type == 'accel') or (data_type == 'acceleration'):
                     section = data_sets[parent.find_section('accel', [['IA', i], ['FZ', -j], ['SA', 0], ['P', 12]])]
-                
+
                 x = section.data[x_index]
                 y = section.data[y_index] * coeff
                 self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
@@ -692,6 +694,9 @@ class tire():
         plt.legend(leg)
         plt.show()
 
+# with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/18x6-10_R20.pkl", "rb") as f:
+#     wheel = pickle.load(file=f)
+# wheel.axial_coeff_plot()
 
 if False:
     cornering_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_Cornering_ASCII_USCS_Round9\\A2356run32.dat'
