@@ -11,6 +11,7 @@ import time
 import math
 import random
 import pandas
+import pickle
 
 from enum import Enum
 
@@ -86,7 +87,7 @@ class car():
     aero_csv = 'aero_array.csv' # contains drag force (lb) acting on vehicle at different speeds (index = mph)
     # aero csv file delimiter
     aero_delimiter = ';'
-    
+
     # importing tire model
     with open(tire_file, 'rb') as f:
         tires = pkl.load(f)
@@ -105,7 +106,6 @@ class car():
             self.drivetrain = pkl.load(f)
         
         self.aero_arr.reverse()
-        # self.compute_traction_updated()
 
     # future code for accounting for tire orientation
         '''
@@ -221,52 +221,60 @@ class car():
         print(time.time() - start_time)
         '''
 
-
-
-    def compute_traction(self):
-
-        # finding max cornering acceleration
-        low_guess = 0 # low estimate for max cornering acceleration (g)
-        high_guess = 3 # high estimate for max cornering acceleration (g)
-
-        # when the low and high estimates converge, the converging value is recorded as the max cornering acceleration
-        while high_guess - low_guess > 0.00001:
-            guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
-            out = self.accel(guess, 0)
-            if out: # sets low estimate to the guess value if the car can handle cornering acceleration equal to the guess value
-                low_guess = guess
-            else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
-                high_guess = guess
-
-        self.max_corner = guess # max cornering acceleration (g)
-        self.AY = np.linspace(0, self.max_corner, 100)
-        self.A_accel = []
-        self.A_brake = []
-        for i in self.AY:
-            self.A_accel.append(self.max_accel(i))
-            self.A_brake.append(self.max_brake(i))
-        self.max_corner -= 0.0001
-
     class Car_Data_Snippet():
         def __init__(self, AX, AY):
             self.AX = AX
             self.AY = AY
 
-    # For each r and car_angle, plug in 0 AY and 0 AX to start.
-    # Since those acceleration are unrealistic for the r, car_angle, and steering_angle, keep plugging in the updated AY and AX
-    # into the function until the AY and AX that are output equal the AY and AX that are inputted to a certain decimal point.
-    # Decimal point will get smaller depending on the amount fo accuracy wanted.
-    # This will create a 2D array with 1D arrays for r and car_angle.
-    # When r and car_angle are input into the 2D array, realistic AY and AX will be spit out.
-    r_carangle_2d_array = [] # radii along rows, car angle along columns
-    def find_AY_AX_for_r_carangle(self):
+    def find_accurate_accel(self, radius, car_angle):
+        """
+        Plugs in parameters into the accel function until the inputted AX and AY are approximately equal to the outputted AX and AY.
+        The main idea of this is that when an initial AX and AY are plugged into the accel function, those accelerations are
+        obviously wrong at first. However, the accel function will calculate a more accurate AX and AY and return those.
+        Those outputted AX and AY are then plugged back into the accel function. This is repeated until extremely accurate
+        AX and AY are returned.
+        :param radius: The radius of the turning curve. (inches)
+        :param car_angle: The angle of the car relative to the turning point. (radians)
+        :return: A Car_Data_Snippet object that contains the converged AX and AY.
+        """
+        # Calculate steering angle
+        steering = math.atan(self.l/radius)
+
+        input_AX, input_AY = 0, 0
+        output_AX, output_AY = 0, 0
+        iterations = 0
+        while (abs(input_AY - output_AY) > 0.0001 and abs(input_AX - output_AX) > 0.0001) or (input_AY == 0):
+            # Change outputs to inputs
+            input_AX, input_AY = output_AX, output_AY
+
+            # Run accel function
+            accel = self.accel_updated(radius, car_angle, steering, input_AY, input_AX)
+            output_AX, output_AY = accel[0], accel[1]
+            iterations+=1
+
+        print(f"iterations: {iterations}")
+
+        # If either AX or AY is very close to 0, set them equal to 0.
+        if output_AY < 0.001:
+            output_AY = 0
+        if output_AX < 0.001:
+            output_AX = 0
+
+        return self.Car_Data_Snippet(output_AX, output_AY)
+
+    def find_AY_AX_for_every_r_carangle(self):
+        """
+        Fills in the r_carangle_2d_array with Car_Data_Snippet objects with each radius along the rows, and each car angle along
+        the columns. Uses the find_accurate_accel function to calculate each AX and AY for each radius and car angle.
+        :return: None
+        """
         total_inerations = 0
 
         # set up radius and car angle arrays
         radius_array = [] # 1000 radii. 1.8 inch step from 100-1000 inch; 35.8 inch step from 1050-10000 inch; 3956 inch step from 11000-1000000 inch.
         radius_array = np.concatenate([radius_array, np.linspace(100, 1000, 500)])
         radius_array = np.concatenate([radius_array, np.linspace(1050, 10000, 250)])
-        radius_array = np.concatenate([radius_array, np.linspace(11000, 1000000, 250).astype(float)])
+        radius_array = np.concatenate([radius_array, np.linspace(11000, 1000000, 250)])
         car_angle_array = []
         for c_angle in range(900):
             angle = c_angle * math.pi/1800 # Take out of required integer, convert to radians
@@ -276,53 +284,37 @@ class car():
         for radius in radius_array:
             row = []
             for c_angle in car_angle_array: # 900 car angles, 0.1 radian step
-                interations = 0
-                input_AX, input_AY = 0, 0
-                output_AX, output_AY = 0, 0
-                while (abs(input_AY - output_AY) > 0.0001 and abs(input_AX - output_AX) > 0.0001) or input_AX == 0:
-                    # Update steering angle
-                    steering = math.atan(self.l/radius)
+                accel = self.find_accurate_accel(radius, c_angle)
+                output_AX, output_AY = accel.AX, accel.AY
 
-                    # Change outputs to inputs
-                    input_AX, input_AY = output_AX, output_AY
-
-                    # Run accel function
-                    accel = self.accel_updated(radius, c_angle, steering, input_AY, input_AX)
-                    output_AX, output_AY = accel[0], accel[1]
-
-                    interations+=1
-
-                total_inerations += interations
                 row.append(self.Car_Data_Snippet(output_AX, output_AY))
-                print(f"\n\nResulting AX: {output_AX}\nResulting AY: {output_AY}\n\nIterations: {interations}")
 
             self.r_carangle_2d_array.append(row)
 
         print(f"\n\n\nTotal iterations: {total_inerations}")
 
-    # Last step: get torque
+    # Last step: get torque about z axis
     def accel_updated(self, r, car_angle, steering_angle, AY, AX):
         """
         :param r: The radius of the turning curve. (inches)
-        :param AY: The lateral acceleration of the car. (in/s^2)
         :param car_angle: The angle of the car relative to the turning point. (radians)
         :param steering_angle: The steering angle of the front wheels relative to the car. (radians)
+        :param AY: The lateral acceleration of the car. (g's)
+        :param AX: The axial acceleration of the car. (g's)
         :return: A tuple of axial and lateral acceleration. i.e. (net_axial_accel, net_lateral_accel)
         """
 
-        print(f"steering angle: {steering_angle * 180/math.pi} degrees\nradius: {r*180/math.pi} degrees")
+        print(f"steering angle: {steering_angle * 180/math.pi} degrees\nradius: {r*180/math.pi} inches")
 
-        # Find real x and y positions of each tire using the car_angle
+        # Find actual x and y positions of each tire using the car_angle
         def rotate_wheel(x, y):
             return x * math.cos(car_angle) - y * math.sin(car_angle), x * math.sin(car_angle) + y * math.cos(car_angle)
 
-        # START OF GOT FROM ACCEL 2. MIGHT BE INCORRECT.
         W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
         W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
 
         roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
         W_shift_x = roll * self.H # lateral shift in center of mass (in)
-        # END OF GOT FROM ACCEL 2. MIGHT BE INCORRECT.
 
         # Get each rotated pos for each tire
         FI_rotated_pos = rotate_wheel(self.FR_wheel_position[0], self.FR_wheel_position[1])
@@ -366,10 +358,6 @@ class car():
 
         print(f"FI_load: {FI_load} pounds\nRI_load: {RI_load} pounds\nFO_load: {FO_load} pounds\nRO_load: {RO_load} pounds")
 
-        # Ensuring that none of the wheel loads are below zero as this would mean the car is tipping
-        # for i in [FI_load, RI_load, FO_load, RO_load]:
-        #     if i < 0: return False, 0
-
         # Calculate vertical displacement of each tire
         front_inner_displacement = (FI_load - self.W_1) / self.K_RF # inches
         rear_inner_displacement = (RI_load - self.W_3) / self.K_RR # inches
@@ -400,10 +388,6 @@ class car():
         FY_front_axle = AY * self.W_car * self.W_bias # minimum necessary lateral force from front tires
         FY_rear_axle = AY * self.W_car * (1-self.W_bias) # minimum necessary lateral force from rear tires
 
-        # checking if the car can generate enough lateral force
-        # if (FY_front_axle > FO_FY+FI_FY) or (FY_rear_axle > RO_FY+RI_FY):
-        #     return False, 0
-
         # Calculating max axial acceleration by using a friction ellipse to put the remaining force into axial acceleration.
         if AX > 0: # If launching, force is only coming from rear wheels.
             RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * math.sqrt(1 - (RI_FY/self.tires.FY_curves.get_max(RI_load, RI_camber))**2)
@@ -425,6 +409,33 @@ class car():
         print(f"lat accel: {net_lat_accel}\naxial accel: {net_axial_accel}")
 
         return net_axial_accel, net_lat_accel
+
+    def max_axial_accel(self):
+        """
+        Runs the find_accurate_accel function with radius 10000000 and car angle 0.
+        :return: The maximum axial acceleration of the car.
+        """
+        return self.find_accurate_accel(10000000, 0).AX
+
+    def max_lateral_accel(self):
+        """
+        Starting at a 200-inch radius, decrements by 1 inch and checks the needed lateral acceleration for that radius until getting
+        a lateral acceleration that is lower than the previous. The lateral acceleration of the previous check is then returned.
+        :return: The maximum lateral acceleration of the car.
+        """
+        radius = 200
+        n = 1
+        AY, max_AY = 0, -1
+        AY_array = []
+
+        while max_AY < AY:
+            radius -= n
+            if AY > max_AY:
+                max_AY = AY
+            AY = self.find_accurate_accel(radius, 0).AY
+            AY_array.append(AY)
+
+        return AY_array[-2]
 
     # calculates the max available traction in
     # AY is magnitude of lateral acceleration, AX is magnitude of axial acceleration, both are measured in g's
@@ -722,4 +733,4 @@ class car():
         print(f"----------------------------")
 
 racecar = car()
-racecar.find_AY_AX_for_r_carangle()
+print(f"max: {racecar.max_lateral_accel()}")

@@ -699,8 +699,9 @@ class tire():
 # wheel.axial_coeff_plot()
 
 if False:
-    cornering_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_Cornering_ASCII_USCS_Round9\\A2356run32.dat'
-    accel_data = 'C:\\Users\\nbogd\\OneDrive\\Documents\\lapsimStuffCopy\\tire stuff\\RunData_DriveBrake_ASCII_USCS_Round9\\A2356run72.dat'
+    cornering_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/cornering_data.dat'
+    accel_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/acceleration_data.dat'
 
     wheel = tire(cornering_data, accel_data)
-    wheel.SA_MZ_plot(0)
+    with(open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/18x6-10_R20.pkl", "wb")as f):
+        pickle.dump(wheel, f)
