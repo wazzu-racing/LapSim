@@ -94,6 +94,7 @@ class car():
 
 
     def __init__(self):
+        self.start = time.perf_counter() # keep track of runtime duration
         self.aero_arr = [] # drag force acceleration (G's) emitted on vehicle (index = mph)
         with open(self.aero_csv, newline='') as f:
             reader = csv.reader(f, delimiter=self.aero_delimiter)
@@ -106,6 +107,8 @@ class car():
             self.drivetrain = pkl.load(f)
         
         self.aero_arr.reverse()
+
+        self.r_carangle_2d_array = []
 
     # future code for accounting for tire orientation
         '''
@@ -271,19 +274,19 @@ class car():
         total_inerations = 0
 
         # set up radius and car angle arrays
-        radius_array = [] # 1000 radii. 1.8 inch step from 100-1000 inch; 35.8 inch step from 1050-10000 inch; 3956 inch step from 11000-1000000 inch.
-        radius_array = np.concatenate([radius_array, np.linspace(100, 1000, 500)])
-        radius_array = np.concatenate([radius_array, np.linspace(1050, 10000, 250)])
-        radius_array = np.concatenate([radius_array, np.linspace(11000, 1000000, 250)])
+        radius_array = [] # 20 radii.
+        radius_array = np.concatenate([radius_array, np.linspace(100, 1000, 10)])
+        radius_array = np.concatenate([radius_array, np.linspace(1050, 10000, 5)])
+        radius_array = np.concatenate([radius_array, np.linspace(11000, 100000, 5)])
+        print(radius_array)
         car_angle_array = []
-        for c_angle in range(900):
-            angle = c_angle * math.pi/1800 # Take out of required integer, convert to radians
+        for c_angle in range(51):
+            angle = c_angle * 1.8 * math.pi/180 # Take out of required integer, convert to radians. Step is 1.8 degrees.
             car_angle_array.append(angle)
 
-        car_angle_array = np.concatenate([car_angle_array, np.linspace(0, 900, 1)])
         for radius in radius_array:
             row = []
-            for c_angle in car_angle_array: # 900 car angles, 0.1 radian step
+            for c_angle in car_angle_array: # 50 car angles, Step is 1.8 degrees. (0.0314159 radian.) up to 90 degrees.
                 accel = self.find_accurate_accel(radius, c_angle)
                 output_AX, output_AY = accel.AX, accel.AY
 
@@ -291,7 +294,8 @@ class car():
 
             self.r_carangle_2d_array.append(row)
 
-        print(f"\n\n\nTotal iterations: {total_inerations}")
+        self.end = time.perf_counter()
+        print(f"Total runtime: {self.end - self.start} seconds")
 
     # Last step: get torque about z axis
     def accel_updated(self, r, car_angle, steering_angle, AY, AX):
@@ -733,4 +737,4 @@ class car():
         print(f"----------------------------")
 
 racecar = car()
-print(f"max: {racecar.max_lateral_accel()}")
+print(f"max: {racecar.find_AY_AX_for_every_r_carangle()}")
