@@ -321,7 +321,7 @@ class tire():
         self.corner_units = corner_units
         self.corner_loads = corner_loads
         self.corner_camber_angles = [0, 2, 4]
-        
+
         self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101), coeff=0.5)
         self.aligning_torque = curve_set(self, 'corner', 'SA', 'MZ', np.linspace(-15, 15, 101), center_vertical=True, data_cutoff=True)
 
