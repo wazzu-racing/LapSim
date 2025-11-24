@@ -298,6 +298,7 @@ class car():
                 c_angle *= math.pi/180
 
                 # Compute accurate acceleration and torque for radius and c_angle (car angle)
+                print(f"CALCULATING RADIUS: {radius}")
                 accel = self.find_accurate_accel(radius, c_angle)
                 output_AX, output_AY, torque = accel.AX, accel.AY, accel.torque
 
@@ -330,7 +331,7 @@ class car():
         :return: A tuple of axial acceleration, lateral acceleration, and torque about the z-axis. (net_axial_accel, net_lateral_accel, total_torque_about_z)
         """
 
-        print(f"steering angle: {steering_angle * 180/math.pi} degrees\nradius: {r*180/math.pi} inches")
+        print(f"steering angle: {steering_angle * 180/math.pi} degrees\nradius: {r} inches")
         print(f"car angle: {car_angle * 180/math.pi} degrees")
 
         # Find actual x and y positions of each tire using the car_angle
@@ -401,7 +402,7 @@ class car():
         front_outer_displacement = (FO_load - self.W_2) / self.K_RF # inches
         rear_outer_displacement = (RO_load - self.W_4) / self.K_RR # inches
 
-        print(f"FI_displacement: {front_inner_displacement} in\nRI_displacement: {rear_inner_displacement} in\nFO_displacement: {front_outer_displacement} in\nRO_displacement: {rear_outer_displacement} in")
+        # print(f"FI_displacement: {front_inner_displacement} in\nRI_displacement: {rear_inner_displacement} in\nFO_displacement: {front_outer_displacement} in\nRO_displacement: {rear_outer_displacement} in")
 
         # Calculate camber of each tire
         FI_camber = self.CMB_STC_F + self.CMB_RT_F * front_inner_displacement # degrees
@@ -439,10 +440,10 @@ class car():
             FO_FX = 0
             FX_car = RO_FX + RI_FX
         else: # If braking, force is coming from all wheels.
-            FI_FX = -(self.tires.FX_curves.get_max(FI_load, FI_camber) * (1 - (FI_FY**2/self.tires.FY_curves.get_max(FI_load, FI_camber)**2))**0.5)
-            RI_FX = -(self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY**2/self.tires.FY_curves.get_max(RI_load, RI_camber)**2))**0.5)
-            FO_FX = -(self.tires.FX_curves.get_max(FO_load, FO_camber) * (1 - (FO_FY**2/self.tires.FY_curves.get_max(FO_load, FO_camber)**2))**0.5)
-            RO_FX = -(self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY**2/self.tires.FY_curves.get_max(RO_load, RO_camber)**2))**0.5)
+            FI_FX = (self.tires.FX_curves.get_max(FI_load, FI_camber) * (1 - (FI_FY**2/self.tires.FY_curves.get_max(FI_load, FI_camber)**2))**0.5)
+            RI_FX = (self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY**2/self.tires.FY_curves.get_max(RI_load, RI_camber)**2))**0.5)
+            FO_FX = (self.tires.FX_curves.get_max(FO_load, FO_camber) * (1 - (FO_FY**2/self.tires.FY_curves.get_max(FO_load, FO_camber)**2))**0.5)
+            RO_FX = (self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY**2/self.tires.FY_curves.get_max(RO_load, RO_camber)**2))**0.5)
             FX_car = FO_FX + FI_FX + RO_FX + RI_FX
 
         print(f"FI_FX: {FI_FX} pounds\nRI_FX: {RI_FX} pounds\nFO_FX: {FO_FX} pounds\nRO_FX: {RO_FX} pounds")
@@ -474,7 +475,7 @@ class car():
         total_aligning_torque = FI_aligning_torque + RI_aligning_torque + FO_aligning_torque + RO_aligning_torque
         total_aligning_torque *= 12 # Convert to inch pounds
 
-        print(f"FI aligning Torque: {FI_torque} inch pounds\nRI aligning Torque: {RI_torque} inch pounds\nFO aligning torque: {FO_torque} inch pounds\nRO aligning Torque: {RO_torque} inch pounds")
+        # print(f"FI aligning Torque: {FI_torque} inch pounds\nRI aligning Torque: {RI_torque} inch pounds\nFO aligning torque: {FO_torque} inch pounds\nRO aligning Torque: {RO_torque} inch pounds")
         print(f"total_aligning_torque: {total_aligning_torque} inch pounds")
 
         return net_axial_accel, net_lat_accel, total_torque_about_z
