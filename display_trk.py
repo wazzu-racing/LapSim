@@ -45,13 +45,13 @@ class DisplayTrack:
 
             # creating track object
             self.trk = spln.track(points_x, points_y, points_x2, points_y2)
-            print(self.trk.get_cost())
 
             #run sim to get data
             self.trk.run_sim(car, nodes=nodes)
 
             # optimizing track
-            self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
+            if len(points_x) > 10:
+                self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
             self.trk.plot(self.save_track) # displaying optimized track
         elif gen_track_file:

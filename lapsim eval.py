@@ -148,8 +148,8 @@ if False:
     #plt.plot(nds, v3)
     #plt.show()
 
-plt.grid()
-plt.xlabel('Distance (ft)')
-plt.ylabel('Speed (mph)')
-plt.title('Autocross Time')
-autocross.plt_sim(car, end = 89)
+# plt.grid()
+# plt.xlabel('Distance (ft)')
+# plt.ylabel('Speed (mph)')
+# plt.title('Autocross Time')
+# autocross.plt_sim(car, end = 89)

@@ -120,7 +120,10 @@ class LapSimUI:
 
     def download_csv(self, arr_bool):
         print("Download CSV")
-        with(open(get_file_from_user(self, file_types=[("CSV File", "*.csv")]), "w", newline='')) as csv_file:
+
+        user_file_loc = get_file_from_user(self, file_types=[("CSV File", "*.csv")], default_exension="*.csv")
+
+        with(open(user_file_loc, "w", newline='')) as csv_file:
             writer = csv.writer(csv_file, dialect='unix')
             header_array = []
             writing_data = []
@@ -486,8 +489,6 @@ class track():
     def __init__(self, p1x, p1y, p2x, p2y):
         global x_array, y_array
 
-        print(f"created track")
-
         self.len = []
 
         self.nds = []
@@ -512,6 +513,8 @@ class track():
         # Keeps track of locations of data nodes
         x_array = []
         y_array = []
+
+        print(f"created track")
 
     def plot(self, save_file_func=None):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label
@@ -588,8 +591,6 @@ class track():
                     x_array.append(x)
                     y_array.append(y)
                     # track_subplot.plot(x, y, marker='o', color='black', markersize=1)
-
-        print(f"length of x_array: {len(x_array)}")
 
         for i in range(len(self.nds)):
             nd = self.nds[i]

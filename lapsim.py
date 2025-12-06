@@ -216,7 +216,7 @@ class four_wheel:
         t = 0
         for i in np.arange(1, len(v2) - 1):
             t += dx / np.average([v3[i], v3[i + 1]])
-        print(t)
+        print(f"Time: {t} seconds")
 
         self.dx = dx
         self.n = n
