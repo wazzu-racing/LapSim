@@ -696,7 +696,7 @@ class tire():
 
 # with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/18x6-10_R20.pkl", "rb") as f:
 #     wheel = pickle.load(file=f)
-# wheel.axial_coeff_plot()
+# wheel.SA_FY_plot(2)
 
 if False:
     cornering_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/cornering_data.dat'
