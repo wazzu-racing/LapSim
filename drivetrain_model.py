@@ -71,8 +71,6 @@ class drivetrain:
             self.axl_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
             self.axl_pwr.append(self.get_engn_pwr(best_rpm)) # power delivered to axel with most effecient gear (index = mph*10)
 
-
-    
     def get_engn_pwr(self, rpm):
         if rpm <= self.engn_rpm[0]:
             return self.hp[0]
