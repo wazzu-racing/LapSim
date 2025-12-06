@@ -276,7 +276,7 @@ class car():
 
         return self.Car_Data_Snippet(output_AX, output_AY, torque)
 
-    def find_AY_AX_for_every_r_carangle(self, n:int=20):
+    def create_accel_2D_array(self, n:int=20):
         """
         Fills in the r_carangle_2d_array with Car_Data_Snippet objects with each radius along the rows, and each car angle along
         the columns. Uses the find_accurate_accel function to calculate each AX and AY for each radius and car angle.
@@ -492,7 +492,7 @@ class car():
         a lateral acceleration that is lower than the previous. The lateral acceleration of the previous check is then returned.
         :return: The maximum lateral acceleration of the car.
         """
-        self.find_AY_AX_for_every_r_carangle(n)
+        self.create_accel_2D_array(n)
 
         max = self.r_carangle_2d_array[0][0].AY
 
@@ -799,7 +799,7 @@ class car():
         print(f"----------------------------")
 
 racecar = car()
-racecar.find_accurate_accel(200, 10 * math.pi/180)
+racecar.find_accurate_accel(200, 34 * math.pi/180)
 # racecar.find_AY_AX_for_every_r_carangle()
 # print(f"\n\n\nMAX: {racecar.max_lateral_accel(50)}")
 # racecar.max_axial_accel()
