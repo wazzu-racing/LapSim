@@ -6,6 +6,8 @@ pi = np.pi
 
 class LapSimData:
     def __init__(self):
+        # Array for time t
+        self.time_array = [0]
         # Arrays for lateral and axial acceleration of car
         self.AY = []
         self.AX = []
@@ -214,8 +216,10 @@ class four_wheel:
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
-        for i in np.arange(1, len(v2) - 1):
+        for i in np.arange(0, len(v2)-1):
+            # calculate time between nodes by averaging the velocities of the nodes at the start and end of the selected time frame
             t += dx / np.average([v3[i], v3[i + 1]])
+            lapsim_data_storage.time_array.append(t)
         print(f"Time: {t} seconds")
 
         self.dx = dx
