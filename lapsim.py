@@ -77,7 +77,8 @@ class four_wheel:
                 v1[int(i+1)] = v2[int(i+1)]
                 gear = self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)] # changes to the optimal gear when braking
                 shifting = False # sets to False so the car doesn't shift when it stops braking
-            else: # car is accelerating
+            # car is accelerating
+            else:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 # if gear is in optimal gear and not shifting, a_tan equals maximum accel.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)]*0.0568182*10)]) and not shifting:

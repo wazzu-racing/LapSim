@@ -558,8 +558,8 @@ class tire():
                 num = abs(i)
 
         return num
-    
-    
+
+
 
     def traction(self, set_type, load, camber):
         if set_type == 'cornering' or set_type == 'corner':
@@ -694,9 +694,9 @@ class tire():
         plt.legend(leg)
         plt.show()
 
-# with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/18x6-10_R20.pkl", "rb") as f:
-#     wheel = pickle.load(file=f)
-# wheel.SA_FY_plot(2)
+with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/18x6-10_R20.pkl", "rb") as f:
+    wheel = pickle.load(file=f)
+wheel.SR_FX_plot(2)
 
 if False:
     cornering_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/cornering_data.dat'

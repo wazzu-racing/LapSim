@@ -230,7 +230,7 @@ class car():
         AY: float
         torque: float
 
-    def find_accurate_accel(self, radius, car_angle = 0, print_info = False, print_every_iteration = False):
+    def find_accurate_accel(self, radius, car_angle = 0, braking=False, print_info = False, print_every_iteration = False):
         """
         Plugs in parameters into the accel function until the inputted AX and AY are approximately equal to the outputted AX and AY.
         The main idea of this is that when an initial AX and AY are plugged into the accel function, those accelerations are
@@ -247,20 +247,12 @@ class car():
         torque = 0
         iterations = 0
 
-        # Testing sideslip using car angle / 2 to get rough estimate of sideslip
-        # car_angle = ((steering_outer + steering_inner) / 2)/2
-
-        # c_angle, sideslip = 0, -1
-        # n = 0.001
-        # while abs(c_angle - sideslip) > 0.01:
-        #     input_AX, input_AY = 0, 0
-        #     output_AX, output_AY = 0, 0
         while (abs(input_AY - output_AY) > 0.0001 and abs(input_AX - output_AX) > 0.0001) or (input_AY == 0):
             # Change outputs to inputs
             input_AX, input_AY = output_AX, output_AY
 
             # Run accel function
-            accel = self.accel_updated(radius, car_angle, input_AY, input_AX, print_info=print_info, print_every_iteration=print_every_iteration)
+            accel = self.accel_updated(radius, car_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration)
             output_AX, output_AY, torque = accel[0], accel[1], accel[2]
 
             iterations+=1
@@ -332,8 +324,7 @@ class car():
 
         return self.r_carangle_2d_array
 
-    # Use slip ratio to make brake_updated, find max negative accel
-    def accel_updated(self, r, car_angle, AY, AX, print_info = False, print_every_iteration = False):
+    def accel_updated(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False):
         """
         :param r: The radius of the turning curve. (inches)
         :param car_angle: The angle of the car, used to rotate the car (and therefore, the tires) however many radians entered about its z-axis. (radians)
@@ -409,20 +400,18 @@ class car():
         net_lat_accel = FY_car / self.W_car
 
         # Calculating max axial acceleration by using a friction ellipse to put the remaining force into axial acceleration.
-        if AX > 0: # If launching, force is only coming from rear wheels.
+        if not braking:
             RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY/self.tires.FY_curves.get_max(RI_load, RI_camber))**2)**0.5
             RO_FX = self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY/self.tires.FY_curves.get_max(RO_load, RO_camber))**2)**0.5
             FI_FX = 0
             FO_FX = 0
             FX_car = RO_FX + RI_FX
-        else: # If braking, force is coming from all wheels.
-            FI_FX = (self.tires.FX_curves.get_max(FI_load, FI_camber) * (1 - (FI_FY/self.tires.FY_curves.get_max(FI_load, FI_camber))**2)**0.5)
-            RI_FX = (self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY/self.tires.FY_curves.get_max(RI_load, RI_camber))**2)**0.5)
-            FO_FX = (self.tires.FX_curves.get_max(FO_load, FO_camber) * (1 - (FO_FY/self.tires.FY_curves.get_max(FO_load, FO_camber))**2)**0.5)
-            RO_FX = (self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY/self.tires.FY_curves.get_max(RO_load, RO_camber))**2)**0.5)
-            FX_car = FO_FX + FI_FX + RO_FX + RI_FX
-
-        # print(f"FO_FY**2: {FO_FY**2}, self.tires.FY_curves.get_max(FO_load, FO_camber)**2: {self.tires.FY_curves.get_max(FO_load, FO_camber)**2}")
+        else:
+            FI_FX = self.tires.FX_curves.get_max(FI_load, FI_camber) * (1 - (FI_FY/self.tires.FY_curves.get_max(FI_load, FI_camber))**2)**0.5
+            RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY/self.tires.FY_curves.get_max(RI_load, RI_camber))**2)**0.5
+            FO_FX = self.tires.FX_curves.get_max(FO_load, FO_camber) * (1 - (FO_FY/self.tires.FY_curves.get_max(FO_load, FO_camber))**2)**0.5
+            RO_FX = self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY/self.tires.FY_curves.get_max(RO_load, RO_camber))**2)**0.5
+            FX_car = -(RO_FX + RI_FX + FI_FX + FO_FX)
 
         # Calculate total axial acceleration
         net_axial_accel = FX_car / self.W_car
@@ -652,7 +641,7 @@ class car():
         print(f"----------------------------")
 
 racecar = car()
-racecar.find_accurate_accel(200, 32.95 * math.pi/180, print_info=True, print_every_iteration=True)
+racecar.find_accurate_accel(200, 10* math.pi/180,braking=True, print_info=True, print_every_iteration=True)
 # racecar.find_AY_AX_for_every_r_carangle()
 # print(f"\n\n\nMAX: {racecar.max_lateral_accel(50)}")
 # racecar.max_axial_accel()
