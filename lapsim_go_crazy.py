@@ -2,6 +2,7 @@ import tkinter
 
 from PIL import ImageTk, Image
 import pickle
+import numpy as np
 
 from files import get_save_files_folder_abs_dir
 from files import get_file_from_user
@@ -21,17 +22,21 @@ class LapSimGoCrazy:
             self.p2x = []
             self.p2y = []
 
-            self.x1 = []
+            self.x1, self.y1 = [], []
+            self.x2, self.y2 = [], []
+
+            # self.x1, self.y1 = np.array(self.points_x) - 3, np.array(self.points_y) - 3
+            # self.x2, self.y2 = np.array(self.points_x) + 3, np.array(self.points_y) + 3
 
             self.dot_positions = []
             self.pxl_to_in = 1
 
-            self.p_num = 0
-            self.clicks = 0
+            self.p_num = 1
+            self.clicks = 2
             self.scale_factor = 1/2
 
-            self.line_drawn = False
-            self.can_drag_image = False
+            self.line_drawn = True
+            self.can_drag_image = True
             self.textboxDisplayed = False
 
             self.image_path_saved = image_path
@@ -54,6 +59,7 @@ class LapSimGoCrazy:
 
             # If there is only 1 click saved, reset clicks to 0 so user can draw the line (1 click is when user clicked 1 point but didn't finish drawing the line)
             if track['clicks'] == 1:
+                self.clicks = 0
                 self.clicks = 0
             else:
                 self.clicks = track['clicks']
@@ -404,14 +410,45 @@ class LapSimGoCrazy:
         self.dot_positions.clear()
 
     def save_custom_ungenerated_track(self):
+        self.p1x = [
+            0, 0, 418.307087, 718.50394, 418.307087, 0, 418.307087, 718.50394, 418.307087, 0,
+            -300.1970125, -718.50394, -300.1970125, 0, -300.1970125, -718.50394, -300.1970125, 0, 0
+        ]
+        self.p1y = [
+            0, 418.307087, 836.614174, 418.307087, 118.11, 418.307087, 836.614174, 418.307087, 118.11, 418.307087,
+            836.614174, 418.307087, 118.11, 418.307087, 836.614174, 418.307087, 118.11, 418.307087, 836.614625
+        ]
+        self.p2x = [
+            118.11, 118.11, 418.307087, 836.614174, 418.307087, 118.11, 418.307087, 836.614174, 418.307087, 118.11,
+            -300.1970125, -600.394025, -300.1970125, 118.11, -300.1970125, -600.394025, -300.1970125, 118.11, 118.1103
+        ]
+        self.p2y = [
+            0, 418.307087, 718.504325, 418.307087, 0, 418.307087, 718.504325, 418.307087, 0, 418.307087,
+            718.504325, 418.307087, 0, 418.307087, 718.504325, 418.307087, 0, 418.307087, 836.614625
+        ]
+        self.points_x = [0, 118.11, 0, 118.11, 418.307087, 418.307087, 718.50394, 836.614174, 418.307087, 418.307087,
+                         0, 118.11, 418.307087, -300.1970125, 718.50394, -600.394025, 418.307087, -300.1970125, 0, 118.11,
+                         -300.1970125, 418.307087, -718.50394, 836.614174, -300.1970125, 418.307087, 0, 118.11]
+        self.points_y = [0, 0, 418.307087, 418.307087, 836.614174, 718.504325, 418.307087, 418.307087, 118.11, 0,
+                         418.307087, 418.307087, 836.614174, 0, 418.307087, 718.504325, 836.614174, 418.307087, 118.11, 418.307087,
+                         418.307087, 718.504325, 418.307087, 836.614174, 118.11, 418.307087, 418.307087, 836.614625]
+        self.dot_positions = [
+            (0, 0), (118.11, 0), (0, 418.307087), (118.11, 418.307087),
+            (418.307087, 836.614174), (418.307087, 718.504325), (718.50394, 418.307087), (836.614174, 418.307087),
+            (418.307087, 118.11), (418.307087, 0), (0, 418.307087), (118.11, 418.307087),
+            (418.307087, 836.614174), (-300.1970125, 0), (718.50394, 418.307087), (-600.394025, 718.504325),
+            (418.307087, 836.614174), (-300.1970125, 418.307087), (0, 118.11), (118.11, 418.307087),
+            (-300.1970125, 418.307087), (418.307087, 718.504325), (-718.50394, 418.307087), (836.614174, 836.614174),
+            (-300.1970125, 118.11), (418.307087, 418.307087), (0, 418.307087), (118.11, 836.614625)
+        ]
         data2 = {
-            'p1x' :  [0, 0],
-            'p1y' : [0, 3312],
-            'p2x' : [100, 100],
-            'p2y' : [0, 3312],
-            'points_x' : [0, 100, 0, 100],
-            'points_y' : [0, 0, 3312, 3312],
-            'dot_positions' : [(0, 0), (100, 0), (0, 3312), (100, 3312)],
+            'p1x' : self.p1x,
+            'p1y' : self.p1y,
+            'p2x' : self.p2x,
+            'p2y' : self.p2y,
+            'points_x' : self.points_x,
+            'points_y' : self.points_y,
+            'dot_positions' : self.dot_positions,
             'dots' : [],
             'pxl_to_in' : 1,
             'p_num' : 1,
@@ -422,7 +459,7 @@ class LapSimGoCrazy:
             'textboxDisplayed' : False,
             'image_path_saved' : ""
         }
-        with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/acceleration_trk.pkl", 'wb') as f:
+        with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/skidpad_trk.pkl", 'wb') as f:
             pickle.dump(obj=data2, file=f)
 
 def bind_go_crazy_keys(root, self):

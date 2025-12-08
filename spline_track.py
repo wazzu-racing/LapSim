@@ -505,6 +505,7 @@ class track():
             i.start_v()
 
         self.arcs = []
+
         for i in self.nds:
             self.arcs.append(curve(i, i.next_nd))
             i.next_arc = self.arcs[-1]
