@@ -49,7 +49,7 @@ class DisplayTrack:
                     points_y2.append(i.y2)
 
             # creating track object
-            self.trk = spln.track(points_x, points_y, points_x2, points_y2)
+            self.trk = spln.track(points_x, points_y, points_x2, points_y2, car)
 
             #run sim to get data
             self.trk.run_sim(car, nodes=nodes)

@@ -74,7 +74,6 @@ class car():
     H = h - (a*z_rf + b*z_rr)/l
     # Rolling resistance force, in/s^2
     a_rr = -(C_rr * W_1 + C_rr * W_2 + C_rr * W_3 + C_rr * W_4)/W_car * 386.089
-    print(f"a_rr: {a_rr}")
 
     # Weight forces on wheels
     W_out_f =0 # vertical force on front outer wheel

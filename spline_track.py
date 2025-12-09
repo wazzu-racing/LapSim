@@ -277,12 +277,13 @@ class LapSimUI:
 
 ui = LapSimUI() # Run LapSimUI to initialize base UI elements like track_root, track_canvas, etc.
 
-car_rad = 29
-v_min = 0
 class node():
-   
-    def __init__(self, x1, y1, x2, y2):
+
+    def __init__(self, x1, y1, x2, y2, car_rad):
         global track_subplot
+
+        self.car_rad = car_rad
+        self.v_min = 0
 
         self.x1 = x1
         self.x2 = x2
@@ -302,16 +303,16 @@ class node():
         self.update_shift()
     
     def update_shift(self):
-        if self.shift > self.dist-car_rad:
-            self.shift = self.dist-car_rad
-        elif self.shift < car_rad:
-            self.shift = car_rad
+        if self.shift > self.dist-self.car_rad:
+            self.shift = self.dist-self.car_rad
+        elif self.shift < self.car_rad:
+            self.shift = self.car_rad
         
         self.x = self.x1 + (self.x2 - self.x1) * self.shift / self.dist
         self.y = self.y1 + (self.y2 - self.y1) * self.shift / self.dist
 
-        if self.vx**2 + self.vy**2 < v_min**2:
-            v = v_min/(self.vx**2 + self.vy**2)**0.5
+        if self.vx**2 + self.vy**2 < self.v_min **2:
+            v = self.v_min /(self.vx**2 + self.vy**2)**0.5
             self.vx *= v
             self.vy *= v
     
@@ -465,21 +466,6 @@ class curve():
     def plot(self):
         track_subplot.plot(self.x, self.y)
 
-def k_closest(points, mouse_pos):
-    closest_point = None
-    closest_dist = float('inf')
-    closest_index = None
-
-    # Push points onto the heap, maintaining the size at most k
-    for index, point in enumerate(points):
-        distance = math.sqrt((point[0] - mouse_pos[0])**2 + (point[1] - mouse_pos[1])**2)
-        if closest_dist > distance:
-            closest_dist = distance
-            closest = point
-            closest_index = index
-
-    return closest_index
-
 def get_data_string(self, data_bools, index):
     content = ""
     if data_bools[0].get():
@@ -503,14 +489,19 @@ class track():
 
     global x_array, y_array
 
-    def __init__(self, p1x, p1y, p2x, p2y):
+    def __init__(self, p1x, p1y, p2x, p2y, car):
         global x_array, y_array
+
+        self.car = car
+
+        # Get the minimum distance the CG of the car needs from the apex of the turn
+        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
 
         self.len = []
 
         self.nds = []
         for i in range(len(p1x)):
-            self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i]))
+            self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i], self.car_rad))
         print(f"nodes: {len(self.nds)}")
 
         for i in range(-1, len(self.nds)-1):
@@ -533,6 +524,21 @@ class track():
         y_array = []
 
         print(f"created track")
+
+    def k_closest(self, points, mouse_pos):
+        closest_point = None
+        closest_dist = float('inf')
+        closest_index = None
+
+        # Push points onto the heap, maintaining the size at most k
+        for index, point in enumerate(points):
+            distance = math.sqrt((point[0] - mouse_pos[0])**2 + (point[1] - mouse_pos[1])**2)
+            if closest_dist > distance:
+                closest_dist = distance
+                closest = point
+                closest_index = index
+
+        return closest_index
 
     def plot(self, save_file_func=None):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label
@@ -645,7 +651,7 @@ class track():
                     for i in range(len(x_array)):
                         points.append((x_array[i], y_array[i]))
 
-                    closest_index = k_closest(points, (x, y))
+                    closest_index = self.k_closest(points, (x, y))
 
                     # Find corresponding lateral and axial acceleration with node the user is hovering over
                     if closest_index != -1: # Check to see if the algorithm above found a suitable data node.
