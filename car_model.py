@@ -52,6 +52,8 @@ class car():
     # in, maximum displacement in jounce for suspension, front and rear
     max_jounce_f = 1
     max_jounce_r = 1
+    # Rolling resistance coefficient
+    C_rr = 0.01
 
     # Converting roll rates to ft*lb/rad
     K_rollF *= 180/np.pi
@@ -70,6 +72,10 @@ class car():
     a = l - b
     # in, CG height to roll axis
     H = h - (a*z_rf + b*z_rr)/l
+    # Rolling resistance force, in/s^2
+    a_rr = 0
+    # a_rr = -(C_rr * W_1 + C_rr * W_2 + C_rr * W_3 + C_rr * W_4)/W_car * 386.089
+    print(f"a_rr: {a_rr}")
 
     # Weight forces on wheels
     W_out_f =0 # vertical force on front outer wheel

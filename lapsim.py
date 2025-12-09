@@ -186,10 +186,9 @@ class four_wheel:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
                     a_tan = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in in/s^2
-
                 else:
                     shifting = True
-                    a_tan = 0
+                    a_tan = self.car.a_rr # While shifting, the car has negative acceleration because of rolling resistance
                     shift_time -= dx / v1[int(i)]
                     if shift_time <= 0:
                         gear += 1

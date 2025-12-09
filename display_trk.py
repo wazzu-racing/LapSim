@@ -1,9 +1,14 @@
 import spline_track as spln
 import pickle
+
+from car_model import car
 from lapsim import lapsim_data_storage
 
 from files import get_file_from_user, get_save_files_folder_abs_dir
 
+# racecar = car()
+# with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Models/CAR_73.pkl", "wb") as f:
+#     pickle.dump(racecar, f)
 
 class DisplayTrack:
 
