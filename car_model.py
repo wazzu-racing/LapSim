@@ -473,8 +473,8 @@ class car():
 
         A_tire = 0
         for i in range(1, len(self.AY)):
-            if self.AY[i] >= AY:
-                # linearly interpolating self.A_brake to find the max acceleration at lateral acceleration AY
+            if self.AY[i] >= AY: # If max AY along a turn is more than or equal to the current AY
+                # linearly interpolating self.A_accel to find the max acceleration at lateral acceleration AY
                 A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1] - self.get_drag(v * 0.0568182))
                 break
 

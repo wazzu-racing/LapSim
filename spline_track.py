@@ -270,7 +270,7 @@ class LapSimUI:
 
         data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
 
-        menu_button = tkinter.Menubutton(track_root, text="Choose visible data", font=("Ariel", 12))
+        menu_button = tkinter.Menubutton(track_root, text="Choose visible data", font=("Ariel", 12), fg="black", bg="white")
 
         menu_button.menu = tkinter.Menu(menu_button, tearoff=0)
         menu_button["menu"] = menu_button.menu
