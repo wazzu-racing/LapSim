@@ -12,18 +12,31 @@ class LapSimData:
         self.AY = []
         self.AX = []
         # Arrays for vertical force, lateral force, and axial forces on wheels
-        self.W_out_f_array = []
-        self.W_in_f_array = []
-        self.W_out_r_array = []
-        self.W_in_r_array = []
-        self.FY_out_f_array = []
-        self.FY_in_f_array = []
-        self.FY_out_r_array = []
-        self.FY_in_r_array = []
-        self.FX_out_f_array = []
-        self.FX_in_f_array = []
-        self.FX_out_r_array = []
-        self.FX_in_r_array = []
+        self.FI_load_array = []
+        self.FO_load_array = []
+        self.RI_load_array = []
+        self.RO_load_array = []
+        self.FI_FY_array = []
+        self.FO_FY_array = []
+        self.RI_FY_array = []
+        self.RO_FY_array = []
+        self.FI_FX_array = []
+        self.FO_FX_array = []
+        self.RI_FX_array = []
+        self.RO_FX_array = []
+        # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
+        self.FI_vector = []
+        self.FO_vector = []
+        self.RI_vector = []
+        self.RO_vector = []
+        self.FI_vector_mag = []
+        self.FO_vector_mag = []
+        self.RI_vector_mag = []
+        self.RO_vector_mag = []
+        self.FI_vector_dir = []
+        self.RI_vector_dir = []
+        self.FO_vector_dir = []
+        self.RO_vector_dir = []
         # Arrays for vertical displacement of wheels
         self.D_1_dis = []
         self.D_2_dis = []
@@ -32,22 +45,73 @@ class LapSimData:
         # Angle of accel force of car
         self.theta_accel = []
 
+    def initialize(self, n):
+        # Collect lateral and axial acceleration
+        self.AX = np.zeros(int(n + 1))
+        self.AY = np.zeros(int(n + 1))
+        #vertical forces on tires
+        self.FO_load_array = np.zeros(int(n + 1))
+        self.FI_load_array = np.zeros(int(n + 1))
+        self.RO_load_array = np.zeros(int(n + 1))
+        self.RI_load_array = np.zeros(int(n + 1))
+        self.FO_FY_array = np.zeros(int(n + 1))
+        self.FI_FY_array = np.zeros(int(n + 1))
+        self.RO_FY_array = np.zeros(int(n + 1))
+        self.RI_FY_array = np.zeros(int(n + 1))
+        self.FO_FX_array = np.zeros(int(n + 1))
+        self.FI_FX_array = np.zeros(int(n + 1))
+        self.RO_FX_array = np.zeros(int(n + 1))
+        self.RI_FX_array = np.zeros(int(n + 1))
+        # vectors for forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
+        self.FI_vector = np.zeros(shape=(int(n + 1), 3))
+        self.FO_vector = np.zeros(shape=(int(n + 1), 3))
+        self.RI_vector = np.zeros(shape=(int(n + 1), 3))
+        self.RO_vector = np.zeros(shape=(int(n + 1), 3))
+        self.FI_vector_mag = np.zeros(int(n+1))
+        self.FO_vector_mag = np.zeros(int(n+1))
+        self.RI_vector_mag = np.zeros(int(n+1))
+        self.RO_vector_mag = np.zeros(int(n+1))
+        self.FI_vector_dir = np.zeros(shape=(int(n + 1), 3))
+        self.RI_vector_dir = np.zeros(shape=(int(n + 1), 3))
+        self.FO_vector_dir = np.zeros(shape=(int(n + 1), 3))
+        self.RO_vector_dir = np.zeros(shape=(int(n + 1), 3))
+        # displacement of wheels
+        self.D_1_dis = np.zeros(int(n + 1))
+        self.D_2_dis = np.zeros(int(n + 1))
+        self.D_3_dis = np.zeros(int(n + 1))
+        self.D_4_dis = np.zeros(int(n + 1))
+        # theta of force on car
+        self.theta_accel = np.zeros(int(n + 1))
+
     def clear_data(self):
         self.AY = []
         self.AX = []
         # Arrays for vertical force, lateral force, and axial forces on wheels
-        self.W_out_f_array = []
-        self.W_in_f_array = []
-        self.W_out_r_array = []
-        self.W_in_r_array = []
-        self.FY_out_f_array = []
-        self.FY_in_f_array = []
-        self.FY_out_r_array = []
-        self.FY_in_r_array = []
-        self.FX_out_f_array = []
-        self.FX_in_f_array = []
-        self.FX_out_r_array = []
-        self.FX_in_r_array = []
+        self.FO_load_array = []
+        self.FI_load_array = []
+        self.RO_load_array = []
+        self.RI_load_array = []
+        self.FO_FY_array = []
+        self.FI_FY_array = []
+        self.RO_FY_array = []
+        self.RI_FY_array = []
+        self.FO_FX_array = []
+        self.FI_FX_array = []
+        self.RO_FX_array = []
+        self.RI_FX_array = []
+        # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
+        self.FI_vector = []
+        self.FO_vector = []
+        self.RI_vector = []
+        self.RO_vector = []
+        self.FI_vector_mag = []
+        self.FO_vector_mag = []
+        self.RI_vector_mag = []
+        self.RO_vector_mag = []
+        self.FI_vector_dir = []
+        self.RI_vector_dir = []
+        self.FO_vector_dir = []
+        self.RO_vector_dir = []
         # Arrays for vertical displacement of wheels
         self.D_1_dis = []
         self.D_2_dis = []
@@ -55,6 +119,12 @@ class LapSimData:
         self.D_4_dis = []
         # Angle of accel force of car
         self.theta_accel = []
+
+    def get_unit_vector(self, vector):
+        return np.divide(vector, np.sqrt(np.sum(np.power(vector, 2))))
+
+    def get_magnitude(self, vector):
+        return np.sqrt(np.sum(np.power(vector, 2)))
 
     def print_lengths(self):
         print('AY: ', len(self.AY))
@@ -98,29 +168,8 @@ class four_wheel:
         # List showing radius at every node. Used to calculate maximum tangential acceleration
         self.nd_rad = np.zeros(int(n + 1))
 
-        # Collect lateral and axial acceleration
-        lapsim_data_storage.AX = np.zeros(int(n + 1))
-        lapsim_data_storage.AY = np.zeros(int(n + 1))
-        # lateral, axial, and vertical forces on tires
-        lapsim_data_storage.W_out_f_array = np.zeros(int(n + 1))
-        lapsim_data_storage.W_in_f_array = np.zeros(int(n + 1))
-        lapsim_data_storage.W_out_r_array = np.zeros(int(n + 1))
-        lapsim_data_storage.W_in_r_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FY_out_f_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FY_in_f_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FY_out_r_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FY_in_r_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FX_out_f_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FX_in_f_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FX_out_r_array = np.zeros(int(n + 1))
-        lapsim_data_storage.FX_in_r_array = np.zeros(int(n + 1))
-        # vertical displacement of wheels
-        lapsim_data_storage.D_1_dis = np.zeros(int(n + 1))
-        lapsim_data_storage.D_2_dis = np.zeros(int(n + 1))
-        lapsim_data_storage.D_3_dis = np.zeros(int(n + 1))
-        lapsim_data_storage.D_4_dis = np.zeros(int(n + 1))
-        # Angle of accel force of car
-        lapsim_data_storage.theta_accel = np.zeros(int(n + 1))
+        # Initialize data collection
+        lapsim_data_storage.initialize(n)
 
         # Each line sets the maximum velocity for each 
         self.arc_beginning_node = []  # Stores the beginning node
@@ -248,18 +297,32 @@ class four_wheel:
         lapsim_data_storage.AY[index] = lat
 
         #lateral, axial, and vertical forces on tires
-        lapsim_data_storage.W_out_f_array[index] = self.car.W_out_f
-        lapsim_data_storage.W_in_f_array[index] = self.car.W_in_f
-        lapsim_data_storage.W_out_r_array[index] = self.car.W_out_r
-        lapsim_data_storage.W_in_r_array[index] = self.car.W_in_r
-        lapsim_data_storage.FY_out_f_array[index] = self.car.FY_out_f
-        lapsim_data_storage.FY_in_f_array[index] = self.car.FY_in_f
-        lapsim_data_storage.FY_out_r_array[index] = self.car.FY_out_r
-        lapsim_data_storage.FY_in_r_array[index] = self.car.FY_in_r
-        lapsim_data_storage.FX_out_f_array[index] = self.car.FX_out_f
-        lapsim_data_storage.FX_in_f_array[index] = self.car.FX_in_f
-        lapsim_data_storage.FX_out_r_array[index] = self.car.FX_out_r
-        lapsim_data_storage.FX_in_r_array[index] = self.car.FX_in_r
+        lapsim_data_storage.FO_load_array[index] = self.car.W_out_f
+        lapsim_data_storage.FI_load_array[index] = self.car.W_in_f
+        lapsim_data_storage.RO_load_array[index] = self.car.W_out_r
+        lapsim_data_storage.RI_load_array[index] = self.car.W_in_r
+        lapsim_data_storage.FO_FY_array[index] = self.car.FY_out_f
+        lapsim_data_storage.FI_FY_array[index] = self.car.FY_in_f
+        lapsim_data_storage.RO_FY_array[index] = self.car.FY_out_r
+        lapsim_data_storage.RI_FY_array[index] = self.car.FY_in_r
+        lapsim_data_storage.FO_FX_array[index] = self.car.FX_out_f
+        lapsim_data_storage.FI_FX_array[index] = self.car.FX_in_f
+        lapsim_data_storage.RO_FX_array[index] = self.car.FX_out_r
+        lapsim_data_storage.RI_FX_array[index] = self.car.FX_in_r
+
+        # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
+        lapsim_data_storage.FI_vector[index] = np.array([self.car.FX_in_f, self.car.FY_in_f, self.car.W_in_f])
+        lapsim_data_storage.RI_vector[index] = np.array([self.car.FX_in_r, self.car.FY_in_r, self.car.W_in_r])
+        lapsim_data_storage.FO_vector[index] = np.array([self.car.FX_out_f, self.car.FY_out_f, self.car.W_out_f])
+        lapsim_data_storage.RO_vector[index] = np.array([self.car.FX_out_r, self.car.FY_out_r, self.car.W_out_r])
+        lapsim_data_storage.FI_vector_mag[index] = lapsim_data_storage.get_magnitude(lapsim_data_storage.FI_vector[index])
+        lapsim_data_storage.FO_vector_mag[index] = lapsim_data_storage.get_magnitude(lapsim_data_storage.FO_vector[index])
+        lapsim_data_storage.RI_vector_mag[index] = lapsim_data_storage.get_magnitude(lapsim_data_storage.RI_vector[index])
+        lapsim_data_storage.RO_vector_mag[index] = lapsim_data_storage.get_magnitude(lapsim_data_storage.RO_vector[index])
+        lapsim_data_storage.FI_vector_dir[index] = np.array(lapsim_data_storage.get_unit_vector(lapsim_data_storage.FI_vector[index]))
+        lapsim_data_storage.RI_vector_dir[index] = np.array(lapsim_data_storage.get_unit_vector(lapsim_data_storage.RI_vector[index]))
+        lapsim_data_storage.FO_vector_dir[index] = np.array(lapsim_data_storage.get_unit_vector(lapsim_data_storage.FO_vector[index]))
+        lapsim_data_storage.RO_vector_dir[index] = np.array(lapsim_data_storage.get_unit_vector(lapsim_data_storage.RO_vector[index]))
 
         # lapsim_data_storage vertical displacement of wheels
         lapsim_data_storage.D_1_dis[index] = self.car.D_1

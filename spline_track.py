@@ -69,8 +69,8 @@ class LapSimUI:
 
     def open_csv_window(self):
         # code copied from load_lapsim function to create data selection menu
-        data_bools = [True, True, False, False, False, False, False]
-        data_options = ["Time", "Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement", "Theta of Force on Car"]
+        data_bools = [True, True, False, False, False, False, False, False, False, False]
+        data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
         menu_button = tkinter.Menubutton(self.csv_window, text="Choose Data to Save", font=("Ariel", 12))
 
         # switch data_bools to tkinter BooleanVars
@@ -85,8 +85,11 @@ class LapSimUI:
         vertical_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[2], variable=data_bools[2])
         lateral_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[3], variable=data_bools[3])
         axial_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[4], variable=data_bools[4])
-        wheel_displacement_check = tkinter.Checkbutton(self.csv_window, text=data_options[5], variable=data_bools[5])
-        theta_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[6], variable=data_bools[6])
+        force_vector_check = tkinter.Checkbutton(self.csv_window, text=data_options[5], variable=data_bools[5])
+        force_magnitude_check = tkinter.Checkbutton(self.csv_window, text=data_options[6], variable=data_bools[6])
+        force_direction_check = tkinter.Checkbutton(self.csv_window, text=data_options[7], variable=data_bools[7])
+        wheel_displacement_check = tkinter.Checkbutton(self.csv_window, text=data_options[8], variable=data_bools[8])
+        theta_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[9], variable=data_bools[9])
 
         # Label to tell users forces are on tires
         forces_label = tkinter.Label(self.csv_window, text="*All forces are on tires.", font=("Ariel", 12), fg="white")
@@ -97,12 +100,15 @@ class LapSimUI:
         vertical_force_check.grid(row=3, column=1, padx=10, pady=5, sticky="W")
         lateral_force_check.grid(row=4, column=1, padx=10, pady=5, sticky="W")
         axial_force_check.grid(row=5, column=1, padx=10, pady=5, sticky="W")
-        wheel_displacement_check.grid(row=6, column=1, padx=10, pady=5, sticky="W")
-        theta_force_check.grid(row=7, column=1, padx=10, pady=5, sticky="W")
-        forces_label.grid(row=8, column=1, padx=10, pady=5, sticky="W")
+        force_vector_check.grid(row=6, column=1, padx=10, pady=5, sticky="W")
+        force_magnitude_check.grid(row=7, column=1, padx=10, pady=5, sticky="W")
+        force_direction_check.grid(row=8, column=1, padx=10, pady=5, sticky="W")
+        wheel_displacement_check.grid(row=9, column=1, padx=10, pady=5, sticky="W")
+        theta_force_check.grid(row=10, column=1, padx=10, pady=5, sticky="W")
+        forces_label.grid(row=11, column=1, padx=10, pady=5, sticky="W")
 
         download_csv_button = tkinter.Button(self.csv_window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
-        download_csv_button.grid(row=9, column=1, padx=10, pady=10)
+        download_csv_button.grid(row=12, column=1, padx=10, pady=10)
 
         self.csv_window.grid_rowconfigure(0, weight=1)
         self.csv_window.grid_rowconfigure(1, weight=0)
@@ -114,7 +120,10 @@ class LapSimUI:
         self.csv_window.grid_rowconfigure(7, weight=0)
         self.csv_window.grid_rowconfigure(8, weight=0)
         self.csv_window.grid_rowconfigure(9, weight=0)
-        self.csv_window.grid_rowconfigure(10, weight=1)
+        self.csv_window.grid_rowconfigure(10, weight=0)
+        self.csv_window.grid_rowconfigure(11, weight=0)
+        self.csv_window.grid_rowconfigure(12, weight=0)
+        self.csv_window.grid_rowconfigure(13, weight=1)
         self.csv_window.grid_columnconfigure(0, weight=1)
         self.csv_window.grid_columnconfigure(1, weight=0)
         self.csv_window.grid_columnconfigure(2, weight=1)
@@ -154,38 +163,71 @@ class LapSimUI:
                             header_array.extend(["Axial Acceleration", "Lateral Acceleration"])
                         case 2:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.W_out_f_array):
+                            for index, i in enumerate(lapsim_data_storage.FO_load_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.W_out_f_array[index]))
-                                array.append(str(lapsim_data_storage.W_in_f_array[index]))
-                                array.append(str(lapsim_data_storage.W_out_r_array[index]))
-                                array.append(str(lapsim_data_storage.W_in_r_array[index]))
+                                array.append(str(lapsim_data_storage.FO_load_array[index]))
+                                array.append(str(lapsim_data_storage.FI_load_array[index]))
+                                array.append(str(lapsim_data_storage.RO_load_array[index]))
+                                array.append(str(lapsim_data_storage.RI_load_array[index]))
                                 array_2.append(array)
                             writing_data[2] = array_2
                             header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"])
                         case 3:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FY_out_f_array):
+                            for index, i in enumerate(lapsim_data_storage.FO_FY_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FY_out_f_array[index]))
-                                array.append(str(lapsim_data_storage.FY_in_f_array[index]))
-                                array.append(str(lapsim_data_storage.FY_out_r_array[index]))
-                                array.append(str(lapsim_data_storage.FY_in_r_array[index]))
+                                array.append(str(lapsim_data_storage.FO_FY_array[index]))
+                                array.append(str(lapsim_data_storage.FI_FY_array[index]))
+                                array.append(str(lapsim_data_storage.RO_FY_array[index]))
+                                array.append(str(lapsim_data_storage.RI_FY_array[index]))
                                 array_2.append(array)
                             writing_data[3] = array_2
                             header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"])
                         case 4:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FX_out_f_array):
+                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FX_out_f_array[index]))
-                                array.append(str(lapsim_data_storage.FX_in_f_array[index]))
-                                array.append(str(lapsim_data_storage.FX_out_r_array[index]))
-                                array.append(str(lapsim_data_storage.FX_in_r_array[index]))
+                                array.append(str(lapsim_data_storage.FO_FX_array[index]))
+                                array.append(str(lapsim_data_storage.FI_FX_array[index]))
+                                array.append(str(lapsim_data_storage.RO_FX_array[index]))
+                                array.append(str(lapsim_data_storage.RI_FX_array[index]))
                                 array_2.append(array)
                             writing_data[4] = array_2
                             header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"])
                         case 5:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                                array = []
+                                array.append(str(lapsim_data_storage.FO_vector[index]))
+                                array.append(str(lapsim_data_storage.FI_vector[index]))
+                                array.append(str(lapsim_data_storage.RO_vector[index]))
+                                array.append(str(lapsim_data_storage.RI_vector[index]))
+                                array_2.append(array)
+                            writing_data[5] = array_2
+                            header_array.extend(["Front outer force vector", "Front inner force vector", "Rear outer force vector", "Rear inner force vector"])
+                        case 6:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                                array = []
+                                array.append(str(lapsim_data_storage.FO_vector_mag[index]))
+                                array.append(str(lapsim_data_storage.FI_vector_mag[index]))
+                                array.append(str(lapsim_data_storage.RO_vector_mag[index]))
+                                array.append(str(lapsim_data_storage.RI_vector_mag[index]))
+                                array_2.append(array)
+                            writing_data[6] = array_2
+                            header_array.extend(["Front outer force magnitude", "Front inner force magnitude", "Rear outer force magnitude", "Rear inner force magnitude"])
+                        case 7:
+                            array_2 = []
+                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                                array = []
+                                array.append(str(lapsim_data_storage.FO_vector_dir[index]))
+                                array.append(str(lapsim_data_storage.FI_vector_dir[index]))
+                                array.append(str(lapsim_data_storage.RO_vector_dir[index]))
+                                array.append(str(lapsim_data_storage.RI_vector_dir[index]))
+                                array_2.append(array)
+                            writing_data[7] = array_2
+                            header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"])
+                        case 8:
                             array_2 = []
                             for index, i in enumerate(lapsim_data_storage.D_1_dis):
                                 array = []
@@ -196,7 +238,7 @@ class LapSimUI:
                                 array_2.append(array)
                             writing_data[5] = array_2
                             header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
-                        case 6:
+                        case 9:
                             array_2 = []
                             for index, i in enumerate(lapsim_data_storage.theta_accel):
                                 array = []
@@ -224,9 +266,9 @@ class LapSimUI:
 
         track_root.deiconify() # Show the window
 
-        data_bools = [True, True, False, False, False, False, False]
+        data_bools = [True, True, False, False, False, False, False, False, False, False]
 
-        data_options = ["Time", "Acceleration", "Vertical Forces", "Lateral Forces", "Axial Forces", "Wheel Displacement", "Theta of Force on Car"]
+        data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
 
         menu_button = tkinter.Menubutton(track_root, text="Choose visible data", font=("Ariel", 12))
 
@@ -282,6 +324,7 @@ class node():
     def __init__(self, x1, y1, x2, y2, car_rad):
         global track_subplot
 
+        # The distance from the Car's center to it's most outer point, perpendicular to its longitudinal axis
         self.car_rad = car_rad
         self.v_min = 0
 
@@ -290,7 +333,9 @@ class node():
         self.y1 = y1
         self.y2 = y2
 
+        # distance between gates
         self.dist = ((x2-x1)**2 + (y2-y1)**2)**0.5
+        # halfway between gates
         self.shift = self.dist / 2
 
         self.prev_nd = None
@@ -303,8 +348,10 @@ class node():
         self.update_shift()
     
     def update_shift(self):
+        # if the car's width cannot fit within the gates, change node point to the closest it can be to the turn
         if self.shift > self.dist-self.car_rad:
             self.shift = self.dist-self.car_rad
+        # if the distance between the center and outline of the gates is smaller than the car's width, change node point to the car's width (closest the car can be to the turn)
         elif self.shift < self.car_rad:
             self.shift = self.car_rad
         
@@ -473,14 +520,20 @@ def get_data_string(self, data_bools, index):
     if data_bools[1].get():
         content += f"Lateral Acceleration: {round(lapsim_data_storage.AY[index], 2)} g's\nAxial Acceleration: {round(lapsim_data_storage.AX[index], 2)}g's\n\n"
     if data_bools[2].get():
-        content += f"Vertical force on front outer tire: {round(lapsim_data_storage.W_out_f_array[index], 2)} lbs\nVertical force on front inner tire: {round(lapsim_data_storage.W_in_f_array[index], 2)} lbs\nVertical force on rear outer tire: {round(lapsim_data_storage.W_out_r_array[index], 2)} lbs\nVertical force on rear inner tire: {round(lapsim_data_storage.W_in_r_array[index], 2)} lbs\n\n"
+        content += f"Vertical force on front outer tire: {round(lapsim_data_storage.FO_load_array[index], 2)} lbs\nVertical force on front inner tire: {round(lapsim_data_storage.FI_load_array[index], 2)} lbs\nVertical force on rear outer tire: {round(lapsim_data_storage.RO_load_array[index], 2)} lbs\nVertical force on rear inner tire: {round(lapsim_data_storage.RI_load_array[index], 2)} lbs\n\n"
     if data_bools[3].get():
-        content += f"Lateral force on front outer tire: {round(lapsim_data_storage.FY_out_f_array[index], 2)} lbs\nLateral force on front inner tire: {round(lapsim_data_storage.FY_in_f_array[index], 2)} lbs\nLateral force on rear outer tire: {round(lapsim_data_storage.FY_out_r_array[index], 2)} lbs\nLateral force on rear inner tire: {round(lapsim_data_storage.FY_in_r_array[index], 2)} lbs\n\n"
+        content += f"Lateral force on front outer tire: {round(lapsim_data_storage.FO_FY_array[index], 2)} lbs\nLateral force on front inner tire: {round(lapsim_data_storage.FI_FY_array[index], 2)} lbs\nLateral force on rear outer tire: {round(lapsim_data_storage.RO_FY_array[index], 2)} lbs\nLateral force on rear inner tire: {round(lapsim_data_storage.RI_FY_array[index], 2)} lbs\n\n"
     if data_bools[4].get():
-        content += f"Axial force on front outer tire: {round(lapsim_data_storage.FX_out_f_array[index], 2)} lbs\nAxial force on front inner tire: {round(lapsim_data_storage.FX_in_f_array[index], 2)} lbs\nAxial force on rear outer tire: {round(lapsim_data_storage.FX_out_r_array[index], 2)} lbs\nAxial force on rear inner tire: {round(lapsim_data_storage.FX_in_r_array[index], 2)} lbs\n\n"
+        content += f"Axial force on front outer tire: {round(lapsim_data_storage.FO_FX_array[index], 2)} lbs\nAxial force on front inner tire: {round(lapsim_data_storage.FI_FX_array[index], 2)} lbs\nAxial force on rear outer tire: {round(lapsim_data_storage.RO_FX_array[index], 2)} lbs\nAxial force on rear inner tire: {round(lapsim_data_storage.RI_FX_array[index], 2)} lbs\n\n"
     if data_bools[5].get():
-        content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.D_1_dis[index], 2)} in\nVertical displacement of front inner tire: {round(lapsim_data_storage.D_2_dis[index], 2)} in\nVertical displacement of rear outer tire: {round(lapsim_data_storage.D_3_dis[index], 2)} in\nVertical displacement of rear inner tire: {round(lapsim_data_storage.D_4_dis[index], 2)} in\n\n"
+        content += f"Force vector on front outer tire: {np.round(lapsim_data_storage.FO_vector[index], 2)} lbs\nVector force on front inner tire: {np.round(lapsim_data_storage.FI_vector[index], 2)} lbs\nVector force on rear outer tire: {np.round(lapsim_data_storage.RO_vector[index], 2)} lbs\nVector force on rear inner tire: {np.round(lapsim_data_storage.RI_vector[index], 2)} lbs\n\n"
     if data_bools[6].get():
+        content += f"Force magnitude on front outer tire: {round(lapsim_data_storage.FO_vector_mag[index], 2)} lbs\nForce magnitude on front inner tire: {round(lapsim_data_storage.FI_vector_mag[index], 2)} lbs\nForce magnitude on rear outer tire: {round(lapsim_data_storage.RO_vector_mag[index], 2)} lbs\nForce magnitude on rear inner tire: {round(lapsim_data_storage.RI_vector_mag[index], 2)} lbs\n\n"
+    if data_bools[7].get():
+        content += f"Force direction on front outer tire: {np.round(lapsim_data_storage.FO_vector_dir[index], 2)}\nForce direction on front inner tire: {np.round(lapsim_data_storage.FI_vector_dir[index], 2)}\nForce direction on rear outer tire: {np.round(lapsim_data_storage.RO_vector_dir[index], 2)}\nForce direction on rear inner tire: {np.round(lapsim_data_storage.RI_vector_dir[index], 2)}\n\n"
+    if data_bools[8].get():
+        content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.D_1_dis[index], 2)} in\nVertical displacement of front inner tire: {round(lapsim_data_storage.D_2_dis[index], 2)} in\nVertical displacement of rear outer tire: {round(lapsim_data_storage.D_3_dis[index], 2)} in\nVertical displacement of rear inner tire: {round(lapsim_data_storage.D_4_dis[index], 2)} in\n\n"
+    if data_bools[9].get():
         content += f"Theta of Force on Car: {round(lapsim_data_storage.theta_accel[index], 2)} deg\n\n"
     content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."
     return content
