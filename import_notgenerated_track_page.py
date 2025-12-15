@@ -1,8 +1,10 @@
 import os
 import tkinter
 from tkinter import filedialog
+import pickle
 
 from display_trk import DisplayTrack
+import display_trk
 from files import get_save_files_folder_abs_dir
 
 run_lapsim_button = None
@@ -52,6 +54,8 @@ class ImportNotGeneratedTrackPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
+        self.save_func = ""
+
         controller.title("Vehicle Dynamics - Import Track")
 
         # Make and pack "Create or Import Track" label
@@ -78,14 +82,14 @@ class ImportNotGeneratedTrackPage(tkinter.Frame):
         node_label = tkinter.Label(node_frame, text="Nodes:", bg="Black", fg="White", font=("Ariel", 16), borderwidth=0, highlightthickness=0)
         node_label.grid(row=0, column=0, pady=(10,0))
 
-        node_entry = tkinter.Entry(node_frame, bg="White", fg="Black", font=("Ariel", 12), width=10)
-        node_entry.grid(row=0, column=1, pady=(10,0))
+        self.node_entry = tkinter.Entry(node_frame, bg="White", fg="Black", font=("Ariel", 12), width=10)
+        self.node_entry.grid(row=0, column=1, pady=(10,0))
 
         default_label = tkinter.Label(self, text="Default: 5000 nodes.", font=("Ariel", 10), bg="Black", fg="White")
         default_label.grid(row=5, column=1, pady=(0,0))
 
         #  Make and pack "Run LapSim" button
-        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: DisplayTrack(self, pts_file=track_file, cr_file=car_file, nodes=int(node_entry.get()) if node_entry.get() != "" and int(node_entry.get()) > 9 else 5000))
+        run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: self.run_notgenerated_track())
         run_lapsim_button.grid(row=6, column=1, pady=(50, 0))
 
         # Configure grid to center all widgets

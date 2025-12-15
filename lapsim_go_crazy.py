@@ -6,6 +6,7 @@ import numpy as np
 
 from files import get_save_files_folder_abs_dir
 from files import get_file_from_user
+from LapData import LapData
 
 class LapSimGoCrazy:
 
@@ -289,7 +290,8 @@ class LapSimGoCrazy:
                             'textboxDisplayed' : self.textboxDisplayed,
                             'image_path_saved' : self.image_path_saved}
                     with open(get_file_from_user(self, file_types=[("Pickle files", "*.pkl")]), 'wb') as f:
-                        pickle.dump(obj=data, file=f)
+                        new_track_data = LapData(data)
+                        pickle.dump(obj=new_track_data, file=f)
                     print('[Track points saved]')
                     print(f"points_x: {self.points_x}")
                     print(f"points_y: {self.points_y}")

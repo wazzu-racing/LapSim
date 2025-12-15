@@ -12,6 +12,7 @@ with open('Data/pkl/Tracks/autocross_trk.pkl', 'rb') as f:
 
 with open('/saved_files/DEFAULT_CAR.pkl', 'rb') as f:
     car = pkl.load(f)
+car.file_location = '/saved_files/DEFAULT_CAR.pkl'
 
 times = []
 weights = []

@@ -49,6 +49,7 @@ def plot_car_data(option):
 
     # Load car object from file
     car = pkl.load(open(car_file_path, 'rb'))
+    car.file_location = car_file_path
 
     # Match the users choice of graph with the graph's corresponding function.
     match option:

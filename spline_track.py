@@ -2,6 +2,8 @@ import pickle
 
 import numpy as np
 import math
+
+from PIL.ImageOps import expand
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -11,7 +13,9 @@ import tkinter
 import csv
 
 from files import get_file_from_user
-from lapsim import lapsim_data_storage
+from car_settings_window import CarSettingsWindow
+from max_values_window import MaxValuesWindow
+from report_window import ReportWindow
 
 # Create UI global vars
 track_root = None
@@ -19,15 +23,18 @@ track_fig = None
 track_subplot = None
 track_canvas = None
 data_bools = [True, False, False, False, False]
+tkinter_data_bools = []
 data_label = None
 
 x_array = []
 y_array = []
 
+racecar = None
+
 class LapSimUI:
 
     # MAKE AN INIT FUNCTION FOR THIS CONSTRUCTOR TO CLEAR FIGURE WHEN CLOSING WINDOW
-    def __init__(self):
+    def __init__(self, display_track):
         global track_root, track_fig, track_subplot, track_canvas, data_bools
 
         track_root = tkinter.Tk() # For window of graph and viewable values
@@ -37,14 +44,27 @@ class LapSimUI:
         track_subplot = track_fig.add_subplot(111) # Add a track_subplot to the figure
         track_canvas = FigureCanvasTkAgg(track_fig, master=track_root)
 
+        self.running_from_ungenerated_track = False
+
         # Hide this window until ready to show
         track_root.withdraw()
 
-        # Create a toplevel window for CSV download and graph download
+        # Create a toplevel window for CSV download
         self.init_CSV_window()
+
+        # Create a toplevel window for car settings
+        self.car_settings_window = None
+
+        # Create a toplevel window for max values
+        self.max_values_window = None
 
         # initialize dir that file dialogs open to
         self.initial_dir = ""
+
+        # LapData
+        self.lap_data = None
+
+        self.display_track = display_track
 
         # Only allow the user to hide the LapSim UI and CSV windows, not close it
         track_root.protocol("WM_DELETE_WINDOW", self.close_LapsimUI_window)
@@ -66,6 +86,9 @@ class LapSimUI:
 
     def close_CSV_window(self):
         self.csv_window.withdraw()
+
+    def close_car_settings_window(self):
+        self.car_settings_window.withdraw()
 
     def open_csv_window(self):
         # code copied from load_lapsim function to create data selection menu
@@ -130,6 +153,24 @@ class LapSimUI:
 
         self.csv_window.deiconify()
 
+    def open_car_settings_window(self, display_track):
+        # Init car settings window
+        if self.car_settings_window is None and self.lap_data is not None:
+            # Create a toplevel window for car settings
+            self.car_settings_window = CarSettingsWindow(display_track=display_track, lap_data=self.lap_data)
+        # Open car settings window
+        self.car_settings_window.open_window()
+
+    def open_max_values_window(self):
+        # Init max values window
+        if self.max_values_window is None:
+            print(f"Opening Max Values window")
+            # Create a toplevel window for max values
+            self.max_values_window = MaxValuesWindow(self.lap_data)
+        print(f"Opening not non Max Values window")
+        # Open max values window
+        self.max_values_window.open_window()
+
     def download_csv(self, arr_bool):
         print("Download CSV")
 
@@ -146,103 +187,103 @@ class LapSimUI:
                     match i:
                         case 0:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.time_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.time_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.time_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.time_array[index]))
                                 array_2.append(array)
                             writing_data[0] = array_2
                             header_array.extend(["Time"])
                         case 1:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.AX):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.AX):
                                 array = []
-                                array.append(str(lapsim_data_storage.AX[index]))
-                                array.append(str(lapsim_data_storage.AY[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AX[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AY[index]))
                                 array_2.append(array)
                             writing_data[1] = array_2
                             header_array.extend(["Axial Acceleration", "Lateral Acceleration"])
                         case 2:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FO_load_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FO_load_array[index]))
-                                array.append(str(lapsim_data_storage.FI_load_array[index]))
-                                array.append(str(lapsim_data_storage.RO_load_array[index]))
-                                array.append(str(lapsim_data_storage.RI_load_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_load_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_load_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_load_array[index]))
                                 array_2.append(array)
                             writing_data[2] = array_2
                             header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"])
                         case 3:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FO_FY_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FO_FY_array[index]))
-                                array.append(str(lapsim_data_storage.FI_FY_array[index]))
-                                array.append(str(lapsim_data_storage.RO_FY_array[index]))
-                                array.append(str(lapsim_data_storage.RI_FY_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_FY_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_FY_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FY_array[index]))
                                 array_2.append(array)
                             writing_data[3] = array_2
                             header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"])
                         case 4:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FO_FX_array[index]))
-                                array.append(str(lapsim_data_storage.FI_FX_array[index]))
-                                array.append(str(lapsim_data_storage.RO_FX_array[index]))
-                                array.append(str(lapsim_data_storage.RI_FX_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_FX_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_FX_array[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FX_array[index]))
                                 array_2.append(array)
                             writing_data[4] = array_2
                             header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"])
                         case 5:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FO_vector[index]))
-                                array.append(str(lapsim_data_storage.FI_vector[index]))
-                                array.append(str(lapsim_data_storage.RO_vector[index]))
-                                array.append(str(lapsim_data_storage.RI_vector[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector[index]))
                                 array_2.append(array)
                             writing_data[5] = array_2
                             header_array.extend(["Front outer force vector", "Front inner force vector", "Rear outer force vector", "Rear inner force vector"])
                         case 6:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FO_vector_mag[index]))
-                                array.append(str(lapsim_data_storage.FI_vector_mag[index]))
-                                array.append(str(lapsim_data_storage.RO_vector_mag[index]))
-                                array.append(str(lapsim_data_storage.RI_vector_mag[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector_mag[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector_mag[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector_mag[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_mag[index]))
                                 array_2.append(array)
                             writing_data[6] = array_2
                             header_array.extend(["Front outer force magnitude", "Front inner force magnitude", "Rear outer force magnitude", "Rear inner force magnitude"])
                         case 7:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.FO_FX_array):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                 array = []
-                                array.append(str(lapsim_data_storage.FO_vector_dir[index]))
-                                array.append(str(lapsim_data_storage.FI_vector_dir[index]))
-                                array.append(str(lapsim_data_storage.RO_vector_dir[index]))
-                                array.append(str(lapsim_data_storage.RI_vector_dir[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector_dir[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector_dir[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector_dir[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_dir[index]))
                                 array_2.append(array)
                             writing_data[7] = array_2
                             header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"])
                         case 8:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.D_1_dis):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis):
                                 array = []
-                                array.append(str(lapsim_data_storage.D_2_dis[index]))
-                                array.append(str(lapsim_data_storage.D_1_dis[index]))
-                                array.append(str(lapsim_data_storage.D_4_dis[index]))
-                                array.append(str(lapsim_data_storage.D_3_dis[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_2_dis[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_4_dis[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_3_dis[index]))
                                 array_2.append(array)
                             writing_data[5] = array_2
                             header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
                         case 9:
                             array_2 = []
-                            for index, i in enumerate(lapsim_data_storage.theta_accel):
+                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel):
                                 array = []
-                                array.append(str(lapsim_data_storage.theta_accel[index]))
+                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel[index]))
                                 array_2.append(array)
                             writing_data[6] = array_2
                             header_array.extend(["Theta of Force on Car"])
@@ -250,7 +291,7 @@ class LapSimUI:
             writer.writerow(header_array)
             master_array = []
             # Loop through each value of every data point
-            for index in range(len(lapsim_data_storage.AX)):
+            for index in range(len(self.lap_data.generated_track.sim.lapsim_data_storage.AX)):
                 # create array which contains every data point for one specific node (one row) and add to master array
                 array = []
                 for data_section in writing_data:
@@ -261,36 +302,38 @@ class LapSimUI:
             # write all rows to csv file
             writer.writerows(master_array)
 
-    def load_lapsim(self, save_file_func=None):
-        global track_root, track_subplot, track_canvas, data_bools, data_label
+    def load_lapsim(self, display_track, save_file_func=None):
+        global track_root, track_subplot, track_canvas, data_bools, data_label, tkinter_data_bools
 
         track_root.deiconify() # Show the window
 
-        data_bools = [True, True, False, False, False, False, False, False, False, False]
-
+        tkinter_data_bools = [tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False)]
         data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
 
-        menu_button = tkinter.Menubutton(track_root, text="Choose visible data", font=("Ariel", 12), fg="black", bg="white")
+        data_label_frame = tkinter.Frame(track_root, width=600, height=500)
+        data_label_frame.grid(row=1, column=2, padx=0, pady=0, sticky="nsew")
+        data_label_frame.pack_propagate(False)
 
+        menu_button = tkinter.Menubutton(data_label_frame, text="Choose visible data", font=("Ariel", 12), fg="black", bg="white")
         menu_button.menu = tkinter.Menu(menu_button, tearoff=0)
         menu_button["menu"] = menu_button.menu
 
-        for option in data_options:
-            boolean = tkinter.BooleanVar()
-            boolean.set(data_bools[data_options.index(option)])
-            data_bools[data_options.index(option)] = boolean
-            menu_button.menu.add_checkbutton(label=option, variable=boolean)
-        menu_button.grid(row=1, column=2, padx=0, pady=0)
+        for index, option in enumerate(data_options):
+            menu_button.menu.add_checkbutton(label=option, variable=tkinter_data_bools[index])
+            # print(f"{option} -> {boolean.get()}")
+        menu_button.grid(row=0, column=2, padx=0, pady=0)
 
-        data_label_frame = tkinter.Frame(track_root, width=400, height=500, bg='white')
-        data_label_frame.grid(row=2, column=2, padx=0, pady=0)
-        data_label_frame.pack_propagate(False)
+        edit_car_button = tkinter.Button(data_label_frame, text="Edit Car Settings", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.open_car_settings_window(display_track))
+        edit_car_button.grid(row=1, column=2, padx=0, pady=0)
 
-        data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), bg="white", fg="black")
-        data_label.grid(row=0, column=0, padx=0, pady=0, sticky="N")
+        find_max_values_button = tkinter.Button(data_label_frame, text="Display Max Values", font=("Ariel", 12), bg="white", fg="black", command=self.open_max_values_window)
+        find_max_values_button.grid(row=2, column=2, padx=0, pady=0)
 
         download_csv_button = tkinter.Button(data_label_frame, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=self.open_csv_window)
-        download_csv_button.grid(row=1, column=0, padx=0, pady=0)
+        download_csv_button.grid(row=3, column=2, padx=0, pady=0, sticky="N")
+
+        data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), fg="white")
+        data_label.grid(row=5, column=2, padx=0, pady=0, sticky="nsew")
 
         if save_file_func is not None:
             track_root.bind("<s>", lambda event: save_file_func())
@@ -316,8 +359,6 @@ class LapSimUI:
         track_root.columnconfigure(3, weight=1)
 
         track_root.mainloop()
-
-ui = LapSimUI() # Run LapSimUI to initialize base UI elements like track_root, track_canvas, etc.
 
 class node():
 
@@ -407,10 +448,6 @@ class node():
         
         if ((self.shift >= self.dist) and (self.d_shift < 0)) or ((self.shift <= 0) and (self.d_shift > 0)):
             self.shift = 0
-
-        
-
-
 
 
 class curve():
@@ -513,42 +550,45 @@ class curve():
     def plot(self):
         track_subplot.plot(self.x, self.y)
 
-def get_data_string(self, data_bools, index):
+def get_data_string(self, lapsim_data_storage, tkinter_data_bools, index):
     content = ""
-    if data_bools[0].get():
+    if tkinter_data_bools[0].get():
         content += f"Time: {round(lapsim_data_storage.time_array[index], 2)} sec\n\n"
-    if data_bools[1].get():
+    if tkinter_data_bools[1].get():
         content += f"Lateral Acceleration: {round(lapsim_data_storage.AY[index], 2)} g's\nAxial Acceleration: {round(lapsim_data_storage.AX[index], 2)}g's\n\n"
-    if data_bools[2].get():
+    if tkinter_data_bools[2].get():
         content += f"Vertical force on front outer tire: {round(lapsim_data_storage.FO_load_array[index], 2)} lbs\nVertical force on front inner tire: {round(lapsim_data_storage.FI_load_array[index], 2)} lbs\nVertical force on rear outer tire: {round(lapsim_data_storage.RO_load_array[index], 2)} lbs\nVertical force on rear inner tire: {round(lapsim_data_storage.RI_load_array[index], 2)} lbs\n\n"
-    if data_bools[3].get():
+    if tkinter_data_bools[3].get():
         content += f"Lateral force on front outer tire: {round(lapsim_data_storage.FO_FY_array[index], 2)} lbs\nLateral force on front inner tire: {round(lapsim_data_storage.FI_FY_array[index], 2)} lbs\nLateral force on rear outer tire: {round(lapsim_data_storage.RO_FY_array[index], 2)} lbs\nLateral force on rear inner tire: {round(lapsim_data_storage.RI_FY_array[index], 2)} lbs\n\n"
-    if data_bools[4].get():
+    if tkinter_data_bools[4].get():
         content += f"Axial force on front outer tire: {round(lapsim_data_storage.FO_FX_array[index], 2)} lbs\nAxial force on front inner tire: {round(lapsim_data_storage.FI_FX_array[index], 2)} lbs\nAxial force on rear outer tire: {round(lapsim_data_storage.RO_FX_array[index], 2)} lbs\nAxial force on rear inner tire: {round(lapsim_data_storage.RI_FX_array[index], 2)} lbs\n\n"
-    if data_bools[5].get():
+    if tkinter_data_bools[5].get():
         content += f"Force vector on front outer tire: {np.round(lapsim_data_storage.FO_vector[index], 2)} lbs\nVector force on front inner tire: {np.round(lapsim_data_storage.FI_vector[index], 2)} lbs\nVector force on rear outer tire: {np.round(lapsim_data_storage.RO_vector[index], 2)} lbs\nVector force on rear inner tire: {np.round(lapsim_data_storage.RI_vector[index], 2)} lbs\n\n"
-    if data_bools[6].get():
+    if tkinter_data_bools[6].get():
         content += f"Force magnitude on front outer tire: {round(lapsim_data_storage.FO_vector_mag[index], 2)} lbs\nForce magnitude on front inner tire: {round(lapsim_data_storage.FI_vector_mag[index], 2)} lbs\nForce magnitude on rear outer tire: {round(lapsim_data_storage.RO_vector_mag[index], 2)} lbs\nForce magnitude on rear inner tire: {round(lapsim_data_storage.RI_vector_mag[index], 2)} lbs\n\n"
-    if data_bools[7].get():
+    if tkinter_data_bools[7].get():
         content += f"Force direction on front outer tire: {np.round(lapsim_data_storage.FO_vector_dir[index], 2)}\nForce direction on front inner tire: {np.round(lapsim_data_storage.FI_vector_dir[index], 2)}\nForce direction on rear outer tire: {np.round(lapsim_data_storage.RO_vector_dir[index], 2)}\nForce direction on rear inner tire: {np.round(lapsim_data_storage.RI_vector_dir[index], 2)}\n\n"
-    if data_bools[8].get():
+    if tkinter_data_bools[8].get():
         content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.D_1_dis[index], 2)} in\nVertical displacement of front inner tire: {round(lapsim_data_storage.D_2_dis[index], 2)} in\nVertical displacement of rear outer tire: {round(lapsim_data_storage.D_3_dis[index], 2)} in\nVertical displacement of rear inner tire: {round(lapsim_data_storage.D_4_dis[index], 2)} in\n\n"
-    if data_bools[9].get():
+    if tkinter_data_bools[9].get():
         content += f"Theta of Force on Car: {round(lapsim_data_storage.theta_accel[index], 2)} deg\n\n"
     content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."
     return content
 
 class track():
 
-    global x_array, y_array
+    global x_array, y_array, racecar
 
     def __init__(self, p1x, p1y, p2x, p2y, car):
-        global x_array, y_array
+        global x_array, y_array, racecar
 
-        self.car = car
+        racecar = car
+
+        # Create a toplevel window for REPRT
+        self.report_window = None
 
         # Get the minimum distance the CG of the car needs from the apex of the turn
-        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
+        self.car_rad = np.max([racecar.t_r, racecar.t_f])/2
 
         self.len = []
 
@@ -579,7 +619,6 @@ class track():
         print(f"created track")
 
     def k_closest(self, points, mouse_pos):
-        closest_point = None
         closest_dist = float('inf')
         closest_index = None
 
@@ -588,13 +627,14 @@ class track():
             distance = math.sqrt((point[0] - mouse_pos[0])**2 + (point[1] - mouse_pos[1])**2)
             if closest_dist > distance:
                 closest_dist = distance
-                closest = point
                 closest_index = index
 
         return closest_index
 
-    def plot(self, save_file_func=None):
-        global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label
+    def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, save_file_func=None):
+        global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
+
+        self.lap_data = lap_data_stuff
 
         print("plotting")
 
@@ -684,8 +724,19 @@ class track():
                 track_subplot.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color='pink', markersize=6)
                 track_subplot.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color='pink', markersize=6)
 
+        if save_lap_data_func is not None:
+            # Save track into lap_data file
+            save_lap_data_func()
+
+        if self.lap_data.generated_track is not None:
+            self.sim.lapsim_data_storage = self.lap_data.generated_track.sim.lapsim_data_storage
+
+        if prev_lap_data is not None:
+            self.report_window = ReportWindow(prev_lap_data=prev_lap_data, new_lap_data=self.lap_data)
+            self.report_window.open_window()
+
         # Load lapsim ui
-        ui.load_lapsim(save_file_func)
+        ui_instance.load_lapsim(display_track=display_track, save_file_func=save_file_func)
 
         # Function that converts the position of the users mouse into data from the nearest data node
         def on_hover(event):
@@ -708,7 +759,7 @@ class track():
 
                     # Find corresponding lateral and axial acceleration with node the user is hovering over
                     if closest_index != -1: # Check to see if the algorithm above found a suitable data node.
-                        data_label.config(text=get_data_string(self, data_bools, closest_index))
+                        data_label.config(text=get_data_string(self, self.sim.lapsim_data_storage, tkinter_data_bools, closest_index))
 
                     # Draw dot that indicates which data node the user is gathering information from
                     track_subplot.lines[-1].remove()
@@ -718,7 +769,7 @@ class track():
         # Connect the mouse movement event to the on_hover function
         track_canvas.mpl_connect("motion_notify_event", on_hover)
 
-        ui.load_track()
+        ui_instance.load_track()
 
     def get_cost(self):
         cost = 0
@@ -758,7 +809,8 @@ class track():
         print()
 
     def run_sim(self, car, nodes = 5000, start = 0, end = 0):
-        self.car = car
+        global racecar
+        racecar = car
 
         if end == 0:
             end = len(self.arcs)
@@ -780,7 +832,8 @@ class track():
             i.compute()
 
     def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
-        self.car = car
+        global racecar
+        racecar = car
 
         # setup for position vs velocity plot
         self.run_sim(car, nodes, start, end)

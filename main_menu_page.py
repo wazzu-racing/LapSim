@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 from import_generated_track_page import ImportGeneratedTrackPage
 from import_track_image_page import ImportTrackImagePage
 from import_notgenerated_track_page import ImportNotGeneratedTrackPage
+from import_track_page import ImportTrackPage
 from manage_lapsim_page import ManageLapSimPage
 from track_import_method_page import TrackImportMethodPage
 from create_new_car_page import CreateNewCarPage
@@ -45,7 +46,7 @@ class PageStack(tkinter.Tk):
 
         # stores the pages
         self.frames = {}
-        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, TrackImportMethodPage, ImportNotGeneratedTrackPage, ImportGeneratedTrackPage, ImportTrackImagePage):
+        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, TrackImportMethodPage, ImportNotGeneratedTrackPage, ImportTrackPage):
             # Basic Setup for each page
             page_name = F.__name__
             frame = F(parent=container, controller=self)

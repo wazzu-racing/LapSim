@@ -1,28 +1,48 @@
 import tkinter
+from copy import deepcopy
+from tkinter import filedialog
 
 import numpy as np
 import pickle
 
+from PIL.ImageOps import expand
+
+import display_trk
+from LapData import LapData
+from files import get_file_from_user, get_save_files_folder_abs_dir
+
 class CarSettingsWindow:
 
-    def __init__(self, car, car_file_path, save_car):
-        self.root = tkinter.Tk() # For window of graph and viewable values
+    def __init__(self, display_track = None, lap_data = None, car = None):
+        self.root = tkinter.Toplevel() # For winsow of graph and viewable values
         self.root.title("Car Settings")
 
-        self.save_car = save_car
+        self.display_track = display_track
 
-        self.canvas = tkinter.Canvas(master=self.root)
+        self.lap_data = lap_data
+
+        self.entries_list = []
+
+        # Absolute path to saved_files folder.
+        self.initial_dir = ""
+        self.set_initial_dir()
+
+        self.canvas = tkinter.Canvas(master=self.root, width=500, height=500)
         self.canvas.pack(side="left", fill="both", expand=True)
 
         scrollbar = (tkinter.Scrollbar(self.root, orient="vertical", command=self.canvas.yview))
         scrollbar.pack(side="right", fill="y")
         self.canvas.config(yscrollcommand=scrollbar.set)
 
-        self.scrollable_frame = tkinter.Frame(self.canvas)
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.scrollable_frame = tkinter.Frame(self.canvas, width=500, height=500)
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="center")
 
-        self.car = car
-        self.car_file_path = car_file_path
+        if car is not None:
+            self.car = car
+            self.car_file_path = self.car.file_location
+        else:
+            self.car = lap_data.car
+            self.car_file_path = lap_data.car.file_location
 
         # Variables for each entry on screen
         self.settings = {
@@ -46,14 +66,19 @@ class CarSettingsWindow:
             "front_static_camber": tkinter.DoubleVar(self.root, value=self.car.CMB_STC_F),
             "rear_static_camber": tkinter.DoubleVar(self.root, value=self.car.CMB_STC_R),
             "max_front_jounce": tkinter.DoubleVar(self.root, value=self.car.max_jounce_f),
-            "max_rear_jounce": tkinter.DoubleVar(self.root, value=self.car.max_jounce_r)
+            "max_rear_jounce": tkinter.DoubleVar(self.root, value=self.car.max_jounce_r),
+            "rolling_resistance_coefficient":tkinter.DoubleVar(self.root, value=self.car.C_rr),
         }
+
+        # Units for each variable per row
+        self.units = ["", "lbs", "lbs", "lbs", "lbs", "in", "in", "in", "in", "in", "in", "in", "lb/in", "lb/in", "lb*ft/deg","lb*ft/deg", "deg/in", "deg/in", "deg", "deg", "in", "in", "unitless"]
 
         # Grid each label and entries into window
         row = 1
         for name, var in self.settings.items():
             # Create a readable label from the key
             label_text = name.replace("_", " ").title()
+            label_text += f" ({self.units[row]})"
 
             # Create label
             label = tkinter.Label(self.scrollable_frame, text=label_text)
@@ -62,8 +87,20 @@ class CarSettingsWindow:
             # Create entry and bind it to the tkinter variable
             entry = tkinter.Entry(self.scrollable_frame, textvariable=var, width=15)
             entry.grid(row=row, column=2, padx=5, pady=5)
+            self.entries_list.append(entry)
 
             row += 1  # move to next row
+
+        if display_track is not None:
+            change_car_button = tkinter.Button(self.scrollable_frame, text="Change Car", command= lambda: self.get_car_file())
+            change_car_button.grid(row=23, column=1, pady=(50, 0), sticky="N")
+
+            self.change_car_label = tkinter.Label(self.scrollable_frame, text="Car imported!", fg="Green")
+            self.change_car_label.grid(row=23, column=2, pady=(50, 0), sticky="W")
+            self.change_car_label.grid_remove()
+
+        apply_and_reload_button = tkinter.Button(self.scrollable_frame, text="Apply and Reload", command= lambda: self.apply_changes_and_run_lapsim() if display_track is not None else self.apply_changes())
+        apply_and_reload_button.grid(row=24, column=1, pady=(50, 0), sticky="N")
 
         # Set rows and columns for all widgets in window. This organizes widgets on screen.
         self.scrollable_frame.rowconfigure(0, weight=1)
@@ -88,7 +125,11 @@ class CarSettingsWindow:
         self.scrollable_frame.rowconfigure(19, weight=0)
         self.scrollable_frame.rowconfigure(20, weight=0)
         self.scrollable_frame.rowconfigure(21, weight=0)
-        self.scrollable_frame.rowconfigure(22, weight=1)
+        self.scrollable_frame.rowconfigure(22, weight=0)
+        self.scrollable_frame.rowconfigure(23, weight=0)
+        self.scrollable_frame.rowconfigure(24, weight=0)
+        self.scrollable_frame.rowconfigure(25, weight=0)
+        self.scrollable_frame.rowconfigure(26, weight=1)
         self.scrollable_frame.columnconfigure(0, weight=1)
         self.scrollable_frame.columnconfigure(1, weight=0)
         self.scrollable_frame.columnconfigure(2, weight=0)
@@ -102,8 +143,12 @@ class CarSettingsWindow:
         # Only allow the user to hide the window, not close it
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
+    # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
+    def set_initial_dir(self):
+        self.initial_dir = get_save_files_folder_abs_dir()
+
     # Apply the changes that the user has made to the settings in the window to the car object and save it in the existing car pkl.
-    def apply_changes(self):
+    def apply_changes(self, save_car_file = False):
         self.car.W_1 = self.settings["front_left_wheel_weight"].get()
         self.car.W_2 = self.settings["front_right_wheel_weight"].get()
         self.car.W_3 = self.settings["rear_left_wheel_weight"].get()
@@ -117,14 +162,15 @@ class CarSettingsWindow:
         self.car.t_r = self.settings["rear_track_width"].get()
         self.car.K_RF = self.settings["front_ride_rate"].get()
         self.car.K_RR = self.settings["rear_ride_rate"].get()
-        self.car.K_rollF = self.settings["front_roll_rate"].get()
-        self.car.K_rollR = self.settings["rear_roll_rate"].get()
+        self.car.K_rollF = self.settings["front_roll_rate"].get() * np.pi/180
+        self.car.K_rollR = self.settings["rear_roll_rate"].get() * np.pi/180
         self.car.CMB_RT_F = self.settings["front_camber_rate"].get()
         self.car.CMB_RT_R = self.settings["rear_camber_rate"].get()
         self.car.CMB_STC_F = self.settings["front_static_camber"].get()
         self.car.CMB_STC_R = self.settings["rear_static_camber"].get()
         self.car.max_jounce_f = self.settings["max_front_jounce"].get()
         self.car.max_jounce_r = self.settings["max_rear_jounce"].get()
+        self.car.C_rr = self.settings["rolling_resistance_coefficient"].get()
 
         # Converting roll rates to ft*lb/rad
         self.car.K_rollF *= 180/np.pi
@@ -146,14 +192,74 @@ class CarSettingsWindow:
 
         self.car.compute_traction()
 
-        if self.car_file_path:
-            with(open(self.car_file_path, 'wb') as f):
-                pickle.dump(obj=self.car, file=f)
+        if save_car_file:
+            if self.car_file_path:
+                with(open(self.car_file_path, 'wb') as f):
+                    pickle.dump(obj=self.car, file=f)
+
+        self.close_window()
+
+    def change_vars_to_car(self, car):
+        self.car = car
+        self.settings = {
+            "front_left_wheel_weight": tkinter.DoubleVar(self.root, value=self.car.W_1),
+            "front_right_wheel_weight": tkinter.DoubleVar(self.root, value=self.car.W_2),
+            "rear_left_wheel_weight": tkinter.DoubleVar(self.root, value=self.car.W_3),
+            "rear_right_wheel_weight": tkinter.DoubleVar(self.root, value=self.car.W_4),
+            "length_of_wheelbase": tkinter.DoubleVar(self.root, value=self.car.l),
+            "cg_height": tkinter.DoubleVar(self.root, value=self.car.h),
+            "cg_to_roll_axis_height": tkinter.DoubleVar(self.root, value=self.car.H),
+            "front_roll_axis_height": tkinter.DoubleVar(self.root, value=self.car.z_rf),
+            "rear_roll_axis_height": tkinter.DoubleVar(self.root, value=self.car.z_rr),
+            "front_track_width": tkinter.DoubleVar(self.root, value=self.car.t_f),
+            "rear_track_width": tkinter.DoubleVar(self.root, value=self.car.t_r),
+            "front_ride_rate": tkinter.DoubleVar(self.root, value=self.car.K_RF),
+            "rear_ride_rate": tkinter.DoubleVar(self.root, value=self.car.K_RR),
+            "front_roll_rate": tkinter.DoubleVar(self.root, value=self.car.K_rollF),
+            "rear_roll_rate": tkinter.DoubleVar(self.root, value=self.car.K_rollR),
+            "front_camber_rate": tkinter.DoubleVar(self.root, value=self.car.CMB_RT_F),
+            "rear_camber_rate": tkinter.DoubleVar(self.root, value=self.car.CMB_RT_R),
+            "front_static_camber": tkinter.DoubleVar(self.root, value=self.car.CMB_STC_F),
+            "rear_static_camber": tkinter.DoubleVar(self.root, value=self.car.CMB_STC_R),
+            "max_front_jounce": tkinter.DoubleVar(self.root, value=self.car.max_jounce_f),
+            "max_rear_jounce": tkinter.DoubleVar(self.root, value=self.car.max_jounce_r),
+            "rolling_resistance_coefficient":tkinter.DoubleVar(self.root, value=self.car.C_rr),
+        }
+        index = 0
+        for key, value in self.settings.items():
+            self.entries_list[index].grid_forget()
+            self.entries_list[index] = tkinter.Entry(self.scrollable_frame, textvariable=self.settings[key])
+            self.entries_list[index].grid(row=index+1, column=2, padx=5, pady=5)
+            index += 1
+
+    def get_car_file(self):
+        file = filedialog.askopenfilename(title="Pick a car file", filetypes=[("Pickle file", "*.pkl")], defaultextension=".pkl")
+        if file:
+            with open(file, "rb") as f:
+                self.car = pickle.load(f)
+                print(f"t_f: {self.car.t_f}")
+            self.change_vars_to_car(self.car)
+            self.change_car_label.grid()
 
     def open_window(self):
         self.root.deiconify() # Show the window
 
     def close_window(self):
-        self.apply_changes()
-        self.save_car()
+        try:
+            self.change_car_label.grid_remove()
+        except Exception:
+            pass
         self.root.withdraw()
+        self.root.withdraw()
+
+    def apply_changes_and_run_lapsim(self):
+        # Make a prev_lap_data var
+        prev_lap_data = LapData(self.lap_data.points)
+        prev_lap_data.generated_track = self.lap_data.generated_track
+        prev_lap_data.generated_track.sim.lapsim_data_storage = deepcopy(self.lap_data.generated_track.sim.lapsim_data_storage)
+        prev_lap_data.car = deepcopy(self.car)
+
+        self.apply_changes(save_car_file=False)
+        self.lap_data.car = self.car
+        self.change_vars_to_car(self.car)
+        self.display_track.create_and_show_notgenerated_track(display_track=self.display_track, lap_data=self.lap_data, prev_lap_data=prev_lap_data)

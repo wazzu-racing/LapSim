@@ -138,6 +138,7 @@ class car():
             with open(os.path.join("Data", "pkl", "Models", "DEFAULT_DRIVETRAIN.pkl"), 'wb') as f:
                 pickle.dump(self.drivetrain, f)
 
+        self.file_location = ""
 
         self.aero_arr.reverse()
         self.compute_traction()

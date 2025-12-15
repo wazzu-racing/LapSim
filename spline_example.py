@@ -41,6 +41,8 @@ else:
             trk = pickle.load(f)
     with open('../Saved_Files/DEFAULT_CAR.pkl', 'rb') as f:
             car = pickle.load(f)
+    car.file_location = '../Saved_Files/DEFAULT_CAR.pkl'
+
     trk.plot()
     trk.plt_sim(car)
     print(trk.t)
