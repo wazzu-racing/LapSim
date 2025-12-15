@@ -805,6 +805,7 @@ class track():
 
     def adjust_track(self, itterations, step):
         global len_s, k
+        k = 0
 
         s = []
         for i in range(len(itterations)):
