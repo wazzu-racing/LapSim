@@ -34,8 +34,6 @@ class CreateNewCarPage(tkinter.Frame):
 
         self.settings_window = CarSettingsWindow(car=self.car)
 
-        controller.title("Vehicle Dynamics - Create New Car")
-
         # Make and pack "Create New Car" label
         self.label = tkinter.Label(self, text="Create New Car", font=("Ariel", 48), bg="Black", fg="White")
         self.label.grid(row=1, column=1)

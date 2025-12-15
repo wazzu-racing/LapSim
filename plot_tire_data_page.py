@@ -80,8 +80,6 @@ class PlotTireDataPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Plot Tire Data")
-
         # Make and pack "Import Tire Files" label
         label = tkinter.Label(self, text="Plot Tire Data", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)

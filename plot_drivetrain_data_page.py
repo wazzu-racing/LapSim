@@ -74,8 +74,6 @@ class PlotDrivetrainDataPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Plot Drivetrain Data")
-
         # Make and pack "Plot Drivetrain Data" label
         label = tkinter.Label(self, text="Plot Drivetrain Data", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)

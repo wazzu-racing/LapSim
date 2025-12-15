@@ -41,8 +41,6 @@ class ImportTrackImagePage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Import Track Image")
-
         # Make and pack "Import Image" label
         label = tkinter.Label(self, text="Import Track Image", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)

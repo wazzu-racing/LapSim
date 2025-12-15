@@ -4,10 +4,8 @@ import matplotlib as mat
 
 from PIL import Image, ImageTk
 
-from import_generated_track_page import ImportGeneratedTrackPage
-from import_track_image_page import ImportTrackImagePage
-from import_notgenerated_track_page import ImportNotGeneratedTrackPage
 from import_track_page import ImportTrackPage
+from loading_window import LoadingWindow
 from manage_lapsim_page import ManageLapSimPage
 from track_import_method_page import TrackImportMethodPage
 from create_new_car_page import CreateNewCarPage
@@ -31,7 +29,7 @@ class PageStack(tkinter.Tk):
         mat.use('TkAgg')
 
         # Basic setup
-        self.title("Vehicle Dynamics - Main Menu")
+        self.title("LAPSIM")
         self.geometry("1000x500")
         self.configure(bg="Black")
 
@@ -46,7 +44,7 @@ class PageStack(tkinter.Tk):
 
         # stores the pages
         self.frames = {}
-        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, TrackImportMethodPage, ImportNotGeneratedTrackPage, ImportTrackPage):
+        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, TrackImportMethodPage, ImportTrackPage):
             # Basic Setup for each page
             page_name = F.__name__
             frame = F(parent=container, controller=self)
@@ -95,9 +93,6 @@ class MainMenuPage(tkinter.Frame):
     def __init__(self, parent, controller):
         # Init to initialize itself as a Frame
         super().__init__(parent)
-
-        # Set window title
-        controller.title("Vehicle Dynamics - Main Menu")
 
         # Get the directory of relative path to images
         image_path = "Images/wazzu_racing_logo.PNG"

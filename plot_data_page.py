@@ -6,8 +6,6 @@ class PlotDataPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Plot Data")
-
         # Make and pack "Plot Data" label
         label = tkinter.Label(self, text="Plot Data", font=("Ariel", 48), bg="Black", fg="White")
         label.pack(pady=0)

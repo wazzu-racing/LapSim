@@ -1,4 +1,5 @@
 import pickle
+import threading
 
 import numpy as np
 import math
@@ -14,6 +15,7 @@ import csv
 
 from files import get_file_from_user
 from car_settings_window import CarSettingsWindow
+from loading_window import LoadingWindow
 from max_values_window import MaxValuesWindow
 from report_window import ReportWindow
 
@@ -31,6 +33,12 @@ y_array = []
 
 racecar = None
 
+loading_window = None
+
+# Global variables to keep track of track loading in other files
+len_s = 0
+k = 0
+
 class LapSimUI:
 
     # MAKE AN INIT FUNCTION FOR THIS CONSTRUCTOR TO CLEAR FIGURE WHEN CLOSING WINDOW
@@ -40,7 +48,7 @@ class LapSimUI:
         track_root = tkinter.Tk() # For window of graph and viewable values
         track_root.title("Graph")
 
-        track_fig = Figure(figsize=(5, 4), dpi=100) # Adjust figsize and dpi as needed
+        track_fig = Figure(figsize=(8, 7), dpi=100) # Adjust figsize and dpi as needed
         track_subplot = track_fig.add_subplot(111) # Add a track_subplot to the figure
         track_canvas = FigureCanvasTkAgg(track_fig, master=track_root)
 
@@ -58,6 +66,9 @@ class LapSimUI:
         # Create a toplevel window for max values
         self.max_values_window = None
 
+        # Create a toplevel window for loading
+        self.loading_window = LoadingWindow()
+
         # initialize dir that file dialogs open to
         self.initial_dir = ""
 
@@ -65,6 +76,9 @@ class LapSimUI:
         self.lap_data = None
 
         self.display_track = display_track
+
+        # initialize the loading window
+        self.initialize_loading_window()
 
         # Only allow the user to hide the LapSim UI and CSV windows, not close it
         track_root.protocol("WM_DELETE_WINDOW", self.close_LapsimUI_window)
@@ -164,12 +178,15 @@ class LapSimUI:
     def open_max_values_window(self):
         # Init max values window
         if self.max_values_window is None:
-            print(f"Opening Max Values window")
             # Create a toplevel window for max values
             self.max_values_window = MaxValuesWindow(self.lap_data)
-        print(f"Opening not non Max Values window")
         # Open max values window
         self.max_values_window.open_window()
+
+    def initialize_loading_window(self):
+        global loading_window
+        if loading_window is None:
+            loading_window = LoadingWindow()
 
     def download_csv(self, arr_bool):
         print("Download CSV")
@@ -387,7 +404,7 @@ class node():
         self.vy = 1
 
         self.update_shift()
-    
+
     def update_shift(self):
         # if the car's width cannot fit within the gates, change node point to the closest it can be to the turn
         if self.shift > self.dist-self.car_rad:
@@ -395,7 +412,7 @@ class node():
         # if the distance between the center and outline of the gates is smaller than the car's width, change node point to the car's width (closest the car can be to the turn)
         elif self.shift < self.car_rad:
             self.shift = self.car_rad
-        
+
         self.x = self.x1 + (self.x2 - self.x1) * self.shift / self.dist
         self.y = self.y1 + (self.y2 - self.y1) * self.shift / self.dist
 
@@ -403,7 +420,7 @@ class node():
             v = self.v_min /(self.vx**2 + self.vy**2)**0.5
             self.vx *= v
             self.vy *= v
-    
+
     def start_shift(self):
         m1 = 0
         if self.x2 == self.x1:
@@ -424,7 +441,7 @@ class node():
         else:
             self.shift = self.dist * ((b2-b1)/(m1-m2) - self.x1) / (self.x2 - self.x1)
         self.update_shift()
-        
+
     def start_v(self):
         #if abs(self.x - self.prev_nd.x) < abs(self.next_nd.x - self.x):
         #    self.vx = (self.x - self.prev_nd.x) / 2**0.5
@@ -445,7 +462,7 @@ class node():
 
         self.d_shift = ((self.next_arc.dcx[0] + self.next_arc.dcx[1] + self.prev_arc.dcx[2]) * (self.x2 - self.x1) +
                         (self.next_arc.dcy[0] + self.next_arc.dcy[1] + self.prev_arc.dcy[2]) * (self.y2 - self.y1)) / self.dist
-        
+
         if ((self.shift >= self.dist) and (self.d_shift < 0)) or ((self.shift <= 0) and (self.d_shift > 0)):
             self.shift = 0
 
@@ -460,13 +477,13 @@ class curve():
         self.s_dA = [[],[],[],[]]
         self.ds_dA = [[],[],[],[]]
         self.dds_dA = [[],[],[],[]]
-            
+
         for t in np.linspace(0, 1, self.elem):
             self.s_dA[0].append(1 - 3*t + 3*t**2 - t**3)
             self.s_dA[1].append(3*t - 6*t**2 + 3*t**3)
             self.s_dA[2].append(3*t**2 - 3*t**3)
             self.s_dA[3].append(t**3)
-            
+
             self.ds_dA[0].append(-3 + 6*t - 3*t**2)
             self.ds_dA[1].append(3 - 12*t + 9*t**2)
             self.ds_dA[2].append(6*t - 9*t**2)
@@ -478,7 +495,7 @@ class curve():
             self.dds_dA[3].append(6*t)
 
         self.compute()
-    
+
     def compute(self):
         n1 = self.n1
         n2 = self.n2
@@ -495,7 +512,7 @@ class curve():
         self.dcy = [0, 0, 0, 0]
 
         self.c = 0
-        
+
         for i in range(0, self.elem):
             self.x.append(p1x * self.s_dA[0][i] + p2x * self.s_dA[1][i] + p3x * self.s_dA[2][i] + p4x * self.s_dA[3][i])
             self.y.append(p1y * self.s_dA[0][i] + p2y * self.s_dA[1][i] + p3y * self.s_dA[2][i] + p4y * self.s_dA[3][i])
@@ -519,7 +536,7 @@ class curve():
             H = 1
             if self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i] < 0:
                 H = -1
-            
+
             for j in range(4):
                 #d_num = (self.ds_dA[j][i] * self.ddy[i] - self.dds_dA[j][i] * self.dy[i]) / (2 * num * H)
                 #d_dom = (self.ds_dA[j][i] * self.dx[i]) / (2 * dom**3)
@@ -528,7 +545,7 @@ class curve():
                 d_dom = 5 * (self.ds_dA[j][i] * self.dx[i]) * (self.dx[i]**2 + self.dy[i]**2)**1.5
                 dc = (d_num * dom - d_dom * num) / dom**2
                 self.dcx[j] += dc / self.elem
-            
+
             for j in range(4):
                 #d_num = (self.dds_dA[j][i] * self.dx[i] - self.ds_dA[j][i] * self.ddx[i]) / (2 * num * H)
                 #d_dom = (self.ds_dA[j][i] * self.dy[i]) / (2 * dom**3)
@@ -546,7 +563,7 @@ class curve():
             len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
 
         return(len, rad)
-    
+
     def plot(self):
         track_subplot.plot(self.x, self.y)
 
@@ -584,8 +601,11 @@ class track():
 
         racecar = car
 
-        # Create a toplevel window for REPRT
+        # Create a toplevel window for REPORT
         self.report_window = None
+
+        # create a toplevel window for loading
+        self.loading_window = None
 
         # Get the minimum distance the CG of the car needs from the apex of the turn
         self.car_rad = np.max([racecar.t_r, racecar.t_f])/2
@@ -633,6 +653,11 @@ class track():
 
     def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, save_file_func=None):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
+
+        # Clear figures and plots by setting them equal to new ones
+        track_fig = Figure(figsize=(8, 7), dpi=100) # Adjust figsize and dpi as needed
+        track_subplot = track_fig.add_subplot(111)
+        track_canvas = FigureCanvasTkAgg(track_fig, master=track_root)
 
         self.lap_data = lap_data_stuff
 
@@ -728,6 +753,7 @@ class track():
             # Save track into lap_data file
             save_lap_data_func()
 
+        # Grab the lapsim_data_storage vars from generated track if generated track has already been made
         if self.lap_data.generated_track is not None:
             self.sim.lapsim_data_storage = self.lap_data.generated_track.sim.lapsim_data_storage
 
@@ -778,12 +804,16 @@ class track():
         return cost
 
     def adjust_track(self, itterations, step):
+        global len_s, k
+
         s = []
         for i in range(len(itterations)):
             for j in range(itterations[i]):
                 s += [step[i]]
 
-        for k in range(len(s)):
+        len_s = len(s)
+
+        while k < len_s:
             step = s[k]
 
             grad_mag = 0
@@ -806,6 +836,7 @@ class track():
                 else: progress_bar += '#'
             progress_bar += '] ' + str(int((k+1.1) * 100 / len(s))) + '%\tcost = ' + str(self.get_cost())
             print(progress_bar, end='\r')
+            k+=1
         print()
 
     def run_sim(self, car, nodes = 5000, start = 0, end = 0):

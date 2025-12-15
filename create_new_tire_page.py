@@ -75,8 +75,6 @@ class CreateNewTirePage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Create New Tire")
-
         # Make and pack "Create New Tire" label
         label = tkinter.Label(self, text="Create New Tire", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)

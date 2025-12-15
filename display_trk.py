@@ -1,8 +1,13 @@
+import threading
+
 import spline_track as spln
 from LapData import LapData
 import pickle
+import time
 
 from files import get_file_from_user, get_save_files_folder_abs_dir
+from loading_window import LoadingWindow
+
 
 class DisplayTrack:
 
@@ -57,6 +62,8 @@ class DisplayTrack:
 
     def create_and_show_notgenerated_track(self,display_track, lap_data, prev_lap_data = None):
 
+        x = None
+
         # Function that saves lap_data from generated track. Used later in function as argument.
         def save_lap_data():
             # Save updated lap_data instance with generated track
@@ -79,14 +86,28 @@ class DisplayTrack:
         #run sim to get data
         self.notgenerated_trk.run_sim(car=lap_data.car, nodes=self.nodes)
 
+        self.loading_window = LoadingWindow()
+        self.loading_window.open_window()
+
         # optimizing track
         if len(self.points_x) > 10:
-            self.notgenerated_trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
+            x = threading.Thread(target=self.notgenerated_trk.adjust_track, args=([40, 30, 30, 80],[100, 30, 10, 5],))
+            x.daemon = True
+            x.start()
 
-        if prev_lap_data is None:
-            self.notgenerated_trk.plot(lap_data_stuff=lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
-        else:
-            self.notgenerated_trk.plot(lap_data_stuff=lap_data, prev_lap_data=prev_lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
+        def update_loading_window():
+            if x.is_alive():
+                self.loading_window.update_loading(spln.k / spln.len_s * 100)
+                spln.track_root.after(100, update_loading_window)
+            else:
+                self.loading_window.update_loading(100)
+
+                if prev_lap_data is None:
+                    self.notgenerated_trk.plot(lap_data_stuff=lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
+                else:
+                    self.notgenerated_trk.plot(lap_data_stuff=lap_data, prev_lap_data=prev_lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
+
+        update_loading_window()
 
     def create_and_show_generated_track(self, display_track, lap_data):
         # close track graph if open, also need this if statement to run without errors

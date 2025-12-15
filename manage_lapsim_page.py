@@ -16,8 +16,6 @@ class ManageLapSimPage(tkinter.Frame):
         # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
         self.initial_dir = get_save_files_folder_abs_dir()
 
-        controller.title("Vehicle Dynamics - Manage LapSim")
-
         # Make and pack "Manage LapSim" label
         label = tkinter.Label(self, text="Manage LapSim", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1, pady=0)

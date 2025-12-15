@@ -7,8 +7,6 @@ class ManageDataPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Manage Data")
-
         # Make and pack "Manage Data" label
         label = tkinter.Label(self, text="Manage Data", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1, pady=0)

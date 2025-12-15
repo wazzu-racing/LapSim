@@ -65,8 +65,6 @@ class CreateNewDrivetrainPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Create New Drivetrain")
-
         # Make and pack "Create New Drivetrain" label
         label = tkinter.Label(self, text="Create New Drivetrain", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)

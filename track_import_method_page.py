@@ -7,8 +7,6 @@ class TrackImportMethodPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        controller.title("Vehicle Dynamics - Choose Track Import Method")
-
         # Make and pack "Choose Track Import Method" label
         label = tkinter.Label(self, text="Choose Track Import Method", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)

@@ -38,8 +38,6 @@ class ImportTrackPage(tkinter.Frame):
 
         self.ui = LapSimUI(self.display_track) # Run LapSimUI to initialize base UI elements like track_root, track_canvas, etc.
 
-        controller.title("Vehicle Dynamics - Import Track")
-
         self.initialize_first_widgets()
 
         # Configure grid to center all widgets

@@ -25,7 +25,3 @@ with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSi
     new_track_data = LapData(points_4)
     with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/skidpad_trk.pkl", "wb") as p:
         pickle.dump(new_track_data, p)
-
-# with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/autocross_trk.pkl", "rb") as j:
-#     lap = pickle.load(j)
-#     print(f"{lap.generated_track}")
