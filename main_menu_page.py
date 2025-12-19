@@ -8,7 +8,6 @@ from import_track_image_page import ImportTrackImagePage
 from import_track_page import ImportTrackPage
 from loading_window import LoadingWindow
 from create_new_car_page import CreateNewCarPage
-from create_new_drivetrain_page import CreateNewDrivetrainPage
 from manage_data_page import ManageDataPage
 from manage_tracks_page import ManageTracksPage
 from plot_car_data_page import PlotCarDataPage
@@ -39,7 +38,7 @@ class PageStack(tkinter.Tk):
         container.pack(expand=True)
 
         # Stores all pages available in the LAPSIM
-        self.pages = (MainMenuPage, ManageDataPage, PlotDataPage, PlotDrivetrainDataPage, PlotCarDataPage, PlotTireDataPage, CreateNewDrivetrainPage, CreateNewCarPage, ManageTracksPage, ImportTrackPage, ImportTrackImagePage)
+        self.pages = (MainMenuPage, ManageDataPage, PlotDataPage, PlotDrivetrainDataPage, PlotCarDataPage, PlotTireDataPage, CreateNewCarPage, ManageTracksPage, ImportTrackPage, ImportTrackImagePage)
         # Stores the current page as a string
         self.current_page = "MainMenuPage"
         # Stores the page hierarchy that the user is current at.

@@ -1,11 +1,6 @@
 import numpy as np
 import copy
 
-from dataclasses import dataclass
-
-pi = np.pi
-
-
 class LapSimData:
     def __init__(self):
         # Array for time t

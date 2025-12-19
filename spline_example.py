@@ -29,7 +29,7 @@ if txt_input == 'n':
     while (txt_input != 'y') and (txt_input != 'n'):
         txt_input = input('save track?: ')
     if txt_input == 'y':
-        with open('Data/pkl/Tracks/autocross_trk.pkl', 'wb') as f:
+        with open('Data/Tracks/autocross_trk.pkl', 'wb') as f:
             pickle.dump(trk, f)
         print('[Track Saved.]')
     else:
@@ -37,7 +37,7 @@ if txt_input == 'n':
 
 else:
     print('[Loading Track...]')
-    with open('Data/pkl/Tracks/autocross_trk.pkl', 'rb') as f:
+    with open('Data/Tracks/autocross_trk.pkl', 'rb') as f:
             trk = pickle.load(f)
     with open('../Saved_Files/DEFAULT_CAR.pkl', 'rb') as f:
             car = pickle.load(f)

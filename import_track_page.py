@@ -5,18 +5,8 @@ from tkinter import filedialog
 import pickle
 
 from display_trk import DisplayTrack
-from files import get_save_files_folder_abs_dir
+from files import get_models_abs_dir, get_tracks_abs_dir
 from spline_track import LapSimUI
-
-initial_dir = ""
-
-# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-def set_initial_dir():
-    global initial_dir
-
-    initial_dir = get_save_files_folder_abs_dir()
-
-set_initial_dir()
 
 class ImportTrackPage(tkinter.Frame):
 
@@ -59,20 +49,25 @@ class ImportTrackPage(tkinter.Frame):
         self.label = tkinter.Label(self, text="Import Track", font=("Ariel", 48), bg="Black", fg="White")
         self.label.grid(row=1, column=1)
 
-        #  Make and pack "Import Track" button
+        # Make and pack "Import Track" button
         self.button = tkinter.Button(self, text="Import Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: self.select_file(is_car_file=False))
         self.button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Track" button above.
-        self.track_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
+        self.track_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
     def select_file(self,is_car_file=False):
-        global initial_dir
 
         if self.track_check is None:
             self.initialize_first_widgets()
-        # Asks the user to choose a pkl file to create the track object with.
-        file_path = filedialog.askopenfilename(title="Select a file", initialdir=initial_dir, filetypes=[("Pickle files", "*.pkl")])
+
+        if is_car_file:
+            # Asks the user to choose a car file to create the LapData object with.
+            file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_models_abs_dir(), filetypes=[("Pickle files", "*.pkl")])
+        else:
+            # Asks the user to choose a track file to create the LapData object with.
+            file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_tracks_abs_dir(), filetypes=[("Pickle files", "*.pkl")])
+
         # if the file_path is not nothing, the car/track file is saved and the user is used to make the track object.
         if file_path:
             # Store the file path in the appropriate variable and show that the file has been imported

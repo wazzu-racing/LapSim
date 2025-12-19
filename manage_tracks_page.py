@@ -2,7 +2,6 @@ import tkinter
 from tkinter import filedialog
 
 from lapsim_go_crazy import LapSimGoCrazy
-from files import get_save_files_folder_abs_dir
 
 class ManageTracksPage(tkinter.Frame):
 
@@ -11,12 +10,7 @@ class ManageTracksPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        self.initial_dir = ""
-
         self.edit_lapsim_go_crazy_window = None
-
-        # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-        self.initial_dir = get_save_files_folder_abs_dir()
 
         # Make and pack "Manage LapSim" label
         label = tkinter.Label(self, text="Manage Tracks", font=("Ariel", 48), bg="Black", fg="White")
@@ -53,7 +47,7 @@ class ManageTracksPage(tkinter.Frame):
 
     def get_file_from_user(self):
         # Asks the user to choose an image file to create the track with.
-        file_path = filedialog.askopenfilename(title="Select the track", initialdir=self.initial_dir, filetypes=[("Pickle files", "*.pkl")])
+        file_path = filedialog.askopenfilename(title="Select the track", filetypes=[("Pickle files", "*.pkl")])
         # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
         if file_path:
             return file_path

@@ -2,28 +2,18 @@ import tkinter
 from tkinter import filedialog
 
 from lapsim_go_crazy import LapSimGoCrazy
-from files import get_save_files_folder_abs_dir
+from files import get_track_images_abs_dir
 
 plot_button = None
 
 image_file = ""
 image_check = None
 
-initial_dir = ""
-
-# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-def set_initial_dir():
-    global initial_dir
-
-    initial_dir = get_save_files_folder_abs_dir()
-
-set_initial_dir()
-
 def select_file():
-    global image_file, image_check, plot_button, initial_dir
+    global image_file, image_check, plot_button
 
     # Asks the user to choose an image file to create the track with.
-    file_path = filedialog.askopenfilename(title="Select a file", filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
+    file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_track_images_abs_dir(), filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
     # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
     if file_path:
         # enable plot button if file is selected

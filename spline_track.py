@@ -69,9 +69,6 @@ class LapSimUI:
         # Create a toplevel window for loading
         self.loading_window = LoadingWindow()
 
-        # initialize dir that file dialogs open to
-        self.initial_dir = ""
-
         # LapData
         self.lap_data = None
 
@@ -193,131 +190,134 @@ class LapSimUI:
 
         user_file_loc = get_file_from_user(self, file_types=[("CSV File", "*.csv")], default_exension="*.csv")
 
-        with(open(user_file_loc, "w", newline='')) as csv_file:
-            writer = csv.writer(csv_file, dialect='unix')
-            header_array = []
-            writing_data = []
-            for i in range(len(arr_bool)): # Initialize writing_data with empty lists for each selected data type
-                writing_data.append([])
-            for i in range(len(arr_bool)):
-                if arr_bool[i].get():
-                    match i:
-                        case 0:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.time_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.time_array[index]))
-                                array_2.append(array)
-                            writing_data[0] = array_2
-                            header_array.extend(["Time"])
-                        case 1:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.AX):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AX[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AY[index]))
-                                array_2.append(array)
-                            writing_data[1] = array_2
-                            header_array.extend(["Axial Acceleration", "Lateral Acceleration"])
-                        case 2:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_load_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_load_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_load_array[index]))
-                                array_2.append(array)
-                            writing_data[2] = array_2
-                            header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"])
-                        case 3:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_FY_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_FY_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FY_array[index]))
-                                array_2.append(array)
-                            writing_data[3] = array_2
-                            header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"])
-                        case 4:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_FX_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_FX_array[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FX_array[index]))
-                                array_2.append(array)
-                            writing_data[4] = array_2
-                            header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"])
-                        case 5:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector[index]))
-                                array_2.append(array)
-                            writing_data[5] = array_2
-                            header_array.extend(["Front outer force vector", "Front inner force vector", "Rear outer force vector", "Rear inner force vector"])
-                        case 6:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector_mag[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector_mag[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector_mag[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_mag[index]))
-                                array_2.append(array)
-                            writing_data[6] = array_2
-                            header_array.extend(["Front outer force magnitude", "Front inner force magnitude", "Rear outer force magnitude", "Rear inner force magnitude"])
-                        case 7:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector_dir[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector_dir[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector_dir[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_dir[index]))
-                                array_2.append(array)
-                            writing_data[7] = array_2
-                            header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"])
-                        case 8:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_2_dis[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_4_dis[index]))
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_3_dis[index]))
-                                array_2.append(array)
-                            writing_data[5] = array_2
-                            header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
-                        case 9:
-                            array_2 = []
-                            for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel):
-                                array = []
-                                array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel[index]))
-                                array_2.append(array)
-                            writing_data[6] = array_2
-                            header_array.extend(["Theta of Force on Car"])
+        if user_file_loc:
+            with(open(user_file_loc, "w", newline='')) as csv_file:
+                writer = csv.writer(csv_file, dialect='unix')
+                header_array = []
+                writing_data = []
+                for i in range(len(arr_bool)): # Initialize writing_data with empty lists for each selected data type
+                    writing_data.append([])
+                for i in range(len(arr_bool)):
+                    if arr_bool[i].get():
+                        match i:
+                            case 0:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.time_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.time_array[index]))
+                                    array_2.append(array)
+                                writing_data[0] = array_2
+                                header_array.extend(["Time"])
+                            case 1:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.AX):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AX[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AY[index]))
+                                    array_2.append(array)
+                                writing_data[1] = array_2
+                                header_array.extend(["Axial Acceleration", "Lateral Acceleration"])
+                            case 2:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_load_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_load_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_load_array[index]))
+                                    array_2.append(array)
+                                writing_data[2] = array_2
+                                header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"])
+                            case 3:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_FY_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_FY_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FY_array[index]))
+                                    array_2.append(array)
+                                writing_data[3] = array_2
+                                header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"])
+                            case 4:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_FX_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_FX_array[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FX_array[index]))
+                                    array_2.append(array)
+                                writing_data[4] = array_2
+                                header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"])
+                            case 5:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector[index]))
+                                    array_2.append(array)
+                                writing_data[5] = array_2
+                                header_array.extend(["Front outer force vector", "Front inner force vector", "Rear outer force vector", "Rear inner force vector"])
+                            case 6:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector_mag[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector_mag[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector_mag[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_mag[index]))
+                                    array_2.append(array)
+                                writing_data[6] = array_2
+                                header_array.extend(["Front outer force magnitude", "Front inner force magnitude", "Rear outer force magnitude", "Rear inner force magnitude"])
+                            case 7:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FO_vector_dir[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.FI_vector_dir[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RO_vector_dir[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_dir[index]))
+                                    array_2.append(array)
+                                writing_data[7] = array_2
+                                header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"])
+                            case 8:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_2_dis[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_4_dis[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_3_dis[index]))
+                                    array_2.append(array)
+                                writing_data[5] = array_2
+                                header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
+                            case 9:
+                                array_2 = []
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel):
+                                    array = []
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel[index]))
+                                    array_2.append(array)
+                                writing_data[6] = array_2
+                                header_array.extend(["Theta of Force on Car"])
 
-            writer.writerow(header_array)
-            master_array = []
-            # Loop through each value of every data point
-            for index in range(len(self.lap_data.generated_track.sim.lapsim_data_storage.AX)):
-                # create array which contains every data point for one specific node (one row) and add to master array
-                array = []
-                for data_section in writing_data:
-                    if data_section:
-                        array.extend(data_section[index])
-                # master array, where each index is a row of data points
-                master_array.append(array)
-            # write all rows to csv file
-            writer.writerows(master_array)
+                writer.writerow(header_array)
+                master_array = []
+                # Loop through each value of every data point
+                for index in range(len(self.lap_data.generated_track.sim.lapsim_data_storage.AX)):
+                    # create array which contains every data point for one specific node (one row) and add to master array
+                    array = []
+                    for data_section in writing_data:
+                        if data_section:
+                            array.extend(data_section[index])
+                    # master array, where each index is a row of data points
+                    master_array.append(array)
+                # write all rows to csv file
+                writer.writerows(master_array)
+        else:
+            print("No file selected")
 
     def load_lapsim(self, display_track, save_file_func=None):
         global track_root, track_subplot, track_canvas, data_bools, data_label, tkinter_data_bools
@@ -614,7 +614,7 @@ class track():
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i], self.car_rad))
-        print(f"\nnodes: {len(self.nds)}")
+        print(f"nodes: {len(self.nds)}")
 
         for i in range(-1, len(self.nds)-1):
             self.nds[i].prev_nd = self.nds[i-1]

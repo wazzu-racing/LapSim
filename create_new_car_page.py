@@ -4,19 +4,8 @@ import pickle as pkl
 import os
 
 from car_settings_window import CarSettingsWindow
-from files import get_save_files_folder_abs_dir
+from files import get_models_abs_dir
 import car_model
-
-# Absolute path to saved_files folder.
-initial_dir = ""
-
-# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-def set_initial_dir():
-    global initial_dir
-
-    initial_dir = get_save_files_folder_abs_dir()
-
-set_initial_dir()
 
 # The "CreateNewCarPage" page.
 class CreateNewCarPage(tkinter.Frame):
@@ -29,8 +18,8 @@ class CreateNewCarPage(tkinter.Frame):
         self.car = car_model.car()
 
         # sets path vars to the default car
-        self.tire_file_path = f"{get_save_files_folder_abs_dir()}/18x6-10_R20.pkl"
-        self.drivetrain_file_path = f"{get_save_files_folder_abs_dir()}/DEFAULT_DRIVETRAIN.pkl"
+        self.tire_file_path = ""
+        self.drivetrain_file_path = ""
 
         self.settings_window = CarSettingsWindow(car=self.car)
 
@@ -43,7 +32,7 @@ class CreateNewCarPage(tkinter.Frame):
         self.import_tire_file_button.grid(row=2, column=1, pady=(0, 10))
 
         # Make check label to import Tire file
-        self.tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
+        self.tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         #  Make and pack "Import Drivetrain File" button
         self.import_drivetrain_file_button = tkinter.Button(self, text="Import Drivetrain File", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: self.select_file(file_type="pkl", file="drivetrain_file"))
@@ -75,44 +64,43 @@ class CreateNewCarPage(tkinter.Frame):
 
     # The user selects a file to build the car with
     def select_file(self, file_type, file):
-        # Get file from user
-        file_path = filedialog.askopenfilename(title="Select a file", initialdir=initial_dir, filetypes=[("File", f"*.{file_type}")])
-        # If users chosen path is not nothing
-        if file_path:
-            # Determines which file the user has selected to create the car with, saves it, and shows the user that it has been saved.
-            match file:
-                case "tire_file":
+        # Determines which file the user has selected to create the car with, saves it, and shows the user that it has been saved.
+        match file:
+            case "tire_file":
+                # Get file from user
+                file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_models_abs_dir(), filetypes=[("File", f"*.{file_type}")])
+                if file_path:
                     self.tire_file_path = file_path
                     self.tire_file_check.grid(row=2, column=2, pady=(0, 10))
-                case "drivetrain_file":
+            case "drivetrain_file":
+                # Get file from user
+                file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_models_abs_dir(), filetypes=[("File", f"*.{file_type}")])
+                if file_path:
                     self.drivetrain_file_path = file_path
                     self.drivetrain_file_check.grid(row=3, column=2, pady=(0, 10))
 
-            # If user inputs all three required files, the user is able to create the car object and save it.
-            if self.tire_file_path and self.drivetrain_file_path:
-                self.save_car_button.configure(state="normal")
-
-        else:
-            print("No file selected")
+        # If user inputs all three required files, the user is able to create the car object and save it.
+        if self.tire_file_path and self.drivetrain_file_path:
+            self.save_car_button.configure(state="normal")
 
     def set_window_settings_car_to_car(self):
         self.car = self.settings_window.car
 
     # Saves the car in a dir
     def save_file(self, controller):
-        global initial_dir, racecar
+        global racecar
 
         # Apply changes made by user to car object
         self.settings_window.apply_changes()
         self.car = self.settings_window.car
 
         # Create and save car object into saved_files dir using imported files after setting car_model paths equal to user selection
-        self.car.aero_csv_file_path = os.path.join("Data", "csv", "DEFAULT_AERO_ARRAY.csv")
+        self.car.aero_csv_file_path = os.path.join("config_data", "DEFAULT_AERO_ARRAY.csv")
         self.car.tire_file_path = self.tire_file_path
         self.car.drivetrain_file_path = self.drivetrain_file_path
 
         # Ask the user where they want to save the car object
-        file_path = filedialog.asksaveasfilename(title="Save Car File", initialdir=initial_dir, defaultextension=".pkl")
+        file_path = filedialog.asksaveasfilename(title="Save Car File", initialdir=get_models_abs_dir(), defaultextension=".pkl")
 
         if file_path:
             # saving tire object

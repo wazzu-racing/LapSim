@@ -9,7 +9,8 @@ from PIL.ImageOps import expand
 
 import display_trk
 from LapData import LapData
-from files import get_file_from_user, get_save_files_folder_abs_dir
+from files import get_models_abs_dir
+
 
 class CarSettingsWindow:
 
@@ -22,10 +23,6 @@ class CarSettingsWindow:
         self.lap_data = lap_data
 
         self.entries_list = []
-
-        # Absolute path to saved_files folder.
-        self.initial_dir = ""
-        self.set_initial_dir()
 
         self.generate_report = tkinter.BooleanVar()
         self.generate_report.set(True)
@@ -151,10 +148,6 @@ class CarSettingsWindow:
         # Only allow the user to hide the window, not close it
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
-    # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-    def set_initial_dir(self):
-        self.initial_dir = get_save_files_folder_abs_dir()
-
     # Apply the changes that the user has made to the settings in the window to the car object and save it in the existing car pkl.
     def apply_changes(self, save_car_file = False):
         self.car.W_1 = self.settings["front_left_wheel_weight"].get()
@@ -241,7 +234,7 @@ class CarSettingsWindow:
             index += 1
 
     def get_car_file(self):
-        file = filedialog.askopenfilename(title="Pick a car file", filetypes=[("Pickle file", "*.pkl")], defaultextension=".pkl")
+        file = filedialog.askopenfilename(title="Pick a car file", initialdir=get_models_abs_dir(), filetypes=[("Pickle file", "*.pkl")], defaultextension=".pkl")
         if file:
             with open(file, "rb") as f:
                 self.car = pickle.load(f)

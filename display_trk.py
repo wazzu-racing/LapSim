@@ -5,7 +5,7 @@ from LapData import LapData
 import pickle
 import tqdm as tq
 
-from files import get_file_from_user, get_save_files_folder_abs_dir
+from files import get_file_from_user
 from loading_window import LoadingWindow
 
 
@@ -27,9 +27,6 @@ class DisplayTrack:
         self.points_y =[]
         self.points_x2 =[]
         self.points_y2 = []
-
-        # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-        self.initial_dir = get_save_files_folder_abs_dir()
 
     def initialize_notgenerated_track(self, lap_data):
         if lap_data.points is not None and lap_data.car is not None:

@@ -2,9 +2,7 @@ import tkinter
 
 from PIL import ImageTk, Image
 import pickle
-import numpy as np
 
-from files import get_save_files_folder_abs_dir
 from files import get_file_from_user
 from LapData import LapData
 
@@ -146,19 +144,12 @@ class LapSimGoCrazy:
 
         self.bind_go_crazy_keys()
 
-        self.initial_dir = ""
-        self.set_initial_dir()
-
         # self.save_ungenerated_track()
 
         self.go_crazy_root.withdraw()
 
         # Only allow the user to hide the window, not close it
         self.go_crazy_root.protocol("WM_DELETE_WINDOW", self.close_window())
-
-    # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-    def set_initial_dir(self):
-        self.initial_dir = get_save_files_folder_abs_dir()
 
     def open_window(self):
         self.go_crazy_root.deiconify()
@@ -474,7 +465,7 @@ class LapSimGoCrazy:
             'textboxDisplayed' : False,
             'image_path_saved' : ""
         }
-        with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/skidpad_trk.pkl", 'wb') as f:
+        with open("/Data/Tracks/skidpad_trk.pkl", 'wb') as f:
             pickle.dump(obj=data2, file=f)
 
     def bind_go_crazy_keys(self):

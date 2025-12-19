@@ -16,7 +16,7 @@ class ManageDataPage(tkinter.Frame):
         button.grid(row=2, column=1, pady=(50, 5))
 
         #  Make and pack "Plot Data" button
-        button = tkinter.Button(self, text="Plot Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("PlotDataPage"))
+        button = tkinter.Button(self, text="Plot Vehicle Dynamics Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("PlotDataPage"))
         button.grid(row=3, column=1, pady=(0, 10))
 
         # Configure grid to center all widgets

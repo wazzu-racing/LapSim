@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import ttk
 import pickle as pkl
 
-from files import get_save_files_folder_abs_dir
+from files import get_models_abs_dir
 
 # Widget that is gridded once the user inputs the correct file
 drivetrain_file_check = None
@@ -17,23 +17,12 @@ dropdown = None
 # The file path of the drivetrain object used to make the graphs. Selected by the user.
 drivetrain_file_path = ""
 
-# Absolute path to saved_files folder.
-initial_dir = ""
-
-# Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
-def set_initial_dir():
-    global initial_dir
-
-    initial_dir = get_save_files_folder_abs_dir()
-
-set_initial_dir()
-
 # The user selects a file and the path is stored in the appropriate variable
 def select_file(root):
     global drivetrain_file_path, drivetrain_file_check, plot_button
 
     # Open file dialog to select drivetrain file
-    drivetrain_file_path = filedialog.askopenfilename(title="Open Drivetrain File", initialdir=initial_dir, defaultextension=".pkl", filetypes=[("Pickle files", "*.pkl")])
+    drivetrain_file_path = filedialog.askopenfilename(title="Open Drivetrain File", initialdir=get_models_abs_dir(), defaultextension=".pkl", filetypes=[("Pickle files", "*.pkl")])
 
     # If the path that the user chooses is not empty, then allow the user to plot data.
     if drivetrain_file_path:
