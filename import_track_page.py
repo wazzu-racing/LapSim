@@ -113,7 +113,7 @@ class ImportTrackPage(tkinter.Frame):
         self.car_button.grid(row=3, column=1, pady=(10, 0))
 
         # Make and pack check label widget for "Import Car" button above.
-        self.car_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
+        self.car_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         self.node_frame = tkinter.Frame(self, borderwidth=0, highlightthickness=0, bg="Black")
         self.node_frame.grid(row=4, column=1)

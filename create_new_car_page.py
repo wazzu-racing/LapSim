@@ -50,7 +50,7 @@ class CreateNewCarPage(tkinter.Frame):
         self.import_drivetrain_file_button.grid(row=3, column=1, pady=(0, 0))
 
         # Make check label to import drivetrain file
-        self.drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
+        self.drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         # Make and pack button to change car settings
         self.car_settings_button = tkinter.Button(self, text="Car Settings", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: self.settings_window.open_window())

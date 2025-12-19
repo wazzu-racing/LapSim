@@ -79,15 +79,11 @@ class PlotDrivetrainDataPage(tkinter.Frame):
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Saved Drivetrain" button
-        engine_array_button = tkinter.Button(self, text="Import Saved Drivetrain", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
+        engine_array_button = tkinter.Button(self, text="Import Drivetrain", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
         engine_array_button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Saved Engine" button above.
-        drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
-
-        #  Make and pack "Create New Drivetrain" button
-        engine_array_button = tkinter.Button(self, text="Create New Drivetrain", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("CreateNewDrivetrainPage"))
-        engine_array_button.grid(row=3, column=1, pady=(0, 10))
+        drivetrain_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         #  Make and pack "Plot Data" button
         plot_button = tkinter.Button(self, text="Plot Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_drivetrain_data(dropdown.get()))

@@ -23,12 +23,17 @@ def select_file():
     global image_file, image_check, plot_button, initial_dir
 
     # Asks the user to choose an image file to create the track with.
-    file_path = filedialog.askopenfilename(title="Select a file", initialdir=initial_dir, filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
+    file_path = filedialog.askopenfilename(title="Select a file", filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
     # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
     if file_path:
         # enable plot button if file is selected
+
         image_file = file_path
         image_check.grid(row=2, column=2, pady=(100, 10))
+        plot_button.configure(state="normal")
+    elif image_file != "":
+        if not image_check.grid_info():
+            image_check.grid(row=2, column=2, pady=(100, 10))
         plot_button.configure(state="normal")
     else:
         print("No file selected")
@@ -41,6 +46,9 @@ class ImportTrackImagePage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
+        # Initiate LapSimGoCrazy var
+        self.lapsim_go_crazy = None
+
         # Make and pack "Import Image" label
         label = tkinter.Label(self, text="Import Track Image", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1)
@@ -50,10 +58,10 @@ class ImportTrackImagePage(tkinter.Frame):
         button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Image" button above.
-        image_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green")
+        image_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         #  Make and pack "Plot Track" button
-        plot_button = tkinter.Button(self, text="Plot Track", bg="White",  fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: LapSimGoCrazy(image_path=image_file))
+        plot_button = tkinter.Button(self, text="Plot Track", bg="White",  fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: self.run_lapsim_go_crazy())
         plot_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets
@@ -66,3 +74,12 @@ class ImportTrackImagePage(tkinter.Frame):
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=0)
         self.grid_columnconfigure(3, weight=1)
+
+    def run_lapsim_go_crazy(self):
+        global image_file
+        if self.lapsim_go_crazy is None:
+            self.lapsim_go_crazy = LapSimGoCrazy(image_path=image_file)
+        elif self.lapsim_go_crazy is not None and image_file != self.lapsim_go_crazy.image_path_saved:
+            self.lapsim_go_crazy.go_crazy_root.destroy()
+            self.lapsim_go_crazy = LapSimGoCrazy(image_path=image_file)
+        self.lapsim_go_crazy.open_window()

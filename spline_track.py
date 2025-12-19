@@ -24,7 +24,7 @@ track_root = None
 track_fig = None
 track_subplot = None
 track_canvas = None
-data_bools = [True, False, False, False, False]
+data_bools = []
 tkinter_data_bools = []
 data_label = None
 
@@ -337,7 +337,6 @@ class LapSimUI:
 
         for index, option in enumerate(data_options):
             menu_button.menu.add_checkbutton(label=option, variable=tkinter_data_bools[index])
-            # print(f"{option} -> {boolean.get()}")
         menu_button.grid(row=0, column=2, padx=0, pady=0)
 
         edit_car_button = tkinter.Button(data_label_frame, text="Edit Car Settings", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.open_car_settings_window(display_track))
@@ -615,7 +614,7 @@ class track():
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i], self.car_rad))
-        print(f"nodes: {len(self.nds)}")
+        print(f"\nnodes: {len(self.nds)}")
 
         for i in range(-1, len(self.nds)-1):
             self.nds[i].prev_nd = self.nds[i-1]
@@ -651,7 +650,7 @@ class track():
 
         return closest_index
 
-    def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, save_file_func=None):
+    def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, save_file_func=None, generate_report = False, changed_car_model=False):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
 
         # Clear figures and plots by setting them equal to new ones
@@ -757,8 +756,8 @@ class track():
         if self.lap_data.generated_track is not None:
             self.sim.lapsim_data_storage = self.lap_data.generated_track.sim.lapsim_data_storage
 
-        if prev_lap_data is not None:
-            self.report_window = ReportWindow(prev_lap_data=prev_lap_data, new_lap_data=self.lap_data)
+        if prev_lap_data is not None and generate_report:
+            self.report_window = ReportWindow(prev_lap_data=prev_lap_data, new_lap_data=self.lap_data, changed_car_model=changed_car_model)
             self.report_window.open_window()
 
         # Load lapsim ui
@@ -857,6 +856,7 @@ class track():
         self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run()
         # print(f'Total Travel Time: {self.t}')
+
     def update_track(self):
         for i in self.nds:
             i.update_shift()

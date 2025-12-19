@@ -27,6 +27,11 @@ class CarSettingsWindow:
         self.initial_dir = ""
         self.set_initial_dir()
 
+        self.generate_report = tkinter.BooleanVar()
+        self.generate_report.set(True)
+
+        self.changed_car_model = False
+
         self.canvas = tkinter.Canvas(master=self.root, width=500, height=500)
         self.canvas.pack(side="left", fill="both", expand=True)
 
@@ -95,9 +100,12 @@ class CarSettingsWindow:
             change_car_button = tkinter.Button(self.scrollable_frame, text="Change Car", command= lambda: self.get_car_file())
             change_car_button.grid(row=23, column=1, pady=(50, 0), sticky="N")
 
-            self.change_car_label = tkinter.Label(self.scrollable_frame, text="Car imported!", fg="Green")
+            self.change_car_label = tkinter.Label(self.scrollable_frame, text="Car imported!", fg="SpringGreen2")
             self.change_car_label.grid(row=23, column=2, pady=(50, 0), sticky="W")
             self.change_car_label.grid_remove()
+
+            self.generate_report_toggle = tkinter.Checkbutton(self.scrollable_frame, text="Generate REPORT", variable=self.generate_report)
+            self.generate_report_toggle.grid(row=24, column=2, pady=(50, 0), sticky="N")
 
         apply_and_reload_button = tkinter.Button(self.scrollable_frame, text="Apply and Reload", command= lambda: self.apply_changes_and_run_lapsim() if display_track is not None else self.apply_changes())
         apply_and_reload_button.grid(row=24, column=1, pady=(50, 0), sticky="N")
@@ -228,7 +236,7 @@ class CarSettingsWindow:
         index = 0
         for key, value in self.settings.items():
             self.entries_list[index].grid_forget()
-            self.entries_list[index] = tkinter.Entry(self.scrollable_frame, textvariable=self.settings[key])
+            self.entries_list[index].config(textvariable=self.settings[key])
             self.entries_list[index].grid(row=index+1, column=2, padx=5, pady=5)
             index += 1
 
@@ -240,6 +248,7 @@ class CarSettingsWindow:
                 print(f"t_f: {self.car.t_f}")
             self.change_vars_to_car(self.car)
             self.change_car_label.grid()
+            self.changed_car_model = True
 
     def open_window(self):
         self.root.deiconify() # Show the window
@@ -253,7 +262,7 @@ class CarSettingsWindow:
         self.root.withdraw()
 
     def apply_changes_and_run_lapsim(self):
-        # Make a prev_lap_data var
+        # Make a prev_lap_data var that stores the data in this current track so that we can access it later for the REPORT
         prev_lap_data = LapData(self.lap_data.points)
         prev_lap_data.generated_track = self.lap_data.generated_track
         prev_lap_data.generated_track.sim.lapsim_data_storage = deepcopy(self.lap_data.generated_track.sim.lapsim_data_storage)
@@ -262,4 +271,9 @@ class CarSettingsWindow:
         self.apply_changes(save_car_file=False)
         self.lap_data.car = self.car
         self.change_vars_to_car(self.car)
-        self.display_track.create_and_show_notgenerated_track(display_track=self.display_track, lap_data=self.lap_data, prev_lap_data=prev_lap_data)
+        # If the user wants to generate a REPORT, pass prev_lap_data, etc. arguments into create_and_show_notgenerated_track func
+        if self.generate_report.get():
+            self.display_track.create_and_show_notgenerated_track(display_track=self.display_track, lap_data=self.lap_data, prev_lap_data=prev_lap_data, generate_report=self.generate_report.get(), changed_car_model=self.changed_car_model)
+        # User does not want to generate a REPORT
+        else:
+            self.display_track.create_and_show_notgenerated_track(display_track=self.display_track, lap_data=self.lap_data)

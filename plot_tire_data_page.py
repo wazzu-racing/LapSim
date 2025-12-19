@@ -85,19 +85,15 @@ class PlotTireDataPage(tkinter.Frame):
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Saved Tire" button
-        cornering_button = tkinter.Button(self, text="Import Saved Tire", bg="White", fg="Black",  highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
+        cornering_button = tkinter.Button(self, text="Import Tire", bg="White", fg="Black",  highlightbackground="Black", font=("Ariel", 24), command= lambda: select_file(self))
         cornering_button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Saved Tire" button above.
-        tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="Green", )
-
-        #  Make and pack "Import New Tire" button
-        acceleration_button = tkinter.Button(self, text="Create New Tire", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("CreateNewTirePage"))
-        acceleration_button.grid(row=3, column=1, pady=(0, 10))
+        tire_file_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2", )
 
         #  Make and pack "Plot Data" button
         plot_button = tkinter.Button(self, text="Plot Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: plot_tire_data(dropdown.get()))
-        plot_button.grid(row=4, column=1, pady=(100, 0))
+        plot_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
@@ -105,8 +101,7 @@ class PlotTireDataPage(tkinter.Frame):
         self.grid_rowconfigure(2, weight=0)
         self.grid_rowconfigure(3, weight=0)
         self.grid_rowconfigure(4, weight=0)
-        self.grid_rowconfigure(5, weight=0)
-        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(5, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=0)

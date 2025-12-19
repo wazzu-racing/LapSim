@@ -3,7 +3,7 @@ import threading
 import spline_track as spln
 from LapData import LapData
 import pickle
-import time
+import tqdm as tq
 
 from files import get_file_from_user, get_save_files_folder_abs_dir
 from loading_window import LoadingWindow
@@ -18,6 +18,8 @@ class DisplayTrack:
         self.nodes = nodes
 
         self.ui_instance = ui_instance
+
+        self.loading_window = None
 
         # DisplayTrack has these if the track was not generated beforehand
         self.points = []
@@ -60,7 +62,7 @@ class DisplayTrack:
         elif lap_data.generated_track is not None:
             self.create_and_show_generated_track(display_track, lap_data)
 
-    def create_and_show_notgenerated_track(self,display_track, lap_data, prev_lap_data = None):
+    def create_and_show_notgenerated_track(self,display_track, lap_data, prev_lap_data = None, generate_report = False, changed_car_model = False):
 
         x = None
 
@@ -71,6 +73,16 @@ class DisplayTrack:
             print(f"Generated Track: {lap_data.generated_track is not None}")
             with open(lap_data.file_location, "wb") as f:
                 pickle.dump(lap_data, f)
+
+        def run_and_plot():
+            #run sim to get data
+            self.notgenerated_trk.run_sim(car=lap_data.car, nodes=self.nodes)
+
+            # If no previous lap data, just plot the lap. Else, give the user a REPORT.
+            if prev_lap_data is None:
+                self.notgenerated_trk.plot(lap_data_stuff=lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
+            else:
+                self.notgenerated_trk.plot(lap_data_stuff=lap_data, prev_lap_data=prev_lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track, generate_report=generate_report, changed_car_model=changed_car_model) # displaying optimized track
 
         # initialize points and stuff
         self.initialize_notgenerated_track(lap_data)
@@ -84,33 +96,39 @@ class DisplayTrack:
         self.notgenerated_trk = spln.track(self.points_x, self.points_y, self.points_x2, self.points_y2, lap_data.car)
 
         # optimizing track
-        if len(self.points_x) > 10:
+        if len(self.points_x) > 5:
             x = threading.Thread(target=self.notgenerated_trk.adjust_track, args=([40, 30, 30, 80],[100, 30, 10, 5],))
             x.daemon = True
             x.start()
 
-        self.loading_window = LoadingWindow()
+        if self.loading_window is None:
+            self.loading_window = LoadingWindow()
+        else:
+            self.loading_window.reset()
         self.loading_window.open_window()
 
+        instance = tq.tqdm(total=100) # Create instance of tqdm (library used to estimate time remaining)
+        self.last_k = 0 # Set last_k to 0 for now, used to track how many k's have been added since last time loading was checked
         def update_loading_window():
-            if x.is_alive():
-                self.loading_window.update_loading(spln.k / spln.len_s * 100)
-                spln.track_root.after(100, update_loading_window)
+            # update instance to contain how many k's have been added since last time loading was checked
+            instance.update((spln.k - self.last_k) / spln.len_s * 100)
+
+            # Use tqdm library to calculate rate of loading in iterations per second. 1 if rate is None.
+            rate = 1
+            if instance.format_dict['rate']:
+                rate = instance.format_dict['rate']
+
+            # Calculate the amount of seconds left.
+            seconds_left = int((100 - (spln.k / spln.len_s * 100)) / rate)
+            self.last_k = spln.k # Set last k to the current k so we can use it in the next iteration.
+            if x is not None and x.is_alive(): # If loading has not finished, update the loading window to display loading progress.
+                self.loading_window.update_loading(spln.k / spln.len_s * 100, seconds_left)
+                spln.track_root.after(100, update_loading_window) # Call this same function again after 0.1 seconds.
             else:
-                self.loading_window.update_loading(100)
-                run_and_plot()
+                self.loading_window.update_loading(100, 0)
+                run_and_plot() # Once loading is done, run the LapSimUI class and plot the track.
 
-        update_loading_window()
-
-        def run_and_plot():
-            #run sim to get data
-            self.notgenerated_trk.run_sim(car=lap_data.car, nodes=self.nodes)
-
-            # If no previous lap data, just plot the lap. Else, give the user a REPORT.
-            if prev_lap_data is None:
-                self.notgenerated_trk.plot(lap_data_stuff=lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
-            else:
-                self.notgenerated_trk.plot(lap_data_stuff=lap_data, prev_lap_data=prev_lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
+        update_loading_window() # Call function to start the loop.
 
     def create_and_show_generated_track(self, display_track, lap_data):
         # close track graph if open, also need this if statement to run without errors

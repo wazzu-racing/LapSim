@@ -4,20 +4,21 @@ import matplotlib as mat
 
 from PIL import Image, ImageTk
 
+from import_track_image_page import ImportTrackImagePage
 from import_track_page import ImportTrackPage
 from loading_window import LoadingWindow
-from manage_lapsim_page import ManageLapSimPage
-from track_import_method_page import TrackImportMethodPage
 from create_new_car_page import CreateNewCarPage
 from create_new_drivetrain_page import CreateNewDrivetrainPage
-from create_new_tire_page import CreateNewTirePage
 from manage_data_page import ManageDataPage
+from manage_tracks_page import ManageTracksPage
 from plot_car_data_page import PlotCarDataPage
 from plot_data_page import PlotDataPage
 from plot_drivetrain_data_page import PlotDrivetrainDataPage
-from plot_tire_data_page import PlotTireDataPage
 
 import platform
+
+from plot_tire_data_page import PlotTireDataPage
+
 
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
@@ -34,9 +35,11 @@ class PageStack(tkinter.Tk):
         self.configure(bg="Black")
 
         # Create a container frame for each page
-        container = tkinter.Frame(self)
+        container = tkinter.Frame(self, bg="Black")
         container.pack(expand=True)
 
+        # Stores all pages available in the LAPSIM
+        self.pages = (MainMenuPage, ManageDataPage, PlotDataPage, PlotDrivetrainDataPage, PlotCarDataPage, PlotTireDataPage, CreateNewDrivetrainPage, CreateNewCarPage, ManageTracksPage, ImportTrackPage, ImportTrackImagePage)
         # Stores the current page as a string
         self.current_page = "MainMenuPage"
         # Stores the page hierarchy that the user is current at.
@@ -44,7 +47,7 @@ class PageStack(tkinter.Tk):
 
         # stores the pages
         self.frames = {}
-        for F in (MainMenuPage, ManageDataPage, PlotDataPage, PlotTireDataPage, PlotDrivetrainDataPage, PlotCarDataPage, CreateNewTirePage, CreateNewDrivetrainPage, CreateNewCarPage, ManageLapSimPage, TrackImportMethodPage, ImportTrackPage):
+        for F in self.pages:
             # Basic Setup for each page
             page_name = F.__name__
             frame = F(parent=container, controller=self)
@@ -105,16 +108,29 @@ class MainMenuPage(tkinter.Frame):
         image_label.grid(row=1, column=1, pady=(0, 0))
 
         # Make and pack "Vehicle Dynamics" label
-        label = tkinter.Label(self, text="Vehicle Dynamics", font=("Ariel", 48), bg="Black", fg="White")
-        label.grid(row=2, column=1, pady=0)
+        label = tkinter.Label(self, text="LAPSIM", font=("Ariel", 48), bg="Black", fg="White")
+        label.grid(row=2, column=1, pady=(0, 20))
+
+        # Make and pack "LapSim" button
+        button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ImportTrackPage"))
+        button.grid(row=3, column=1, pady=0)
+
+        # Make and pack "Manage Data" button
+        button = tkinter.Button(self, text="Manage Tracks", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageTracksPage"))
+        button.grid(row=4, column=1, pady=(5, 0))
 
         # Make and pack "Manage Data" button
         button = tkinter.Button(self, text="Manage Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
-        button.grid(row=3, column=1, pady=(50, 10))
+        button.grid(row=5, column=1, pady=(5, 0))
 
-        # Make and pack "LapSim" button
-        button = tkinter.Button(self, text="LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ManageLapSimPage"))
-        button.grid(row=4, column=1, pady=0)
+        advanced_label = tkinter.Label(self, text="(ADVANCED)", fg="red", bg = "black", font=("Ariel", 12))
+        advanced_label.grid(row=6, column=1, pady=(0, 0))
+
+        version_frame = tkinter.Frame(self, bg="Black")
+        version_frame.grid(row=7, column=1, pady=(0, 0))
+
+        version_label = tkinter.Label(version_frame, text="v1 (2026.0.0)", fg="white", bg = "black")
+        version_label.grid(row=0, column=0, pady=(100, 0), padx=(0, 800), sticky="se")
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
@@ -122,11 +138,10 @@ class MainMenuPage(tkinter.Frame):
         self.grid_rowconfigure(2, weight=0)
         self.grid_rowconfigure(3, weight=0)
         self.grid_rowconfigure(4, weight=0)
-        self.grid_rowconfigure(5, weight=1)
+        self.grid_rowconfigure(5, weight=0)
+        self.grid_rowconfigure(6, weight=0)
+        self.grid_rowconfigure(7, weight=0)
+        self.grid_rowconfigure(8, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
-
-page_stack = PageStack()
-page_stack.go_to_page("MainMenuPage")
-page_stack.mainloop()

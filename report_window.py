@@ -5,7 +5,7 @@ from sympy.polys.densebasic import dmp_apply_pairs
 
 class ReportWindow:
 
-    def __init__(self, prev_lap_data, new_lap_data):
+    def __init__(self, prev_lap_data, new_lap_data, changed_car_model=False):
         self.root = tkinter.Toplevel()
         self.root.title("REPORT")
         self.root.attributes("-topmost", True)
@@ -109,7 +109,14 @@ class ReportWindow:
         # Subtitle for users changes to car settings
         car_changes_label = tkinter.Label(self.scrollable_frame, text="User's Changes", font=("TkDefaultFont", 13, "bold"))
         car_changes_label.grid(row=row, column=1, pady=(20, 0), sticky="W")
+
         row+=1
+
+        if changed_car_model:
+            # Create label
+            label = tkinter.Label(self.scrollable_frame, text="Changed to another car model")
+            label.grid(row=row, column=1, padx=5, pady=5, sticky="W")
+            row+=1
 
         # Grid each label and entries into window
         for index, setting in enumerate(self.prev_settings):

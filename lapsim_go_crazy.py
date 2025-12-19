@@ -10,7 +10,7 @@ from LapData import LapData
 
 class LapSimGoCrazy:
 
-    def __init__(self, image_path=None, track_file=None):
+    def __init__(self, image_path=None, track_file=None, editing = False):
 
         # Check if there is a track file to load stuff from. If there is, load the stuff from the file.
         if track_file is None:
@@ -32,46 +32,49 @@ class LapSimGoCrazy:
             self.dot_positions = []
             self.pxl_to_in = 1
 
-            self.p_num = 1
-            self.clicks = 2
+            self.p_num = 0
+            self.clicks = 0
             self.scale_factor = 1/2
 
-            self.line_drawn = True
-            self.can_drag_image = True
+            self.line_drawn = False
+            self.can_drag_image = False
             self.textboxDisplayed = False
 
             self.image_path_saved = image_path
         else:
             with open(track_file, 'rb') as f:
                 track = pickle.load(file=f)
-            self.points_x = track['points_x']
-            self.points_y = track['points_y']
+            track_points = track.points
 
-            self.p1x = track['p1x']
-            self.p2x = track['p2x']
-            self.p1y = track['p1y']
-            self.p2y = track['p2y']
+            self.points_x = track_points['points_x']
+            self.points_y = track_points['points_y']
 
-            self.dot_positions = track['dot_positions']
-            self.pxl_to_in = track['pxl_to_in']
+            self.p1x = track_points['p1x']
+            self.p2x = track_points['p2x']
+            self.p1y = track_points['p1y']
+            self.p2y = track_points['p2y']
 
-            self.p_num = track['p_num']
-            self.scale_factor = track['scale_factor']
+            self.dot_positions = track_points['dot_positions']
+            self.pxl_to_in = track_points['pxl_to_in']
+
+            self.p_num = track_points['p_num']
+            self.scale_factor = track_points['scale_factor']
 
             # If there is only 1 click saved, reset clicks to 0 so user can draw the line (1 click is when user clicked 1 point but didn't finish drawing the line)
-            if track['clicks'] == 1:
-                self.clicks = 0
+            if track_points['clicks'] == 1:
                 self.clicks = 0
             else:
-                self.clicks = track['clicks']
+                self.clicks = track_points['clicks']
 
-            self.line_drawn = track['line_drawn']
-            self.can_drag_image = track['can_drag_image']
-            self.textboxDisplayed = track['textboxDisplayed']
+            self.line_drawn = track_points['line_drawn']
+            self.can_drag_image = track_points['can_drag_image']
+            self.textboxDisplayed = track_points['textboxDisplayed']
 
-            self.image_path_saved = track['image_path_saved']
+            self.image_path_saved = track_points['image_path_saved']
 
         self.go_crazy_root = None
+
+        self.editing = editing
 
         self.p_width = 1400
         self.p_height = 600
@@ -93,16 +96,11 @@ class LapSimGoCrazy:
 
         self.clicking_button = False
 
-        scroll_amount = 0.1
-
         self.move_step = 10
 
         # Initialize window
         self.go_crazy_root = tkinter.Toplevel()
-        self.go_crazy_root.title("Plot LapSim Track")
-
-        # Only allow the user to hide the window, not close it
-        self.go_crazy_root.protocol("WM_DELETE_WINDOW", self.go_crazy_root.withdraw)
+        self.go_crazy_root.title("Plot LAPSIM Track")
 
         if self.image_path_saved is not None:
             self.immage = Image.open(self.image_path_saved)
@@ -129,7 +127,7 @@ class LapSimGoCrazy:
         self.intro_text_widget.pack()
         self.entry_widget = tkinter.Entry(self.go_crazy_root, width=30)
         self.entry_text_widget = tkinter.Label(self.go_crazy_root, width=60, text="Enter the distance (in feet) between the two points you self.clicked, then press Enter")
-        self.plot_text_widget = tkinter.Label(self.go_crazy_root, width=60, text="Click points to plot the track. Press 's' to save and 'z' to undo last point.")
+        self.plot_text_widget = tkinter.Label(self.go_crazy_root, width=150, text="Click points to make gates. Each gate has 2 points. The car will drive through these gates.\nPress 's' to save your track and 'z' to undo last point.")
 
         print(f"Image dimensions: {self.img_width} x {self.img_height}")
 
@@ -146,18 +144,27 @@ class LapSimGoCrazy:
         # Set redo line button widget to connect to reset_line function
         self.redo_line_button_widget = tkinter.Button(self.go_crazy_root, text="Redo Line", command=self.reset_line)
 
-        bind_go_crazy_keys(self.go_crazy_root, self)
+        self.bind_go_crazy_keys()
 
         self.initial_dir = ""
         self.set_initial_dir()
 
         # self.save_ungenerated_track()
 
-        self.go_crazy_root.mainloop()
+        self.go_crazy_root.withdraw()
+
+        # Only allow the user to hide the window, not close it
+        self.go_crazy_root.protocol("WM_DELETE_WINDOW", self.close_window())
 
     # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
     def set_initial_dir(self):
         self.initial_dir = get_save_files_folder_abs_dir()
+
+    def open_window(self):
+        self.go_crazy_root.deiconify()
+
+    def close_window(self):
+        self.go_crazy_root.withdraw()
 
     def reset_line(self):
         print("Redoing line...")
@@ -179,7 +186,6 @@ class LapSimGoCrazy:
         self.clicking_button = True
 
     def record_click(self, event):
-        print("Recording click...")
         self.time_pressed = event.time
 
         self.holding_down_mouse = True
@@ -189,7 +195,6 @@ class LapSimGoCrazy:
         self.gathered_held_down_pos = False
 
         if event.time - self.time_pressed < 200: # Only register as a click if mouse was held down for less than 200ms
-            print("Recording release...")
             # Only record click if mouse is within the self.panel (prevents inaccurate starting point for line) and the user is not also clicking the redo line button
             if self.mouse_x != 0 and self.mouse_y != 0 and not self.clicking_button:
                 if len(self.points_x) > 0 and self.p_num == 0:
@@ -206,6 +211,7 @@ class LapSimGoCrazy:
                     self.click_y = (event.y + self.y_pos) * self.pxl_to_in
                     self.points_x.append(self.click_x)
                     self.points_y.append(self.click_y)
+                    print(f"loc: ({self.click_x},{self.click_y})")
 
             self.clicking_button = False
 
@@ -231,17 +237,16 @@ class LapSimGoCrazy:
                         if self.mouse_x != 0 and self.mouse_y != 0: # Only record click if mouse is within the self.panel (prevents inaccurate starting point for line)
                             self.start_dragging_line()
                 case 1:
-                    col = ""
-                    print(f"{self.click_x}\t{self.click_y}")
-                    match len(self.p2x) % 4:
-                        case 0: col = "green"
-                        case 1: col = "red"
-                        case 2: col = "blue"
-                        case 3: col = "violet"
+                    color = ""
+                    color_num = len(self.dot_positions) % 8
+                    if color_num <= 1: color = "green"
+                    elif color_num <= 3: color = "red"
+                    elif color_num <= 5: color = "blue"
+                    elif color_num <= 7: color = "violet"
 
                     self.x1, self.y1 = (event.x - 3), (event.y - 3)
                     self.x2, self.y2 = (event.x + 3), (event.y + 3)
-                    self.dots.append(self.panel.create_oval(self.x1, self.y1, self.x2, self.y2, fill=col))
+                    self.dots.append(self.panel.create_oval(self.x1, self.y1, self.x2, self.y2, fill=color))
                     self.orig_x = (event.x - self.img_width_center - self.x_pos)/self.scale_factor
                     self.orig_y = (event.y - self.img_height_center - self.y_pos)/self.scale_factor
                     self.dot_positions.append((self.orig_x, self.orig_y))
@@ -258,21 +263,27 @@ class LapSimGoCrazy:
 
     def key(self, event):
         self.move_x, self.move_y = 0, 0
-
+        self.p1ys = []
+        self.p2ys = []
         match event.keysym:
             case 'Up': self.move_y = self.move_step
             case 'Down': self.move_y = -self.move_step
             case 'Left': self.move_x = self.move_step
             case 'Right': self.move_x = -self.move_step
             case 's':
-                if len(self.points_x) >= 4:
+                if len(self.points_x) >= 4 and len(self.p2y) == len(self.p1y):
                     print("Saving track points...")
-                    self.p1ys = []
-                    for i in self.p1y:
-                        self.p1ys.append(-i)
-                    self.p2ys = []
-                    for i in self.p2y:
-                        self.p2ys.append(-i)
+                    # If the user is editing the track, there is no need to flip the coordinates as they were already flipped when creating the track the first time
+                    if not self.editing:
+                        self.p1ys = []
+                        for i in self.p1y:
+                            self.p1ys.append(-i)
+                        self.p2ys = []
+                        for i in self.p2y:
+                            self.p2ys.append(-i)
+                    else:
+                        self.p1ys = self.p1y
+                        self.p2ys = self.p2y
                     data = {'p1x' : self.p1x,
                             'p1y' : self.p1ys,
                             'p2x' : self.p2x,
@@ -295,17 +306,19 @@ class LapSimGoCrazy:
                     print('[Track points saved]')
                     print(f"points_x: {self.points_x}")
                     print(f"points_y: {self.points_y}")
+
+                    self.close_window()
             case 'z':
                 print(f'undid {(self.points_x[-1], self.points_y[-1])}')
                 self.panel.delete(self.dots[-1])
                 pop_lists = []
-                if len(self.p1y) > len(self.p2y): pop_lists = [self.p1x, self.p1y, self.points_x, self.points_y, self.dots]
-                else: pop_lists = [self.p2x, self.p2y, self.points_x, self.points_y, self.dots]
+                if len(self.p1y) > len(self.p2y): pop_lists = [self.p1x, self.p1y, self.points_x, self.points_y, self.dots, self.dot_positions]
+                else: pop_lists = [self.p2x, self.p2y, self.points_x, self.points_y, self.dots, self.dot_positions]
                 for i in pop_lists: i.pop(-1)
             case 'd':
                 print(f"p1x: {self.p1x}")
-                print(f"p1y: {self.p1y}")
                 print(f"p2x: {self.p2x}")
+                print(f"p1y: {self.p1y}")
                 print(f"p2y: {self.p2y}")
 
         self.panel.move(self.image_item, self.move_x, self.move_y)
@@ -395,18 +408,18 @@ class LapSimGoCrazy:
 
     def plot_saved_points(self):
         for index, position in enumerate(reversed(self.dot_positions)):
-            col = ""
-            col_num = index % 8
-            if col_num <= 1: col = "green"
-            elif col_num <= 3: col = "red"
-            elif col_num <= 5: col = "blue"
-            elif col_num <= 7: col = "violet"
+            color = ""
+            color_num = index % 8
+            if color_num <= 1: color = "green"
+            elif color_num <= 3: color = "red"
+            elif color_num <= 5: color = "blue"
+            elif color_num <= 7: color = "violet"
 
             new_x = (self.img_width_center + self.x_pos + position[0]) * self.scale_factor
             new_y = (self.img_height_center + self.y_pos + position[1]) * self.scale_factor
             x1, y1 = (new_x - 3), (new_y - 3)
             x2, y2 = (new_x + 3), (new_y + 3)
-            self.dots.append(self.panel.create_oval(x1, y1, x2, y2, fill=col))
+            self.dots.append(self.panel.create_oval(x1, y1, x2, y2, fill=color))
 
     def clear_track(self):
         self.dot_positions.clear()
@@ -464,14 +477,12 @@ class LapSimGoCrazy:
         with open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimWindowsFix/Data/pkl/Tracks/skidpad_trk.pkl", 'wb') as f:
             pickle.dump(obj=data2, file=f)
 
-def bind_go_crazy_keys(root, self):
-    root.bind("<ButtonPress-1>", self.record_click)
-    root.bind("<ButtonRelease-1>", self.record_release)
-    root.bind("<Return>", self.return_key)
-    root.bind("<Motion>", self.get_mouse_pos)
-    root.bind("<Key>", self.key)
-
-# LapSimGoCrazy()
+    def bind_go_crazy_keys(self):
+        self.go_crazy_root.bind("<ButtonPress-1>", self.record_click)
+        self.go_crazy_root.bind("<ButtonRelease-1>", self.record_release)
+        self.go_crazy_root.bind("<Return>", self.return_key)
+        self.go_crazy_root.bind("<Motion>", self.get_mouse_pos)
+        self.go_crazy_root.bind("<Key>", self.key)
 
     # Uncompleted function to zoom in and out with mouse wheel. Issues w/ scaling the self.dots along the resized image.
     # def mouse_wheel(event):

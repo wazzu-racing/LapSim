@@ -140,6 +140,9 @@ class car():
 
         self.file_location = ""
 
+        self.AX_array = []
+        self.AY_array = []
+
         self.aero_arr.reverse()
         self.compute_traction()
 
@@ -270,7 +273,7 @@ class car():
                 low_guess = guess
             else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
                 high_guess = guess
-        
+
         self.max_corner = guess # max cornering (lateral) acceleration (g)
         self.AY = np.linspace(0, self.max_corner, 100)
         self.A_accel = []
@@ -450,7 +453,7 @@ class car():
     
     def max_brake(self, AY, low_guess = -3, high_guess = 0):
         guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
-        
+
         # returns the guess value if high and low estimates have converged
         if high_guess - low_guess < 0.0001:
             return guess
@@ -550,7 +553,7 @@ class car():
         self.K_rollR *= ratio
 
         self.compute_traction()
-    
+
 
     def adjust_height(self, h):
         ratio = h / self.h
@@ -560,7 +563,7 @@ class car():
         self.z_rr *= ratio
         self.compute_traction()
         
-    
+
     def traction_curve(self):
         plt.plot(self.AY, self.A_accel)
         plt.plot(self.AY, self.A_brake)
@@ -568,43 +571,6 @@ class car():
         plt.ylabel('Axial Acceleration (g\'s)')
         plt.grid()
         plt.show()
-
-    def get_values(self):
-
-        # For gas
-        # print("GAS")
-        # for index, lat in enumerate(self.AY):
-        #     car.accel(self, AY=lat, AX=self.A_accel[index])
-        #     car.append_data_arrays(self,lat=lat, axi=self.A_accel[index], index=0)
-        # print(f"Lateral acceleration (g's): {self.AY}")
-        # print(f"Axial acceleration (g's): {self.A_accel}")
-        # print(f"Vertical: {racecar.W_out_r_array}")
-        # print(f"Lateral: {racecar.FY_out_r_array}")
-        # print(f"Axial: {racecar.FX_out_r_array}\n")
-
-        def get_rid_of_zeros(array):
-            new_array = []
-            for i in range(len(array)):
-                new_array.append(array[i][0])
-            print(new_array)
-            return new_array
-
-        # For braking
-        # for index, accel_AY in enumerate(self.AY):
-        car.accel(self, AY=0, AX=self.A_brake[0])
-        # car.get_data(self)
-            # racecar.append_data_arrays(self, lat=self.AY[index], axi=self.A_brake[index], index=0)
-        print(f"Axial acceleration (g's): {self.A_brake[0]}")
-        # print(f"Axial outer front: {car.axial_force_outer_front}")
-        # print(f"Axial inner front: {car.axial_force_inner_front}")
-        # print(f"Axial outer rear: {car.axial_force_outer_rear}")
-        # print(f"Axial inner rear: {car.axial_force_inner_rear}")
-        print(f"----------------------------")
-
-        # stuff = {"Lateral Acceleration: ": self.AY, "Axial Acceleration: ": self.A_accel, "Vertical force: ": get_rid_of_zeros(racecar.W_out_r_array), "Lateral force: ": get_rid_of_zeros(racecar.FY_out_r_array), "Axial force: ": get_rid_of_zeros(racecar.FX_out_r_array)}
-
-        # with open("../Data/pkl/brake_data.pkl", 'wb') as f:
-        #     pkl.dump(stuff, f)
 
     def get_AX_AY_values(self):
         pass

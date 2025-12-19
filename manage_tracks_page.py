@@ -4,7 +4,7 @@ from tkinter import filedialog
 from lapsim_go_crazy import LapSimGoCrazy
 from files import get_save_files_folder_abs_dir
 
-class ManageLapSimPage(tkinter.Frame):
+class ManageTracksPage(tkinter.Frame):
 
     def __init__(self, parent, controller):
 
@@ -13,11 +13,13 @@ class ManageLapSimPage(tkinter.Frame):
 
         self.initial_dir = ""
 
+        self.edit_lapsim_go_crazy_window = None
+
         # Initializes the initial_dir variable, which points to the absolute directory of the saved_files folder.
         self.initial_dir = get_save_files_folder_abs_dir()
 
         # Make and pack "Manage LapSim" label
-        label = tkinter.Label(self, text="Manage LapSim", font=("Ariel", 48), bg="Black", fg="White")
+        label = tkinter.Label(self, text="Manage Tracks", font=("Ariel", 48), bg="Black", fg="White")
         label.grid(row=1, column=1, pady=0)
 
         #  Make and pack "Create Track" button
@@ -25,12 +27,8 @@ class ManageLapSimPage(tkinter.Frame):
         button.grid(row=2, column=1, pady=(50, 10))
 
         #  Make and pack "Edit Track" button
-        button = tkinter.Button(self, text="Edit Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: self.run_lapsim_go_crazy())
+        button = tkinter.Button(self, text="Edit Track", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: self.edit_lapsim_go_crazy())
         button.grid(row=3, column=1, pady=(0, 10))
-
-        #  Make and pack "Run LapSim" button
-        button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ImportTrackPage"))
-        button.grid(row=4, column=1, pady=(0, 10))
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
@@ -43,10 +41,15 @@ class ManageLapSimPage(tkinter.Frame):
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
 
-    def run_lapsim_go_crazy(self):
+    def edit_lapsim_go_crazy(self):
         track_file = self.get_file_from_user()
-        if track_file is not None:
-            LapSimGoCrazy(track_file=track_file)
+        if track_file:
+            if self.edit_lapsim_go_crazy_window is not None:
+                self.edit_lapsim_go_crazy_window.go_crazy_root.destroy()
+            self.edit_lapsim_go_crazy_window = LapSimGoCrazy(track_file=track_file, editing=True)
+            self.edit_lapsim_go_crazy_window.open_window()
+        else:
+            print("No file selected")
 
     def get_file_from_user(self):
         # Asks the user to choose an image file to create the track with.

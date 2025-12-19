@@ -186,7 +186,7 @@ class four_wheel:
         # nodespace
         nds = np.linspace(0, track, int(n + 1))
 
-        # Determining maximum lateral acceleration for every turn; length = # of arcs in track
+        # Determining maximum tangential velocity for every turn given maximum lateral acceleration; length = # of arcs in track
         self.t_vel = np.sqrt(max_corner * self.t_rad)
 
         # List showing radius at every node. Used to calculate maximum tangential acceleration
