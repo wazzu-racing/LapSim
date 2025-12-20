@@ -30,7 +30,7 @@ class FileManager:
         cornering_data = os.path.join("config_data", "cornering_data.dat")
         accel_data = os.path.join("config_data", "acceleration_data.dat")
         tires = tire_model.tire(cornering_data, accel_data)
-        with open(os.path.join(self.models_file_path, "DEFAULT_TIRE(18x6-10_R20).pkl"), 'wb') as f:
+        with open(os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), 'wb') as f:
             pickle.dump(tires, f)
 
         # Create drivetrain model and put into user's documents folder.
@@ -75,7 +75,7 @@ class FileManager:
             self.create_LAPSIM_folder_in_documents()
 
     def files_written_successfully(self):
-        if not Path(os.path.join(self.models_file_path, "DEFAULT_TIRE(18x6-10_R20).pkl")).exists():
+        if not Path(os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl")).exists():
             return False
         elif not Path(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl")).exists():
             return False
