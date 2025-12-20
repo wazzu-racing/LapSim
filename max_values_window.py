@@ -20,10 +20,14 @@ class MaxValuesWindow:
         # Units for each var in LapSimData
         self.data_units = ["sec", "g's","g's","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","lbs","in","in","in","in"]
 
+        self.lap_data = lap_data
+
+        self.max_value_labels = []
+
         row = 1
         # Display the max values
-        max_values = lap_data.generated_track.sim.lapsim_data_storage.find_max_values()
-        for index, data_point in enumerate(lap_data.generated_track.sim.lapsim_data_storage.max_value_names):
+        max_values = self.lap_data.generated_track.sim.lapsim_data_storage.find_max_values()
+        for index, data_point in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.max_value_names):
             if index != 0:
                 label_text = data_point.replace("_", " ") + f" ({self.data_units[index]})" + ": "
             else:
@@ -33,6 +37,8 @@ class MaxValuesWindow:
             # Create label
             label = tkinter.Label(self.scrollable_frame, text=label_text)
             label.grid(row=row, column=1, padx=5, pady=5, sticky="W")
+
+            self.max_value_labels.append(label)
 
             row += 1
 
@@ -54,7 +60,19 @@ class MaxValuesWindow:
         # Only allow the user to hide the window, not close it
         self.root.protocol("WM_DELETE_WINDOW", self.close_window)
 
+    def update_max_value_labels(self, new_lap_data):
+        max_values = new_lap_data.generated_track.sim.lapsim_data_storage.find_max_values()
+        for index, label in enumerate(self.max_value_labels):
+            if index != 0:
+                label_text = new_lap_data.generated_track.sim.lapsim_data_storage.max_value_names[index].replace("_", " ") + f" ({self.data_units[index]})" + ": "
+            else:
+                label_text = "Time" + f" ({self.data_units[index]})" + ": "
+            label_text += str(round(max_values[new_lap_data.generated_track.sim.lapsim_data_storage.max_value_names[index]], 2))
+
+            label.config(text=label_text)
+
     def open_window(self):
+
         self.root.deiconify() # Show the window
 
     def close_window(self):

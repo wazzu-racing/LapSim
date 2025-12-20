@@ -31,7 +31,7 @@ class PageStack(tkinter.Tk):
 
         # Basic setup
         self.title("LAPSIM")
-        self.geometry("1000x500")
+        self.geometry("1000x600")
         self.configure(bg="Black")
 
         # Create a container frame for each page

@@ -135,7 +135,7 @@ class DisplayTrack:
 
     def save_track(self):
         print("[Saving Track...]")
-        file = file_manager.get_file_from_user(self, file_types=[("Pickle files", "*.pkl")])
+        file = file_manager.get_file_from_user(file_types=[("Pickle files", "*.pkl")])
         if file:
             with open(file, 'wb') as f:
                 new_track_data = LapData(self.points)

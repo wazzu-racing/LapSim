@@ -36,7 +36,7 @@ racecar = None
 loading_window = None
 
 # Global variables to keep track of track loading in other files
-len_s = 0
+len_s = 100
 k = 0
 
 class LapSimUI:
@@ -47,6 +47,7 @@ class LapSimUI:
 
         track_root = tkinter.Tk() # For window of graph and viewable values
         track_root.title("Graph")
+        track_root.config(bg="gray13")
 
         track_fig = Figure(figsize=(8, 7), dpi=100) # Adjust figsize and dpi as needed
         track_subplot = track_fig.add_subplot(111) # Add a track_subplot to the figure
@@ -177,6 +178,8 @@ class LapSimUI:
         if self.max_values_window is None:
             # Create a toplevel window for max values
             self.max_values_window = MaxValuesWindow(self.lap_data)
+        # Update the labels in the window with the new values.
+        self.max_values_window.update_max_value_labels(new_lap_data=self.lap_data)
         # Open max values window
         self.max_values_window.open_window()
 
@@ -188,7 +191,7 @@ class LapSimUI:
     def download_csv(self, arr_bool):
         print("Download CSV")
 
-        user_file_loc = file_manager.get_file_from_user(self, file_types=[("CSV File", "*.csv")], default_exension="*.csv")
+        user_file_loc = file_manager.get_file_from_user(file_types=[("CSV File", "*.csv")], default_exension="*.csv")
 
         if user_file_loc:
             with(open(user_file_loc, "w", newline='')) as csv_file:
@@ -327,7 +330,7 @@ class LapSimUI:
         tkinter_data_bools = [tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False)]
         data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
 
-        data_label_frame = tkinter.Frame(track_root, width=600, height=500)
+        data_label_frame = tkinter.Frame(track_root, width=600, height=500, bg="gray13")
         data_label_frame.grid(row=1, column=2, padx=0, pady=0, sticky="nsew")
         data_label_frame.pack_propagate(False)
 
@@ -348,7 +351,7 @@ class LapSimUI:
         download_csv_button = tkinter.Button(data_label_frame, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=self.open_csv_window)
         download_csv_button.grid(row=3, column=2, padx=0, pady=0, sticky="N")
 
-        data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), fg="white")
+        data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), fg="white", bg="gray13")
         data_label.grid(row=5, column=2, padx=0, pady=0, sticky="nsew")
 
         if save_file_func is not None:
