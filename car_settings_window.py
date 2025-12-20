@@ -5,9 +5,6 @@ from tkinter import filedialog
 import numpy as np
 import pickle
 
-from PIL.ImageOps import expand
-
-import display_trk
 from LapData import LapData
 from file_management import file_manager
 
@@ -244,6 +241,7 @@ class CarSettingsWindow:
             self.changed_car_model = True
 
     def open_window(self):
+        self.change_vars_to_car(self.lap_data.car)
         self.root.deiconify() # Show the window
 
     def close_window(self):

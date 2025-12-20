@@ -170,6 +170,8 @@ class LapSimUI:
         if self.car_settings_window is None and self.lap_data is not None:
             # Create a toplevel window for car settings
             self.car_settings_window = CarSettingsWindow(display_track=display_track, lap_data=self.lap_data)
+        # Set the car settings window lap data to the most current lap data.
+        self.car_settings_window.lap_data = self.lap_data
         # Open car settings window
         self.car_settings_window.open_window()
 
