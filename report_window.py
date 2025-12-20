@@ -1,8 +1,5 @@
 import tkinter
 
-from sympy.polys.densebasic import dmp_apply_pairs
-
-
 class ReportWindow:
 
     def __init__(self, prev_lap_data, new_lap_data, changed_car_model=False):

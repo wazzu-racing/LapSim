@@ -9,7 +9,7 @@ from PIL.ImageOps import expand
 
 import display_trk
 from LapData import LapData
-from files import get_models_abs_dir
+from file_management import file_manager
 
 
 class CarSettingsWindow:
@@ -234,7 +234,7 @@ class CarSettingsWindow:
             index += 1
 
     def get_car_file(self):
-        file = filedialog.askopenfilename(title="Pick a car file", initialdir=get_models_abs_dir(), filetypes=[("Pickle file", "*.pkl")], defaultextension=".pkl")
+        file = filedialog.askopenfilename(title="Pick a car file", initialdir=file_manager.get_models_dir(), filetypes=[("Pickle file", "*.pkl")], defaultextension=".pkl")
         if file:
             with open(file, "rb") as f:
                 self.car = pickle.load(f)

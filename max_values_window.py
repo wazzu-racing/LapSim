@@ -1,8 +1,5 @@
 import tkinter
 
-from sympy.polys.densebasic import dmp_apply_pairs
-
-
 class MaxValuesWindow:
 
     def __init__(self, lap_data):

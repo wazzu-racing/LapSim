@@ -5,9 +5,8 @@ from LapData import LapData
 import pickle
 import tqdm as tq
 
-from files import get_file_from_user
+from file_management import file_manager
 from loading_window import LoadingWindow
-
 
 class DisplayTrack:
 
@@ -136,7 +135,7 @@ class DisplayTrack:
 
     def save_track(self):
         print("[Saving Track...]")
-        file = get_file_from_user(self, file_types=[("Pickle files", "*.pkl")])
+        file = file_manager.get_file_from_user(self, file_types=[("Pickle files", "*.pkl")])
         if file:
             with open(file, 'wb') as f:
                 new_track_data = LapData(self.points)

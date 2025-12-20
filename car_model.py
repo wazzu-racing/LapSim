@@ -1,17 +1,12 @@
 import math
 import pickle
 import os
-
 from matplotlib import pyplot as plt
 import numpy as np
-import pickle as pkl
+
 import csv
 import drivetrain_model
 import tire_model
-
-aero_csv_file_path = os.path.join("config_data", "DEFAULT_AERO_ARRAY.csv")
-tire_file_path = os.path.join("Data", "Models", "DEFAULT_TIRE(18x6-10_R20).pkl")
-drivetrain_file_path = os.path.join("Data", "Models", "DEFAULT_DRIVETRAIN.pkl")
 
 class car():
 
@@ -96,12 +91,6 @@ class car():
     # degrees, theta of accel force of car
     theta_accel = 0
 
-    # Set the aero_csv variable to the saved_files dir
-    aero_csv = aero_csv_file_path
-    # Set the tire_file variable to the saved_files dir
-    tire_file = tire_file_path
-    # Set the drivetrain_file variable to the saved_files dir
-    drivetrain_file = drivetrain_file_path
     # aero csv file delimiter
     aero_delimiter = ';'
 
@@ -109,8 +98,12 @@ class car():
     train = None
 
     def __init__(self):
+        self.aero_csv_file_path = os.path.join("config_data", "DEFAULT_AERO_ARRAY.csv")
+        self.tire_file_path = ""
+        self.drivetrain_file_path = ""
+
         self.aero_arr = [] # drag force acceleration (G's) emitted on vehicle (index = mph)
-        with open(self.aero_csv, newline='') as f:
+        with open(self.aero_csv_file_path, newline='') as f:
             reader = csv.reader(f, delimiter=self.aero_delimiter)
             for line in reader:
                 for i in line:
@@ -118,28 +111,21 @@ class car():
 
         # importing tire model
         try:
-            with open(self.tire_file, 'rb') as f:
-                self.tires = pkl.load(f)
+            with open(self.tire_file_path, 'rb') as f:
+                self.tires = pickle.load(f)
         except Exception:
             cornering_data = os.path.join("config_data", "cornering_data.dat")
             accel_data = os.path.join("config_data", "acceleration_data.dat")
             self.tires = tire_model.tire(cornering_data, accel_data)
-            with open(os.path.join("Data", "Models", "DEFAULT_TIRE(18x6-10_R20).pkl"), 'wb') as f:
-                pickle.dump(self.tires, f)
 
         # importing drivetrain model
         try:
-            with open(self.drivetrain_file, 'rb') as f:
-                self.drivetrain = pkl.load(f)
+            with open(self.drivetrain_file_path, 'rb') as f:
+                self.drivetrain = pickle.load(f)
         except Exception:
             self.drivetrain = drivetrain_model.drivetrain(engine_data=os.path.join("config_data", "engine_array.csv"))
-            with open(os.path.join("Data", "Models", "DEFAULT_DRIVETRAIN.pkl"), 'wb') as f:
-                pickle.dump(self.drivetrain, f)
 
         self.file_location = ""
-
-        self.AX_array = []
-        self.AY_array = []
 
         self.aero_arr.reverse()
         self.compute_traction()
@@ -436,7 +422,7 @@ class car():
         else: return True
 
 
-    # recursive function to find the max axial acceleration; AY is lateral acceleration; g's
+    # recursive function to find the max axial acceleration; AY is lateral acceleration in g's
     def max_accel(self, AY, low_guess = 0, high_guess = 2):
         guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
 

@@ -3,7 +3,7 @@ import tkinter
 from PIL import ImageTk, Image
 import pickle
 
-from files import get_file_from_user
+from file_management import file_manager
 from LapData import LapData
 
 class LapSimGoCrazy:
@@ -291,7 +291,7 @@ class LapSimGoCrazy:
                             'can_drag_image' : self.can_drag_image,
                             'textboxDisplayed' : self.textboxDisplayed,
                             'image_path_saved' : self.image_path_saved}
-                    with open(get_file_from_user(self, file_types=[("Pickle files", "*.pkl")]), 'wb') as f:
+                    with open(file_manager.get_file_from_user(self, file_types=[("Pickle files", "*.pkl")]), 'wb') as f:
                         new_track_data = LapData(data)
                         pickle.dump(obj=new_track_data, file=f)
                     print('[Track points saved]')

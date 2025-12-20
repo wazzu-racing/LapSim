@@ -13,7 +13,7 @@ import lapsim
 import tkinter
 import csv
 
-from files import get_file_from_user
+from file_management import file_manager
 from car_settings_window import CarSettingsWindow
 from loading_window import LoadingWindow
 from max_values_window import MaxValuesWindow
@@ -188,7 +188,7 @@ class LapSimUI:
     def download_csv(self, arr_bool):
         print("Download CSV")
 
-        user_file_loc = get_file_from_user(self, file_types=[("CSV File", "*.csv")], default_exension="*.csv")
+        user_file_loc = file_manager.get_file_from_user(self, file_types=[("CSV File", "*.csv")], default_exension="*.csv")
 
         if user_file_loc:
             with(open(user_file_loc, "w", newline='')) as csv_file:

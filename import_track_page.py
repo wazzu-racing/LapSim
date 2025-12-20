@@ -5,7 +5,7 @@ from tkinter import filedialog
 import pickle
 
 from display_trk import DisplayTrack
-from files import get_models_abs_dir, get_tracks_abs_dir
+from file_management import file_manager
 from spline_track import LapSimUI
 
 class ImportTrackPage(tkinter.Frame):
@@ -63,10 +63,11 @@ class ImportTrackPage(tkinter.Frame):
 
         if is_car_file:
             # Asks the user to choose a car file to create the LapData object with.
-            file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_models_abs_dir(), filetypes=[("Pickle files", "*.pkl")])
+            file_path = filedialog.askopenfilename(title="Select a file", initialdir=file_manager.get_models_dir(), filetypes=[("Pickle files", "*.pkl")])
         else:
             # Asks the user to choose a track file to create the LapData object with.
-            file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_tracks_abs_dir(), filetypes=[("Pickle files", "*.pkl")])
+            print(str(file_manager.get_tracks_dir()))
+            file_path = filedialog.askopenfilename(title="Select a file", initialdir=file_manager.get_tracks_dir(), filetypes=[("Pickle files", "*.pkl")])
 
         # if the file_path is not nothing, the car/track file is saved and the user is used to make the track object.
         if file_path:

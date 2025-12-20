@@ -4,9 +4,9 @@ import matplotlib as mat
 
 from PIL import Image, ImageTk
 
+from file_management import file_manager
 from import_track_image_page import ImportTrackImagePage
 from import_track_page import ImportTrackPage
-from loading_window import LoadingWindow
 from create_new_car_page import CreateNewCarPage
 from manage_data_page import ManageDataPage
 from manage_tracks_page import ManageTracksPage
@@ -18,12 +18,13 @@ import platform
 
 from plot_tire_data_page import PlotTireDataPage
 
-
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
     def __init__(self):
         # Init to initxialize itself as a Tk
         super().__init__()
+
+        file_manager.create_LAPSIM_folder_in_documents()
 
         # Make sure that plots open in a new window and not in the tkinter window.
         mat.use('TkAgg')
@@ -65,6 +66,8 @@ class PageStack(tkinter.Tk):
             self.bind("<ButtonPress-3>", self.go_back)
 
         self.protocol("WM_DELETE_WINDOW", self.kill_window)
+
+
 
     # Forces the window to close when the user presses X in the upper right corner.
     def kill_window(self):

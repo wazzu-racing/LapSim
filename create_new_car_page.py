@@ -4,7 +4,7 @@ import pickle as pkl
 import os
 
 from car_settings_window import CarSettingsWindow
-from files import get_models_abs_dir
+from file_management import file_manager
 import car_model
 
 # The "CreateNewCarPage" page.
@@ -46,7 +46,7 @@ class CreateNewCarPage(tkinter.Frame):
         self.car_settings_button.grid(row=4, column=1, pady=(10, 0))
 
         #  Make and pack "Save Car" button
-        self.save_car_button = tkinter.Button(self, text="Save Car", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: self.save_file(controller))
+        self.save_car_button = tkinter.Button(self, text="Save Car", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), state="active", command=lambda: self.save_file(controller))
         self.save_car_button.grid(row=5, column=1, pady=(50, 0))
 
         # Configure grid to center all widgets
@@ -68,13 +68,13 @@ class CreateNewCarPage(tkinter.Frame):
         match file:
             case "tire_file":
                 # Get file from user
-                file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_models_abs_dir(), filetypes=[("File", f"*.{file_type}")])
+                file_path = filedialog.askopenfilename(title="Select a file", initialdir=file_manager.get_models_dir(), filetypes=[("File", f"*.{file_type}")])
                 if file_path:
                     self.tire_file_path = file_path
                     self.tire_file_check.grid(row=2, column=2, pady=(0, 10))
             case "drivetrain_file":
                 # Get file from user
-                file_path = filedialog.askopenfilename(title="Select a file", initialdir=get_models_abs_dir(), filetypes=[("File", f"*.{file_type}")])
+                file_path = filedialog.askopenfilename(title="Select a file", initialdir=file_manager.get_models_dir(), filetypes=[("File", f"*.{file_type}")])
                 if file_path:
                     self.drivetrain_file_path = file_path
                     self.drivetrain_file_check.grid(row=3, column=2, pady=(0, 10))
@@ -100,7 +100,7 @@ class CreateNewCarPage(tkinter.Frame):
         self.car.drivetrain_file_path = self.drivetrain_file_path
 
         # Ask the user where they want to save the car object
-        file_path = filedialog.asksaveasfilename(title="Save Car File", initialdir=get_models_abs_dir(), defaultextension=".pkl")
+        file_path = filedialog.asksaveasfilename(title="Save Car File", initialdir=file_manager.get_models_dir(), defaultextension=".pkl")
 
         if file_path:
             # saving tire object

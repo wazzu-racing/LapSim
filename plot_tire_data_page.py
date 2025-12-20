@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import ttk
 import pickle as pkl
 
-from files import get_models_abs_dir
+from file_management import file_manager
 
 # Widget that is gridded once the user inputs the correct file
 tire_file_check = None
@@ -22,7 +22,7 @@ def select_file(root):
     global tire_file_path, plot_button
 
     # Open file dialog to select tire file
-    tire_file_path = filedialog.askopenfilename(title="Open Tire File", initialdir=get_models_abs_dir(), defaultextension=".pkl", filetypes=[("Pickle files", "*.pkl")])
+    tire_file_path = filedialog.askopenfilename(title="Open Tire File", initialdir=file_manager.get_models_dir(), defaultextension=".pkl", filetypes=[("Pickle files", "*.pkl")])
 
     # If the path that the user chooses is not empty, then allow the user to plot data.
     if tire_file_path:

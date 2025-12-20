@@ -1,10 +1,7 @@
-import pickle
-
 from matplotlib import pyplot as plt
 import scipy
 import numpy as np
 import csv
-import pickle as pkl
 import copy
 
 # tire magic function
@@ -489,7 +486,7 @@ class tire():
         for i in lim:
             indx = titles.index(i[0])
             for j in range(len(sets)):
-                for k in sets[j].lapsim_data_storage[indx]:
+                for k in sets[j].data[indx]:
                     if not(i[1] < k < i[2]):
                         cost[j] = 999999999999999
 

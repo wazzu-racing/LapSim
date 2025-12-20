@@ -161,12 +161,10 @@ class four_wheel:
         self.car = car
         self.n = n
 
-        self.lapsim_data_storage = LapSimData()
-
-    def run(self):
         # Make LapSimData instance to store LAPSIM data.
         self.lapsim_data_storage = LapSimData()
 
+    def run(self):
         # Finding total length of track
         track = np.sum(self.t_len_tot)
 
