@@ -114,7 +114,7 @@ class MainMenuPage(tkinter.Frame):
         label.grid(row=2, column=1, pady=(0, 20))
 
         # Make and pack "LapSim" button
-        button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ImportTrackPage"))
+        button = tkinter.Button(self, text="Run LAPSIM", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ImportTrackPage"))
         button.grid(row=3, column=1, pady=0)
 
         # Make and pack "Manage Data" button
@@ -125,13 +125,10 @@ class MainMenuPage(tkinter.Frame):
         button = tkinter.Button(self, text="Manage Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
         button.grid(row=5, column=1, pady=(5, 0))
 
-        advanced_label = tkinter.Label(self, text="(ADVANCED)", fg="red", bg = "black", font=("Ariel", 12))
-        advanced_label.grid(row=6, column=1, pady=(0, 0))
-
         version_frame = tkinter.Frame(self, bg="Black")
-        version_frame.grid(row=7, column=1, pady=(0, 0))
+        version_frame.grid(row=6, column=1, pady=(0, 0))
 
-        version_label = tkinter.Label(version_frame, text="v1 (2026.0.0)", fg="white", bg = "black")
+        version_label = tkinter.Label(version_frame, text="LAPSIM Interface v1 (2026)", fg="white", bg = "black")
         version_label.grid(row=0, column=0, pady=(100, 0), padx=(0, 800), sticky="se")
 
         # Configure grid to center all widgets

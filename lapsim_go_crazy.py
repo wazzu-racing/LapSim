@@ -303,8 +303,7 @@ class LapSimGoCrazy:
                     self.close_window()
             case 'z':
                 print(f'undid {(self.points_x[-1], self.points_y[-1])}')
-                self.panel.delete(self.dots[self.dots_array_index])
-                self.dots_array_index += 1
+                self.panel.delete(self.dots[-1])
                 pop_lists = []
                 if len(self.p1y) > len(self.p2y): pop_lists = [self.p1x, self.p1y, self.points_x, self.points_y, self.dots, self.dot_positions]
                 else: pop_lists = [self.p2x, self.p2y, self.points_x, self.points_y, self.dots, self.dot_positions]
@@ -401,7 +400,7 @@ class LapSimGoCrazy:
         self.plot_text_widget.pack()
 
     def plot_saved_points(self):
-        for index, position in enumerate(reversed(self.dot_positions)):
+        for index, position in enumerate(self.dot_positions):
             color = ""
             color_num = index % 8
             if color_num <= 1: color = "green"
