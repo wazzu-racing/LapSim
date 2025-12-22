@@ -129,6 +129,8 @@ class LapSimGoCrazy:
 
         print(f"Image dimensions: {self.img_width} x {self.img_height}")
 
+        self.dots_array_index = 0
+
         # Plot saved points if there are any
         if track_file is not None:
             self.plot_saved_points()
@@ -301,7 +303,8 @@ class LapSimGoCrazy:
                     self.close_window()
             case 'z':
                 print(f'undid {(self.points_x[-1], self.points_y[-1])}')
-                self.panel.delete(self.dots[-1])
+                self.panel.delete(self.dots[self.dots_array_index])
+                self.dots_array_index += 1
                 pop_lists = []
                 if len(self.p1y) > len(self.p2y): pop_lists = [self.p1x, self.p1y, self.points_x, self.points_y, self.dots, self.dot_positions]
                 else: pop_lists = [self.p2x, self.p2y, self.points_x, self.points_y, self.dots, self.dot_positions]

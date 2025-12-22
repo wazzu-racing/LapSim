@@ -101,7 +101,8 @@ class DisplayTrack:
             self.loading_window = LoadingWindow()
         else:
             self.loading_window.reset()
-        self.loading_window.open_window()
+        if len(self.points_x) > 18:
+            self.loading_window.open_window()
 
         instance = tq.tqdm(total=100) # Create instance of tqdm (library used to estimate time remaining)
         self.last_k = 0 # Set last_k to 0 for now, used to track how many k's have been added since last time loading was checked
@@ -121,8 +122,7 @@ class DisplayTrack:
                 self.loading_window.update_loading(spln.k / spln.len_s * 100, seconds_left)
                 spln.track_root.after(100, update_loading_window) # Call this same function again after 0.1 seconds.
             else:
-                self.loading_window.update_loading(100, 0)
-                self.loading_window.close_window()
+                self.loading_window.update_loading(100,0)
                 run_and_plot() # Once loading is done, run the LapSimUI class and plot the track.
 
         update_loading_window() # Call function to start the loop.

@@ -818,6 +818,7 @@ class track():
 
         len_s = len(s)
 
+        # TODO: CHECK IF THE LOADING WILL TAKE A SHORT AMOUNT OF TIME AND IF SO DONT SHOW LOADING WINDOW
         while k < len_s:
             step = s[k]
 
