@@ -13,7 +13,7 @@ import lapsim
 import tkinter
 import csv
 
-from file_management import file_manager
+from file_manager import file_manager
 from car_settings_window import CarSettingsWindow
 from loading_window import LoadingWindow
 from max_values_window import MaxValuesWindow
@@ -378,8 +378,6 @@ class LapSimUI:
         track_root.columnconfigure(1, weight=0)
         track_root.columnconfigure(2, weight=0)
         track_root.columnconfigure(3, weight=1)
-
-        track_root.mainloop()
 
 class node():
 
@@ -818,7 +816,6 @@ class track():
 
         len_s = len(s)
 
-        # TODO: CHECK IF THE LOADING WILL TAKE A SHORT AMOUNT OF TIME AND IF SO DONT SHOW LOADING WINDOW
         while k < len_s:
             step = s[k]
 

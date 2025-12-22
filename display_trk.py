@@ -5,7 +5,7 @@ from LapData import LapData
 import pickle
 import tqdm as tq
 
-from file_management import file_manager
+from file_manager import file_manager
 from loading_window import LoadingWindow
 
 class DisplayTrack:

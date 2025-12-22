@@ -7,6 +7,7 @@ import numpy as np
 import csv
 import drivetrain_model
 import tire_model
+from file_manager import file_manager
 
 class car():
 
@@ -98,7 +99,7 @@ class car():
     train = None
 
     def __init__(self):
-        self.aero_csv_file_path = os.path.join("config_data", "DEFAULT_AERO_ARRAY.csv")
+        self.aero_csv_file_path = file_manager.get_temp_folder_path("config_data/DEFAULT_AERO_ARRAY.csv")
         self.tire_file_path = ""
         self.drivetrain_file_path = ""
 
@@ -114,8 +115,8 @@ class car():
             with open(self.tire_file_path, 'rb') as f:
                 self.tires = pickle.load(f)
         except Exception:
-            cornering_data = os.path.join("config_data", "cornering_data.dat")
-            accel_data = os.path.join("config_data", "acceleration_data.dat")
+            cornering_data = file_manager.get_temp_folder_path("config_data/cornering_data.dat")
+            accel_data = file_manager.get_temp_folder_path("config_data/acceleration_data.dat")
             self.tires = tire_model.tire(cornering_data, accel_data)
 
         # importing drivetrain model
@@ -123,7 +124,7 @@ class car():
             with open(self.drivetrain_file_path, 'rb') as f:
                 self.drivetrain = pickle.load(f)
         except Exception:
-            self.drivetrain = drivetrain_model.drivetrain(engine_data=os.path.join("config_data", "engine_array.csv"))
+            self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path("config_data/engine_array.csv"))
 
         self.file_location = ""
 

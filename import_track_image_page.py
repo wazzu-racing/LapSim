@@ -2,7 +2,7 @@ import tkinter
 from tkinter import filedialog
 
 from lapsim_go_crazy import LapSimGoCrazy
-from file_management import file_manager
+from file_manager import file_manager
 
 plot_button = None
 

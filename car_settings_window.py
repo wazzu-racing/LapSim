@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 
 from LapData import LapData
-from file_management import file_manager
+from file_manager import file_manager
 
 
 class CarSettingsWindow:

@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import ttk
 import pickle as pkl
 
-from file_management import file_manager
+from file_manager import file_manager
 
 # Widget that is gridded once the user inputs the correct file
 drivetrain_file_check = None

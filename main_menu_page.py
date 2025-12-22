@@ -4,7 +4,8 @@ import matplotlib as mat
 
 from PIL import Image, ImageTk
 
-from file_management import file_manager
+from file_manager import file_manager
+from file_maker import file_maker
 from import_track_image_page import ImportTrackImagePage
 from import_track_page import ImportTrackPage
 from create_new_car_page import CreateNewCarPage
@@ -24,7 +25,7 @@ class PageStack(tkinter.Tk):
         # Init to initxialize itself as a Tk
         super().__init__()
 
-        file_manager.create_LAPSIM_folder_in_documents()
+        file_maker.create_LAPSIM_folder_in_documents()
 
         # Make sure that plots open in a new window and not in the tkinter window.
         mat.use('TkAgg')
@@ -100,7 +101,7 @@ class MainMenuPage(tkinter.Frame):
         super().__init__(parent)
 
         # Get the directory of relative path to images
-        image_path = "Images/wazzu_racing_logo.PNG"
+        image_path = file_manager.get_temp_folder_path("config_data/Images/wazzu_racing_logo.PNG")
 
         # Create and pack the Wazzu Racing image
         pil_image = Image.open(image_path)
@@ -128,7 +129,7 @@ class MainMenuPage(tkinter.Frame):
         version_frame = tkinter.Frame(self, bg="Black")
         version_frame.grid(row=6, column=1, pady=(0, 0))
 
-        version_label = tkinter.Label(version_frame, text="LAPSIM Interface v1 (2026)", fg="white", bg = "black")
+        version_label = tkinter.Label(version_frame, text="LAPSIM Interface\nv1 (2026)", fg="white", bg = "black", anchor=tkinter.W, justify=tkinter.LEFT)
         version_label.grid(row=0, column=0, pady=(100, 0), padx=(0, 800), sticky="se")
 
         # Configure grid to center all widgets

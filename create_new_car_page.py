@@ -4,7 +4,7 @@ import pickle as pkl
 import os
 
 from car_settings_window import CarSettingsWindow
-from file_management import file_manager
+from file_manager import file_manager
 import car_model
 
 # The "CreateNewCarPage" page.
@@ -95,7 +95,7 @@ class CreateNewCarPage(tkinter.Frame):
         self.car = self.settings_window.car
 
         # Create and save car object into saved_files dir using imported files after setting car_model paths equal to user selection
-        self.car.aero_csv_file_path = os.path.join("config_data", "DEFAULT_AERO_ARRAY.csv")
+        self.car.aero_csv_file_path = file_manager.get_temp_folder_path("config_data/DEFAULT_AERO_ARRAY.csv")
         self.car.tire_file_path = self.tire_file_path
         self.car.drivetrain_file_path = self.drivetrain_file_path
 
