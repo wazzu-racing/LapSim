@@ -11,6 +11,7 @@ from car_model import car
 class FileMaker:
 
     def __init__(self):
+        # Initiate paths.
         self.lapsim_data_file_path = Path.home()/"Documents"/"LAPSIM"/"Data"
         self.models_file_path = self.lapsim_data_file_path/"Models"
         self.tracks_file_path = self.lapsim_data_file_path/"Tracks"
@@ -74,6 +75,7 @@ class FileMaker:
             print("Failed to write files, running again...")
             self.create_LAPSIM_folder_in_documents()
 
+    # Checks if the files were written correctly by checking each individual file.
     def files_written_successfully(self):
         if not Path(os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl")).exists():
             return False

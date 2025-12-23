@@ -83,6 +83,7 @@ class CreateNewCarPage(tkinter.Frame):
         if self.tire_file_path and self.drivetrain_file_path:
             self.save_car_button.configure(state="normal")
 
+    # Set the car var in this class instance to the car variable within the CarSettingsWindow instance.
     def set_window_settings_car_to_car(self):
         self.car = self.settings_window.car
 

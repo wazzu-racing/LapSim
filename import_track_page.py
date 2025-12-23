@@ -8,7 +8,6 @@ from display_trk import DisplayTrack
 from file_manager import file_manager
 from spline_track import LapSimUI
 
-
 class ImportTrackPage(tkinter.Frame):
 
     def __init__(self, parent, controller):

@@ -1,11 +1,9 @@
 import threading
 
 import spline_track as spln
-from LapData import LapData
 import pickle
 import tqdm as tq
 
-from file_manager import file_manager
 from loading_window import LoadingWindow
 
 class DisplayTrack:
@@ -18,6 +16,7 @@ class DisplayTrack:
 
         self.ui_instance = ui_instance
 
+        # Will set later.
         self.loading_window = None
 
         # DisplayTrack has these if the track was not generated beforehand
@@ -27,7 +26,9 @@ class DisplayTrack:
         self.points_x2 =[]
         self.points_y2 = []
 
+    # Saves data from lap_data.points into organized arrays.
     def initialize_notgenerated_track(self, lap_data):
+        # Guard code to make sure user has given points file and car file. (should never really be activated, just a precaution)
         if lap_data.points is not None and lap_data.car is not None:
             # loading points
             self.points = lap_data.points
@@ -51,16 +52,18 @@ class DisplayTrack:
                     self.points_x2.append(i.x2)
                     self.points_y2.append(i.y2)
 
+    # Either load or show a track depending on what is available in lap_data.
     def run_lap_data(self, display_track, lap_data):
         # if there is a generated track already in the lap_data file, then use that. If not, make a generated track.
         if lap_data.points is not None and lap_data.generated_track is None:
             self.create_and_show_notgenerated_track(display_track, lap_data)
         elif lap_data.generated_track is not None:
-            self.create_and_show_generated_track(display_track, lap_data)
+            self.show_generated_track(display_track, lap_data)
 
+    # Go through the process of generating a track, using a loading window, and displaying the track.
     def create_and_show_notgenerated_track(self,display_track, lap_data, prev_lap_data = None, generate_report = False, changed_car_model = False):
 
-        x = None
+        x = None # will be used later.
 
         # Function that saves lap_data from generated track. Used later in function as argument.
         def save_lap_data():
@@ -70,15 +73,16 @@ class DisplayTrack:
             with open(lap_data.file_location, "wb") as f:
                 pickle.dump(lap_data, f)
 
+        # Run lapsim and plot the track.
         def run_and_plot():
             #run sim to get data
             self.notgenerated_trk.run_sim(car=lap_data.car, nodes=self.nodes)
 
             # If no previous lap data, just plot the lap. Else, give the user a REPORT.
             if prev_lap_data is None:
-                self.notgenerated_trk.plot(lap_data_stuff=lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track) # displaying optimized track
+                self.notgenerated_trk.plot(lap_data_stuff=lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance) # displaying optimized track
             else:
-                self.notgenerated_trk.plot(lap_data_stuff=lap_data, prev_lap_data=prev_lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track, generate_report=generate_report, changed_car_model=changed_car_model) # displaying optimized track
+                self.notgenerated_trk.plot(lap_data_stuff=lap_data, prev_lap_data=prev_lap_data, save_lap_data_func=save_lap_data, display_track=display_track, ui_instance=self.ui_instance, generate_report=generate_report, changed_car_model=changed_car_model) # displaying optimized track
 
         # initialize points and stuff
         self.initialize_notgenerated_track(lap_data)
@@ -97,11 +101,12 @@ class DisplayTrack:
             x.daemon = True
             x.start()
 
+        # If a loading window has already been created, then reset the window. If it has not, then create the window.
         if self.loading_window is None:
             self.loading_window = LoadingWindow()
         else:
             self.loading_window.reset()
-        if len(self.points_x) > 18:
+        if len(self.points_x) > 18: # Loading window will stay on screen if there is not enough to load, so set a minimum.
             self.loading_window.open_window()
 
         instance = tq.tqdm(total=100) # Create instance of tqdm (library used to estimate time remaining)
@@ -127,19 +132,10 @@ class DisplayTrack:
 
         update_loading_window() # Call function to start the loop.
 
-    def create_and_show_generated_track(self, display_track, lap_data):
+    # Show the generated track within lap_data.
+    def show_generated_track(self, display_track, lap_data):
         # close track graph if open, also need this if statement to run without errors
         if self.ui_instance is not None:
             self.ui_instance.close_LapsimUI_window()
             self.ui_instance.running_from_ungenerated_track = False
-        lap_data.generated_track.plot(lap_data_stuff=lap_data, display_track=display_track, ui_instance=self.ui_instance, save_file_func=self.save_track)
-
-    def save_track(self):
-        print("[Saving Track...]")
-        file = file_manager.get_file_from_user(file_types=[("Pickle files", "*.pkl")])
-        if file:
-            with open(file, 'wb') as f:
-                new_track_data = LapData(self.points)
-                new_track_data.car = self.car
-                new_track_data.generated_track = self.notgenerated_trk # now turned into generated track
-                pickle.dump(obj=new_track_data, file=f)
+        lap_data.generated_track.plot(lap_data_stuff=lap_data, display_track=display_track, ui_instance=self.ui_instance)

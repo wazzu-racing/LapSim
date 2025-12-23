@@ -1,10 +1,6 @@
-import pickle
-import threading
-
 import numpy as np
 import math
 
-from PIL.ImageOps import expand
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -324,7 +320,7 @@ class LapSimUI:
         else:
             print("No file selected")
 
-    def load_lapsim(self, display_track, save_file_func=None):
+    def load_lapsim(self, display_track):
         global track_root, track_subplot, track_canvas, data_bools, data_label, tkinter_data_bools
 
         track_root.deiconify() # Show the window
@@ -355,9 +351,6 @@ class LapSimUI:
 
         data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), fg="white", bg="gray13")
         data_label.grid(row=5, column=2, padx=0, pady=0, sticky="nsew")
-
-        if save_file_func is not None:
-            track_root.bind("<s>", lambda event: save_file_func())
 
     def load_track(self):
         global track_subplot, track_canvas, track_root
@@ -653,7 +646,7 @@ class track():
 
         return closest_index
 
-    def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, save_file_func=None, generate_report = False, changed_car_model=False):
+    def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, generate_report = False, changed_car_model=False):
         global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
 
         # Clear figures and plots by setting them equal to new ones
@@ -764,7 +757,7 @@ class track():
             self.report_window.open_window()
 
         # Load lapsim ui
-        ui_instance.load_lapsim(display_track=display_track, save_file_func=save_file_func)
+        ui_instance.load_lapsim(display_track=display_track)
 
         # Function that converts the position of the users mouse into data from the nearest data node
         def on_hover(event):

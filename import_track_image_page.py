@@ -2,39 +2,18 @@ import tkinter
 from tkinter import filedialog
 
 from lapsim_go_crazy import LapSimGoCrazy
-from file_manager import file_manager
-
-plot_button = None
-
-image_file = ""
-image_check = None
-
-def select_file():
-    global image_file, image_check, plot_button
-
-    # Asks the user to choose an image file to create the track with.
-    file_path = filedialog.askopenfilename(title="Select a file", filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
-    # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
-    if file_path:
-        # enable plot button if file is selected
-
-        image_file = file_path
-        image_check.grid(row=2, column=2, pady=(100, 10))
-        plot_button.configure(state="normal")
-    elif image_file != "":
-        if not image_check.grid_info():
-            image_check.grid(row=2, column=2, pady=(100, 10))
-        plot_button.configure(state="normal")
-    else:
-        print("No file selected")
 
 class ImportTrackImagePage(tkinter.Frame):
 
     def __init__(self, parent, controller):
-        global plot_button, image_file, image_check
 
         # Init to initialize itself as a Frame
         super().__init__(parent)
+
+        self.plot_button = None
+
+        self.image_file = ""
+        self.image_check = None
 
         # Initiate LapSimGoCrazy var
         self.lapsim_go_crazy = None
@@ -44,15 +23,15 @@ class ImportTrackImagePage(tkinter.Frame):
         label.grid(row=1, column=1)
 
         #  Make and pack "Import Image" button
-        button = tkinter.Button(self, text="Import Image", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: select_file())
+        button = tkinter.Button(self, text="Import Image", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: self.select_file())
         button.grid(row=2, column=1, pady=(100, 10))
 
         # Make and pack check label widget for "Import Image" button above.
-        image_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
+        self.image_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         #  Make and pack "Plot Track" button
-        plot_button = tkinter.Button(self, text="Plot Track", bg="White",  fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: self.run_lapsim_go_crazy())
-        plot_button.grid(row=3, column=1, pady=(100, 0))
+        self.plot_button = tkinter.Button(self, text="Plot Track", bg="White",  fg="Black", highlightbackground="Black", font=("Ariel", 24), state="disabled", command=lambda: self.run_lapsim_go_crazy())
+        self.plot_button.grid(row=3, column=1, pady=(100, 0))
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
@@ -66,10 +45,24 @@ class ImportTrackImagePage(tkinter.Frame):
         self.grid_columnconfigure(3, weight=1)
 
     def run_lapsim_go_crazy(self):
-        global image_file
         if self.lapsim_go_crazy is None:
-            self.lapsim_go_crazy = LapSimGoCrazy(image_path=image_file)
-        elif self.lapsim_go_crazy is not None and image_file != self.lapsim_go_crazy.image_path_saved:
+            self.lapsim_go_crazy = LapSimGoCrazy(image_path=self.image_file)
+        elif self.lapsim_go_crazy is not None and self.image_file != self.lapsim_go_crazy.image_path_saved:
             self.lapsim_go_crazy.go_crazy_root.destroy()
-            self.lapsim_go_crazy = LapSimGoCrazy(image_path=image_file)
+            self.lapsim_go_crazy = LapSimGoCrazy(image_path=self.image_file)
         self.lapsim_go_crazy.open_window()
+
+    def select_file(self):
+        # Asks the user to choose an image file to create the track with.
+        file_path = filedialog.askopenfilename(title="Select a file", filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
+        # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
+        if file_path: # Activate the plot button if a file has been selected.
+            self.image_file = file_path
+            self.image_check.grid(row=2, column=2, pady=(100, 10))
+            self.plot_button.configure(state="normal")
+        elif self.image_file != "": # If image file was imported, Activate the plot button.
+            if not self.image_check.grid_info():
+                self.image_check.grid(row=2, column=2, pady=(100, 10))
+            self.plot_button.configure(state="normal")
+        else:
+            print("No file selected")

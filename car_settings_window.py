@@ -8,22 +8,25 @@ import pickle
 from LapData import LapData
 from file_manager import file_manager
 
-
 class CarSettingsWindow:
 
     def __init__(self, display_track = None, lap_data = None, car = None):
         self.root = tkinter.Toplevel() # For winsow of graph and viewable values
         self.root.title("Car Settings")
 
+        # Able to reference the single display_track instance universal across the program.
         self.display_track = display_track
 
         self.lap_data = lap_data
 
+        # List for all of the different settings the user can choose.
         self.entries_list = []
 
+        # checkbox button so the user can choose whether to generate a REPORT.
         self.generate_report = tkinter.BooleanVar()
         self.generate_report.set(True)
 
+        # set to true if the user picked an entirely new car model to use
         self.changed_car_model = False
 
         self.canvas = tkinter.Canvas(master=self.root, width=500, height=500)
@@ -36,6 +39,7 @@ class CarSettingsWindow:
         self.scrollable_frame = tkinter.Frame(self.canvas, width=500, height=500)
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="center")
 
+        # Sets car var in create_new_car_page, sets lap_data var in viewer/graph of track.
         if car is not None:
             self.car = car
             self.car_file_path = self.car.file_location
@@ -90,6 +94,7 @@ class CarSettingsWindow:
 
             row += 1  # move to next row
 
+        # If the user is not in create_new_car_page.py, create some buttons and labels.
         if display_track is not None:
             change_car_button = tkinter.Button(self.scrollable_frame, text="Change Car", command= lambda: self.get_car_file())
             change_car_button.grid(row=23, column=1, pady=(50, 0), sticky="N")
@@ -137,6 +142,7 @@ class CarSettingsWindow:
         self.scrollable_frame.columnconfigure(2, weight=0)
         self.scrollable_frame.columnconfigure(3, weight=1)
 
+        # Places the scroll bar on the screen.
         self.scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
 
         # Hide this window until ready to show
@@ -190,6 +196,7 @@ class CarSettingsWindow:
 
         self.car.compute_traction()
 
+        # If save_car_file is true, then the changes that the user made will be saved to the file they derived the values from.
         if save_car_file:
             if self.car_file_path:
                 with(open(self.car_file_path, 'wb') as f):
@@ -197,6 +204,7 @@ class CarSettingsWindow:
 
         self.close_window()
 
+    # Changes all the car settings in the window to the variables that the car argument has.
     def change_vars_to_car(self, car):
         self.car = car
         self.settings = {
@@ -230,6 +238,7 @@ class CarSettingsWindow:
             self.entries_list[index].grid(row=index+1, column=2, padx=5, pady=5)
             index += 1
 
+    # Ask the user for a car file and then change the variables on the page to the vars of that car file.
     def get_car_file(self):
         file = filedialog.askopenfilename(title="Pick a car file", initialdir=file_manager.get_models_dir(), filetypes=[("Pickle file", "*.pkl")], defaultextension=".pkl")
         if file:
@@ -240,18 +249,20 @@ class CarSettingsWindow:
             self.change_car_label.grid()
             self.changed_car_model = True
 
+    # Open the window and change the variables in the window to the car currently in use.
     def open_window(self):
         self.change_vars_to_car(self.lap_data.car)
         self.root.deiconify() # Show the window
 
+    # Get rid of change_car_label and close window.
     def close_window(self):
         try:
             self.change_car_label.grid_remove()
         except Exception:
             pass
         self.root.withdraw()
-        self.root.withdraw()
 
+    # Apply the changes the user made on the page to the car var and run the lapsim.
     def apply_changes_and_run_lapsim(self):
         # Make a prev_lap_data var that stores the data in this current track so that we can access it later for the REPORT
         prev_lap_data = LapData(self.lap_data.points)
