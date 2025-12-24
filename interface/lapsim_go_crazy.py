@@ -3,8 +3,8 @@ import tkinter
 from PIL import ImageTk, Image
 import pickle
 
-from file_manager import file_manager
-from LapData import LapData
+from file_management.file_manager import file_manager
+from interface.LapData import LapData
 
 class LapSimGoCrazy:
 

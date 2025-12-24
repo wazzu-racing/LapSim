@@ -5,15 +5,15 @@ from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-import lapsim
+from lapsim_ import lapsim
 import tkinter
 import csv
 
-from file_manager import file_manager
-from car_settings_window import CarSettingsWindow
-from loading_window import LoadingWindow
-from max_values_window import MaxValuesWindow
-from report_window import ReportWindow
+from interface.file_management.file_manager import file_manager
+from interface.car_settings_window import CarSettingsWindow
+from interface.loading_window import LoadingWindow
+from interface.max_values_window import MaxValuesWindow
+from interface.report_window import ReportWindow
 
 # Create UI global vars
 track_root = None
@@ -364,11 +364,11 @@ class LapSimUI:
 
 class node():
 
-    def __init__(self, x1, y1, x2, y2, car_rad):
+    def __init__(self, x1, y1, x2, y2, car_rad=0):
         global track_subplot
 
         # The distance from the Car's center to it's most outer point, perpendicular to its longitudinal axis
-        self.car_rad = car_rad
+        self.car_rad = car_rad if car_rad != 0 else 29
         self.v_min = 0
 
         self.x1 = x1

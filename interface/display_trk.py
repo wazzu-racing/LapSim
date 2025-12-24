@@ -1,6 +1,6 @@
 import threading
 
-import spline_track as spln
+from lapsim_ import spline_track as spln
 import pickle
 import tqdm as tq
 
@@ -46,7 +46,7 @@ class DisplayTrack:
                 self.points_y = []
                 self.points_x2 = []
                 self.points_y2 = []
-                for i in  self.points.nds:
+                for i in self.points.nds:
                     self.points_x.append(i.x1)
                     self.points_y.append(i.y1)
                     self.points_x2.append(i.x2)

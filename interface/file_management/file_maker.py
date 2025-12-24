@@ -2,15 +2,17 @@ import os
 from pathlib import Path
 import pickle
 
-import drivetrain_model
-import tire_model
-from LapData import LapData
-from file_manager import file_manager
-from car_model import car
+from models import drivetrain_model
+from models import tire_model
+from interface.LapData import LapData
+from .file_manager import file_manager
+from models.car_model import car
 
 class FileMaker:
 
     def __init__(self):
+        self.project_root_dir = Path(__file__).resolve().parent.parent.parent
+
         self.lapsim_data_file_path = Path.home()/"Documents"/"LAPSIM"/"Data"
         self.models_file_path = self.lapsim_data_file_path/"Models"
         self.tracks_file_path = self.lapsim_data_file_path/"Tracks"
@@ -26,14 +28,14 @@ class FileMaker:
         os.makedirs(self.tracks_file_path, exist_ok=True)
 
         # Create tire model and put into user's documents folder.
-        cornering_data = file_manager.get_temp_folder_path("config_data/cornering_data.dat")
-        accel_data = file_manager.get_temp_folder_path("config_data/acceleration_data.dat")
+        cornering_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "cornering_data.dat"))
+        accel_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "acceleration_data.dat"))
         tires = tire_model.tire(cornering_data, accel_data)
         with open(os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), 'wb') as f:
             pickle.dump(tires, f)
 
         # Create drivetrain model and put into user's documents folder.
-        engine_data = file_manager.get_temp_folder_path("config_data/engine_array.csv")
+        engine_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "engine_array.csv"))
         drivetrain = drivetrain_model.drivetrain(engine_data=engine_data)
         with open(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"), 'wb') as f:
             pickle.dump(drivetrain, f)
@@ -45,25 +47,25 @@ class FileMaker:
 
         # Create LapData files and put into user's documents folder.
         # Acceleration track
-        with open(file_manager.get_temp_folder_path("config_data/track_points/acceleration_trk_points.pkl"), "rb") as f:
+        with open(file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "acceleration_trk_points.pkl")), "rb") as f:
             points = pickle.load(f)
             accel_lap_data = LapData(points)
             with open(os.path.join(self.tracks_file_path, "Acceleration_Track.pkl"), "wb") as fi:
                 pickle.dump(accel_lap_data, fi)
         # Autocross track
-        with open(file_manager.get_temp_folder_path("config_data/track_points/autocross_trk_points.pkl"), "rb") as f:
+        with open(file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), "rb") as f:
             points = pickle.load(f)
             autocross_lap_data = LapData(points)
             with open(os.path.join(self.tracks_file_path, "Autocross_Track.pkl"), "wb") as fi:
                 pickle.dump(autocross_lap_data, fi)
         # Endurance track
-        with open(file_manager.get_temp_folder_path("config_data/track_points/endurance_trk_points.pkl"), "rb") as f:
+        with open(file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "endurance_trk_points.pkl")), "rb") as f:
             points = pickle.load(f)
             endurance_lap_data = LapData(points)
             with open(os.path.join(self.tracks_file_path, "Endurance_Track.pkl"), "wb") as fi:
                 pickle.dump(endurance_lap_data, fi)
         # Skidpad track
-        with open(file_manager.get_temp_folder_path("config_data/track_points/skidpad_trk_points.pkl"), "rb") as f:
+        with open(file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "skidpad_trk_points.pkl")), "rb") as f:
             points = pickle.load(f)
             skidpad_lap_data = LapData(points)
             with open(os.path.join(self.tracks_file_path, "Skidpad_Track.pkl"), "wb") as fi:

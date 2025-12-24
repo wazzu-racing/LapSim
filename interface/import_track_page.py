@@ -1,12 +1,10 @@
-import os
 import tkinter
-from dataclasses import dataclass
 from tkinter import filedialog
 import pickle
 
 from display_trk import DisplayTrack
-from file_manager import file_manager
-from spline_track import LapSimUI
+from file_management.file_manager import file_manager
+from lapsim_.spline_track import LapSimUI
 
 class ImportTrackPage(tkinter.Frame):
 

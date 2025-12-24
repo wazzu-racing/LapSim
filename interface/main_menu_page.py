@@ -1,11 +1,11 @@
 import os
 import tkinter
 import matplotlib as mat
-
 from PIL import Image, ImageTk
+from pathlib import Path
 
-from file_manager import file_manager
-from file_maker import file_maker
+from file_management.file_manager import file_manager
+from file_management.file_maker import file_maker
 from import_track_image_page import ImportTrackImagePage
 from import_track_page import ImportTrackPage
 from create_new_car_page import CreateNewCarPage
@@ -18,6 +18,7 @@ from plot_drivetrain_data_page import PlotDrivetrainDataPage
 import platform
 
 from plot_tire_data_page import PlotTireDataPage
+
 
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
@@ -40,7 +41,9 @@ class PageStack(tkinter.Tk):
         container.pack(expand=True)
 
         # Stores all pages available in the LAPSIM
-        self.pages = (MainMenuPage, ManageDataPage, PlotDataPage, PlotDrivetrainDataPage, PlotCarDataPage, PlotTireDataPage, CreateNewCarPage, ManageTracksPage, ImportTrackPage, ImportTrackImagePage)
+        self.pages = (
+        MainMenuPage, ManageDataPage, PlotDataPage, PlotDrivetrainDataPage, PlotCarDataPage, PlotTireDataPage,
+        CreateNewCarPage, ManageTracksPage, ImportTrackPage, ImportTrackImagePage)
         # Stores the current page as a string
         self.current_page = "MainMenuPage"
         # Stores the page hierarchy that the user is current at.
@@ -82,7 +85,8 @@ class PageStack(tkinter.Tk):
         self.page_history.append(page_name)
 
     # Go back to the previous page
-    def go_back(self, event=None):     # Since binding go_back requires it to take in an event parameter, go_back must have an event parameter.
+    def go_back(self,
+                event=None):  # Since binding go_back requires it to take in an event parameter, go_back must have an event parameter.
         # Check to make sure that there are pages to go back to.
         if len(self.page_history) > 1:
             # lower the current frame to show previous frame
@@ -92,6 +96,7 @@ class PageStack(tkinter.Tk):
             self.page_history.pop()
             self.current_page = self.page_history[-1]
 
+
 # The "MainMenuPage" page.
 class MainMenuPage(tkinter.Frame):
     def __init__(self, parent, controller):
@@ -99,7 +104,8 @@ class MainMenuPage(tkinter.Frame):
         super().__init__(parent)
 
         # Get the directory of relative path to images
-        image_path = file_manager.get_temp_folder_path("config_data/Images/wazzu_racing_logo.PNG")
+        image_path = file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent,
+                                                                    "config_data", "Images", "wazzu_racing_logo.PNG"))
 
         # Create and pack the Wazzu Racing image
         pil_image = Image.open(image_path)
@@ -113,21 +119,25 @@ class MainMenuPage(tkinter.Frame):
         label.grid(row=2, column=1, pady=(0, 20))
 
         # Make and pack "LapSim" button
-        button = tkinter.Button(self, text="Run LAPSIM", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command= lambda: controller.go_to_page("ImportTrackPage"))
+        button = tkinter.Button(self, text="Run LAPSIM", bg="White", fg="Black", highlightbackground="Black",
+                                font=("Ariel", 24), command=lambda: controller.go_to_page("ImportTrackPage"))
         button.grid(row=3, column=1, pady=0)
 
         # Make and pack "Manage Data" button
-        button = tkinter.Button(self, text="Manage Tracks", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageTracksPage"))
+        button = tkinter.Button(self, text="Manage Tracks", bg="White", fg="Black", highlightbackground="Black",
+                                font=("Ariel", 24), command=lambda: controller.go_to_page("ManageTracksPage"))
         button.grid(row=4, column=1, pady=(5, 0))
 
         # Make and pack "Manage Data" button
-        button = tkinter.Button(self, text="Manage Data", bg="White", fg="Black", highlightbackground="Black", font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
+        button = tkinter.Button(self, text="Manage Data", bg="White", fg="Black", highlightbackground="Black",
+                                font=("Ariel", 24), command=lambda: controller.go_to_page("ManageDataPage"))
         button.grid(row=5, column=1, pady=(5, 0))
 
         version_frame = tkinter.Frame(self, bg="Black")
         version_frame.grid(row=6, column=1, pady=(0, 0))
 
-        version_label = tkinter.Label(version_frame, text="LAPSIM Interface\nv1 (2026)", fg="white", bg = "black", anchor=tkinter.W, justify=tkinter.LEFT)
+        version_label = tkinter.Label(version_frame, text="LAPSIM Interface\nv1 (2026)", fg="white", bg="black",
+                                      anchor=tkinter.W, justify=tkinter.LEFT)
         version_label.grid(row=0, column=0, pady=(100, 0), padx=(0, 800), sticky="se")
 
         # Configure grid to center all widgets

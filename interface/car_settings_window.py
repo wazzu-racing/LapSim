@@ -5,8 +5,8 @@ from tkinter import filedialog
 import numpy as np
 import pickle
 
-from LapData import LapData
-from file_manager import file_manager
+from interface.LapData import LapData
+from file_management.file_manager import file_manager
 
 class CarSettingsWindow:
 

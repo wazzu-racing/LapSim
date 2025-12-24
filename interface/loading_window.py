@@ -38,7 +38,7 @@ class LoadingWindow:
             self.progress_bar["value"] = 0
 
     def open_window(self):
-        self.root.deiconify() # Show the window
+        self.root.deiconify()  # Show the window
 
     def close_window(self):
         self.root.withdraw()

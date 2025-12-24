@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 
+
 class LapSimData:
     def __init__(self):
         # Array for time t
@@ -42,7 +43,11 @@ class LapSimData:
         # Angle of accel force of car
         self.theta_accel = []
 
-        self.max_value_names = ["max_time", "max_AY","max_AX","max_FI_load","max_FO_load","max_RI_load","max_RO_load","max_FI_FY","max_FO_FY","max_RI_FY","max_RO_FY","max_FI_FX","max_FO_FX","max_RI_FX","max_RO_FX","max_FI_vector_mag","max_FO_vector_mag","max_RI_vector_mag","max_RO_vector_mag","max_D_1_dis","max_D_2_dis","max_D_3_dis","max_D_4_dis"]
+        self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
+                                "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
+                                "max_FO_FX", "max_RI_FX", "max_RO_FX", "max_FI_vector_mag", "max_FO_vector_mag",
+                                "max_RI_vector_mag", "max_RO_vector_mag", "max_D_1_dis", "max_D_2_dis", "max_D_3_dis",
+                                "max_D_4_dis"]
 
     # Initialize all of the arrays in LapSimData
     def initialize(self, n):
@@ -51,7 +56,7 @@ class LapSimData:
         # Collect lateral and axial acceleration
         self.AX = np.zeros(int(n + 1))
         self.AY = np.zeros(int(n + 1))
-        #vertical forces on tires
+        # vertical forces on tires
         self.FO_load_array = np.zeros(int(n + 1))
         self.FI_load_array = np.zeros(int(n + 1))
         self.RO_load_array = np.zeros(int(n + 1))
@@ -69,10 +74,10 @@ class LapSimData:
         self.FO_vector = np.zeros(shape=(int(n + 1), 3))
         self.RI_vector = np.zeros(shape=(int(n + 1), 3))
         self.RO_vector = np.zeros(shape=(int(n + 1), 3))
-        self.FI_vector_mag = np.zeros(int(n+1))
-        self.FO_vector_mag = np.zeros(int(n+1))
-        self.RI_vector_mag = np.zeros(int(n+1))
-        self.RO_vector_mag = np.zeros(int(n+1))
+        self.FI_vector_mag = np.zeros(int(n + 1))
+        self.FO_vector_mag = np.zeros(int(n + 1))
+        self.RI_vector_mag = np.zeros(int(n + 1))
+        self.RO_vector_mag = np.zeros(int(n + 1))
         self.FI_vector_dir = np.zeros(shape=(int(n + 1), 3))
         self.RI_vector_dir = np.zeros(shape=(int(n + 1), 3))
         self.FO_vector_dir = np.zeros(shape=(int(n + 1), 3))
@@ -95,7 +100,8 @@ class LapSimData:
                            "max_FI_FX": np.max(self.FI_FX_array), "max_RO_FX": np.max(self.RO_FX_array),
                            "max_FI_FY": np.max(self.FI_FY_array), "max_RO_FY": np.max(self.RO_FY_array),
                            "max_RI_FX": np.max(self.RI_FX_array), "max_FI_vector_mag": np.max(self.FI_vector_mag),
-                           "max_FO_vector_mag": np.max(self.FO_vector_mag), "max_RI_vector_mag":np.max(self.RI_vector_mag),
+                           "max_FO_vector_mag": np.max(self.FO_vector_mag),
+                           "max_RI_vector_mag": np.max(self.RI_vector_mag),
                            "max_RO_vector_mag": np.max(self.RO_vector_mag), "max_D_1_dis": np.max(self.D_1_dis),
                            "max_D_2_dis": np.max(self.D_2_dis), "max_D_3_dis": np.max(self.D_3_dis),
                            "max_D_4_dis": np.max(self.D_4_dis)}
@@ -109,6 +115,7 @@ class LapSimData:
     # Get the magnitude of the argument vector provided.
     def get_magnitude(self, vector):
         return np.sqrt(np.sum(np.power(vector, 2)))
+
 
 class four_wheel:
 
@@ -152,8 +159,8 @@ class four_wheel:
         self.arc_beginning_node = []  # Stores the beginning node
         for i in np.arange(len(self.t_len_tot)):
             self.nd_rad[
-                int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
-            self.t_rad[i]
+            int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
+                self.t_rad[i]
             self.arc_beginning_node.append(int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)))
         self.arc_beginning_node.append(n + 1)
 
@@ -163,7 +170,7 @@ class four_wheel:
         v2 = np.zeros(int(n + 1))
         for i in np.arange(len(self.t_len_tot)):
             v2[int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
-            self.t_vel[i]
+                self.t_vel[i]
         v2[-1] = v2[-2]
 
         for i in np.arange(n, -1, -1):
@@ -178,7 +185,7 @@ class four_wheel:
 
         for i in np.arange(len(self.t_len_tot)):
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
-            self.t_vel[i]
+                self.t_vel[i]
 
         v1[0] = 0
         v1[-1] = v1[-2]
@@ -214,7 +221,7 @@ class four_wheel:
                     a_tan = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in in/s^2
                 else:
                     shifting = True
-                    a_tan = self.car.a_rr # While shifting, the car has negative acceleration because of rolling resistance
+                    a_tan = self.car.a_rr  # While shifting, the car has negative acceleration because of rolling resistance
                     shift_time -= dx / v1[int(i)]
                     if shift_time <= 0:
                         gear += 1
@@ -241,7 +248,7 @@ class four_wheel:
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
-        for i in np.arange(0, len(v2)-1):
+        for i in np.arange(0, len(v2) - 1):
             # calculate time between nodes by averaging the velocities of the nodes at the start and end of the selected time frame
             t += dx / np.average([v3[i], v3[i + 1]])
             self.lapsim_data_storage.time_array.append(t)
@@ -274,7 +281,7 @@ class four_wheel:
         self.lapsim_data_storage.AX[index] = axi
         self.lapsim_data_storage.AY[index] = lat
 
-        #lateral, axial, and vertical forces on tires
+        # lateral, axial, and vertical forces on tires
         self.lapsim_data_storage.FO_load_array[index] = self.car.W_out_f
         self.lapsim_data_storage.FI_load_array[index] = self.car.W_in_f
         self.lapsim_data_storage.RO_load_array[index] = self.car.W_out_r
@@ -293,14 +300,22 @@ class four_wheel:
         self.lapsim_data_storage.RI_vector[index] = np.array([self.car.FX_in_r, self.car.FY_in_r, self.car.W_in_r])
         self.lapsim_data_storage.FO_vector[index] = np.array([self.car.FX_out_f, self.car.FY_out_f, self.car.W_out_f])
         self.lapsim_data_storage.RO_vector[index] = np.array([self.car.FX_out_r, self.car.FY_out_r, self.car.W_out_r])
-        self.lapsim_data_storage.FI_vector_mag[index] = self.lapsim_data_storage.get_magnitude(self.lapsim_data_storage.FI_vector[index])
-        self.lapsim_data_storage.FO_vector_mag[index] = self.lapsim_data_storage.get_magnitude(self.lapsim_data_storage.FO_vector[index])
-        self.lapsim_data_storage.RI_vector_mag[index] = self.lapsim_data_storage.get_magnitude(self.lapsim_data_storage.RI_vector[index])
-        self.lapsim_data_storage.RO_vector_mag[index] = self.lapsim_data_storage.get_magnitude(self.lapsim_data_storage.RO_vector[index])
-        self.lapsim_data_storage.FI_vector_dir[index] = np.array(self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.FI_vector[index]))
-        self.lapsim_data_storage.RI_vector_dir[index] = np.array(self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.RI_vector[index]))
-        self.lapsim_data_storage.FO_vector_dir[index] = np.array(self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.FO_vector[index]))
-        self.lapsim_data_storage.RO_vector_dir[index] = np.array(self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.RO_vector[index]))
+        self.lapsim_data_storage.FI_vector_mag[index] = self.lapsim_data_storage.get_magnitude(
+            self.lapsim_data_storage.FI_vector[index])
+        self.lapsim_data_storage.FO_vector_mag[index] = self.lapsim_data_storage.get_magnitude(
+            self.lapsim_data_storage.FO_vector[index])
+        self.lapsim_data_storage.RI_vector_mag[index] = self.lapsim_data_storage.get_magnitude(
+            self.lapsim_data_storage.RI_vector[index])
+        self.lapsim_data_storage.RO_vector_mag[index] = self.lapsim_data_storage.get_magnitude(
+            self.lapsim_data_storage.RO_vector[index])
+        self.lapsim_data_storage.FI_vector_dir[index] = np.array(
+            self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.FI_vector[index]))
+        self.lapsim_data_storage.RI_vector_dir[index] = np.array(
+            self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.RI_vector[index]))
+        self.lapsim_data_storage.FO_vector_dir[index] = np.array(
+            self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.FO_vector[index]))
+        self.lapsim_data_storage.RO_vector_dir[index] = np.array(
+            self.lapsim_data_storage.get_unit_vector(self.lapsim_data_storage.RO_vector[index]))
 
         # lapsim_data_storage vertical displacement of wheels
         self.lapsim_data_storage.D_1_dis[index] = self.car.D_1
