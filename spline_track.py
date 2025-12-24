@@ -20,16 +20,12 @@ track_root = None
 track_fig = None
 track_subplot = None
 track_canvas = None
-data_bools = []
 tkinter_data_bools = []
 data_label = None
 
+# Keeps track of locations of data nodes
 x_array = []
 y_array = []
-
-racecar = None
-
-loading_window = None
 
 # Global variables to keep track of track loading in other files
 len_s = 100
@@ -37,9 +33,8 @@ k = 0
 
 class LapSimUI:
 
-    # MAKE AN INIT FUNCTION FOR THIS CONSTRUCTOR TO CLEAR FIGURE WHEN CLOSING WINDOW
     def __init__(self, display_track):
-        global track_root, track_fig, track_subplot, track_canvas, data_bools
+        global track_root, track_fig, track_subplot, track_canvas
 
         track_root = tkinter.Tk() # For window of graph and viewable values
         track_root.title("Graph")
@@ -53,9 +48,6 @@ class LapSimUI:
 
         # Hide this window until ready to show
         track_root.withdraw()
-
-        # Create a toplevel window for CSV download
-        self.init_CSV_window()
 
         # Create a toplevel window for car settings
         self.car_settings_window = None
@@ -74,53 +66,52 @@ class LapSimUI:
         # initialize the loading window
         self.initialize_loading_window()
 
+        self.data_bools = []
+
         # Only allow the user to hide the LapSim UI and CSV windows, not close it
         track_root.protocol("WM_DELETE_WINDOW", self.close_LapsimUI_window)
-        self.csv_window.protocol("WM_DELETE_WINDOW", self.close_CSV_window)
+        # self.csv_window.protocol("WM_DELETE_WINDOW", self.close_CSV_window)
 
-    def init_CSV_window(self):
-        # Create a toplevel window for CSV download
-        self.csv_window = tkinter.Toplevel()
-        self.csv_window.title("Download CSV")
-
-        self.csv_window.withdraw()
-
+    # clear data and close LapSimUI window.
     def close_LapsimUI_window(self):
-        global track_root, track_fig, track_subplot, track_canvas, x_array, y_array
+        global track_root, track_subplot, x_array, y_array
         track_subplot.clear()
-        track_root.withdraw()
         x_array = []
         y_array = []
+        track_root.withdraw()
 
     def close_CSV_window(self):
-        self.csv_window.withdraw()
+        self.csv_window.destroy()
 
     def close_car_settings_window(self):
         self.car_settings_window.withdraw()
 
+    # Make all widgets for CSV window and show the window.
     def open_csv_window(self):
+        self.csv_window = tkinter.Toplevel()
+        self.csv_window.title("Download CSV")
+
         # code copied from load_lapsim function to create data selection menu
-        data_bools = [True, True, False, False, False, False, False, False, False, False]
+        self.data_bools = [True, True, False, False, False, False, False, False, False, False]
         data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
-        menu_button = tkinter.Menubutton(self.csv_window, text="Choose Data to Save", font=("Ariel", 12))
 
         # switch data_bools to tkinter BooleanVars
         for option in data_options:
             boolean = tkinter.BooleanVar()
-            boolean.set(data_bools[data_options.index(option)])
-            data_bools[data_options.index(option)] = boolean
+            boolean.set(self.data_bools[data_options.index(option)])
+            self.data_bools[data_options.index(option)] = boolean
 
         # Create checkbuttons and labels for each data option
-        time_check = tkinter.Checkbutton(self.csv_window, text = data_options[0], variable = data_bools[0])
-        accel_check = tkinter.Checkbutton(self.csv_window, text=data_options[1], variable=data_bools[1])
-        vertical_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[2], variable=data_bools[2])
-        lateral_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[3], variable=data_bools[3])
-        axial_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[4], variable=data_bools[4])
-        force_vector_check = tkinter.Checkbutton(self.csv_window, text=data_options[5], variable=data_bools[5])
-        force_magnitude_check = tkinter.Checkbutton(self.csv_window, text=data_options[6], variable=data_bools[6])
-        force_direction_check = tkinter.Checkbutton(self.csv_window, text=data_options[7], variable=data_bools[7])
-        wheel_displacement_check = tkinter.Checkbutton(self.csv_window, text=data_options[8], variable=data_bools[8])
-        theta_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[9], variable=data_bools[9])
+        time_check = tkinter.Checkbutton(self.csv_window, text = data_options[0], variable =  self.data_bools[0])
+        accel_check = tkinter.Checkbutton(self.csv_window, text=data_options[1], variable= self.data_bools[1])
+        vertical_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[2], variable= self.data_bools[2])
+        lateral_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[3], variable= self.data_bools[3])
+        axial_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[4], variable= self.data_bools[4])
+        force_vector_check = tkinter.Checkbutton(self.csv_window, text=data_options[5], variable= self.data_bools[5])
+        force_magnitude_check = tkinter.Checkbutton(self.csv_window, text=data_options[6], variable= self.data_bools[6])
+        force_direction_check = tkinter.Checkbutton(self.csv_window, text=data_options[7], variable= self.data_bools[7])
+        wheel_displacement_check = tkinter.Checkbutton(self.csv_window, text=data_options[8], variable= self.data_bools[8])
+        theta_force_check = tkinter.Checkbutton(self.csv_window, text=data_options[9], variable= self.data_bools[9])
 
         # Label to tell users forces are on tires
         forces_label = tkinter.Label(self.csv_window, text="*All forces are on tires.", font=("Ariel", 12), fg="white")
@@ -138,23 +129,16 @@ class LapSimUI:
         theta_force_check.grid(row=10, column=1, padx=10, pady=5, sticky="W")
         forces_label.grid(row=11, column=1, padx=10, pady=5, sticky="W")
 
-        download_csv_button = tkinter.Button(self.csv_window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv(data_bools))
+        download_csv_button = tkinter.Button(self.csv_window, text="Download CSV", font=("Ariel", 12), bg="white", fg="black", command=lambda: self.download_csv( self.data_bools))
         download_csv_button.grid(row=12, column=1, padx=10, pady=10)
 
+        # Configure all rows for each checkbox.
         self.csv_window.grid_rowconfigure(0, weight=1)
-        self.csv_window.grid_rowconfigure(1, weight=0)
-        self.csv_window.grid_rowconfigure(2, weight=0)
-        self.csv_window.grid_rowconfigure(3, weight=0)
-        self.csv_window.grid_rowconfigure(4, weight=0)
-        self.csv_window.grid_rowconfigure(5, weight=0)
-        self.csv_window.grid_rowconfigure(6, weight=0)
-        self.csv_window.grid_rowconfigure(7, weight=0)
-        self.csv_window.grid_rowconfigure(8, weight=0)
-        self.csv_window.grid_rowconfigure(9, weight=0)
-        self.csv_window.grid_rowconfigure(10, weight=0)
-        self.csv_window.grid_rowconfigure(11, weight=0)
-        self.csv_window.grid_rowconfigure(12, weight=0)
+        for i in range(1,13):
+            self.csv_window.grid_rowconfigure(i, weight=0)
         self.csv_window.grid_rowconfigure(13, weight=1)
+
+        # configure columns.
         self.csv_window.grid_columnconfigure(0, weight=1)
         self.csv_window.grid_columnconfigure(1, weight=0)
         self.csv_window.grid_columnconfigure(2, weight=1)
@@ -182,16 +166,18 @@ class LapSimUI:
         self.max_values_window.open_window()
 
     def initialize_loading_window(self):
-        global loading_window
-        if loading_window is None:
-            loading_window = LoadingWindow()
+        if self.loading_window is None:
+            self.loading_window = LoadingWindow()
 
+    # Downloads a csv using the preferences that the user chose in csv_window.
     def download_csv(self, arr_bool):
         print("Download CSV")
 
+        # Get where the user wants to save the csv.
         user_file_loc = file_manager.get_file_from_user(file_types=[("CSV File", "*.csv")], default_exension="*.csv")
 
         if user_file_loc:
+            # open csv
             with(open(user_file_loc, "w", newline='')) as csv_file:
                 writer = csv.writer(csv_file, dialect='unix')
                 header_array = []
@@ -199,17 +185,17 @@ class LapSimUI:
                 for i in range(len(arr_bool)): # Initialize writing_data with empty lists for each selected data type
                     writing_data.append([])
                 for i in range(len(arr_bool)):
-                    if arr_bool[i].get():
+                    if arr_bool[i].get(): # If the user selected a data type, find which one it was.
                         match i:
-                            case 0:
+                            case 0: # Save all data points in time_array into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.time_array):
                                     array = []
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.time_array[index]))
                                     array_2.append(array)
                                 writing_data[0] = array_2
-                                header_array.extend(["Time"])
-                            case 1:
+                                header_array.extend(["Time"]) # Add header to first row
+                            case 1:  # Save all data points in AX and AY arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.AX):
                                     array = []
@@ -217,8 +203,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.AY[index]))
                                     array_2.append(array)
                                 writing_data[1] = array_2
-                                header_array.extend(["Axial Acceleration", "Lateral Acceleration"])
-                            case 2:
+                                header_array.extend(["Axial Acceleration", "Lateral Acceleration"])# Add header to first row
+                            case 2: # Save all data points in FO_load_array, FI_load_array, RO_load_array, and RI_load_array arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_load_array):
                                     array = []
@@ -228,8 +214,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_load_array[index]))
                                     array_2.append(array)
                                 writing_data[2] = array_2
-                                header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"])
-                            case 3:
+                                header_array.extend(["Front outer vertical force", "Front inner vertical force", "Rear outer vertical force", "Rear inner vertical force"]) # Add header to first row
+                            case 3: # Save all data points in FO_FY_array, FI_FY_array, RO_FY_array, and RI_FY_array arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FY_array):
                                     array = []
@@ -239,8 +225,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FY_array[index]))
                                     array_2.append(array)
                                 writing_data[3] = array_2
-                                header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"])
-                            case 4:
+                                header_array.extend(["Front outer Lateral force", "Front inner Lateral force", "Rear outer Lateral force", "Rear inner Lateral force"]) # Add header to first row
+                            case 4: # Save all data points in FO_FX_array, FI_FX_array, RO_FX_array, and RI_FX_array arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                     array = []
@@ -250,8 +236,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_FX_array[index]))
                                     array_2.append(array)
                                 writing_data[4] = array_2
-                                header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"])
-                            case 5:
+                                header_array.extend(["Front outer Axial force", "Front inner Axial force", "Rear outer Axial force", "Rear inner Axial force"]) # Add header to first row
+                            case 5: # Save all data points in FO_vector, FI_vector, RO_vector, and RI_vector arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                     array = []
@@ -261,8 +247,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector[index]))
                                     array_2.append(array)
                                 writing_data[5] = array_2
-                                header_array.extend(["Front outer force vector", "Front inner force vector", "Rear outer force vector", "Rear inner force vector"])
-                            case 6:
+                                header_array.extend(["Front outer force vector", "Front inner force vector", "Rear outer force vector", "Rear inner force vector"]) # Add header to first row
+                            case 6: # Save all data points in FO_vector_mag, FI_vector_mag, RO_vector_mag, and RI_vector_mag arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                     array = []
@@ -272,8 +258,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_mag[index]))
                                     array_2.append(array)
                                 writing_data[6] = array_2
-                                header_array.extend(["Front outer force magnitude", "Front inner force magnitude", "Rear outer force magnitude", "Rear inner force magnitude"])
-                            case 7:
+                                header_array.extend(["Front outer force magnitude", "Front inner force magnitude", "Rear outer force magnitude", "Rear inner force magnitude"]) # Add header to first row
+                            case 7: # Save all data points in FO_vector_dir, FI_vector_dir, RO_vector_dir, and RI_vector_dir arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.FO_FX_array):
                                     array = []
@@ -283,8 +269,8 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.RI_vector_dir[index]))
                                     array_2.append(array)
                                 writing_data[7] = array_2
-                                header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"])
-                            case 8:
+                                header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"]) # Add header to first row
+                            case 8: # Save all data points in D_2_dis, D_1_dis, D_4_dis, and D_3_dis arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis):
                                     array = []
@@ -294,16 +280,17 @@ class LapSimUI:
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_3_dis[index]))
                                     array_2.append(array)
                                 writing_data[5] = array_2
-                                header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"])
-                            case 9:
+                                header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"]) # Add header to first row
+                            case 9: # Save all data points in theta_accel into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel):
                                     array = []
                                     array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel[index]))
                                     array_2.append(array)
                                 writing_data[6] = array_2
-                                header_array.extend(["Theta of Force on Car"])
+                                header_array.extend(["Theta of Force on Car"]) # Add header to first row
 
+                # Write the headers into the csv.
                 writer.writerow(header_array)
                 master_array = []
                 # Loop through each value of every data point
@@ -320,9 +307,11 @@ class LapSimUI:
         else:
             print("No file selected")
 
+    # Create widgets if necessary and show already made widgets for the lapsim graph/viewer and pack them.
     def load_lapsim(self, display_track):
-        global track_root, track_subplot, track_canvas, data_bools, data_label, tkinter_data_bools
+        global track_root, track_subplot, track_canvas, data_label, tkinter_data_bools
 
+        # Stuff for track_root is made in load_track.
         track_root.deiconify() # Show the window
 
         tkinter_data_bools = [tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False)]
@@ -352,6 +341,7 @@ class LapSimUI:
         data_label = tkinter.Label(data_label_frame, text="", font=("Ariel", 12), fg="white", bg="gray13")
         data_label.grid(row=5, column=2, padx=0, pady=0, sticky="nsew")
 
+    # Initialize and grid everything for the graph itself.
     def load_track(self):
         global track_subplot, track_canvas, track_root
 
@@ -562,7 +552,9 @@ class curve():
     def plot(self):
         track_subplot.plot(self.x, self.y)
 
+# Get all data points for one node depending on the index argument provided.
 def get_data_string(self, lapsim_data_storage, tkinter_data_bools, index):
+    # If the user has checked a boolean in tkinter_data_bools, add that data point to the content var.
     content = ""
     if tkinter_data_bools[0].get():
         content += f"Time: {round(lapsim_data_storage.time_array[index], 2)} sec\n\n"
@@ -589,12 +581,12 @@ def get_data_string(self, lapsim_data_storage, tkinter_data_bools, index):
 
 class track():
 
-    global x_array, y_array, racecar
+    global x_array, y_array
 
     def __init__(self, p1x, p1y, p2x, p2y, car):
-        global x_array, y_array, racecar
+        global x_array, y_array
 
-        racecar = car
+        self.car = car
 
         # Create a toplevel window for REPORT
         self.report_window = None
@@ -603,7 +595,7 @@ class track():
         self.loading_window = None
 
         # Get the minimum distance the CG of the car needs from the apex of the turn
-        self.car_rad = np.max([racecar.t_r, racecar.t_f])/2
+        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
 
         self.len = []
 
@@ -633,11 +625,12 @@ class track():
 
         print(f"created track")
 
+    # Returns the closest index of LapSimData arrays.
     def k_closest(self, points, mouse_pos):
         closest_dist = float('inf')
-        closest_index = None
+        closest_index = 0
 
-        # Push points onto the heap, maintaining the size at most k
+        # Calculates distance from mouse position to every point on the track. Calculates smallest distance and returns index.
         for index, point in enumerate(points):
             distance = math.sqrt((point[0] - mouse_pos[0])**2 + (point[1] - mouse_pos[1])**2)
             if closest_dist > distance:
@@ -647,7 +640,7 @@ class track():
         return closest_index
 
     def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, generate_report = False, changed_car_model=False):
-        global data_bools, track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
+        global track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
 
         # Clear figures and plots by setting them equal to new ones
         track_fig = Figure(figsize=(8, 7), dpi=100) # Adjust figsize and dpi as needed
@@ -661,6 +654,7 @@ class track():
         for i in self.arcs:
             i.plot() # Plot lines on graph (path of car)
 
+        # Create array that stores the length of every arc on the track.
         arc_lengths = []
         for arc in self.arcs:
             lengths, _ = arc.interpolate()
@@ -669,23 +663,23 @@ class track():
         total_track_length = sum(arc_lengths)
         total_data_node_count = len(self.sim.nds)
         distance_between_nodes = total_track_length / total_data_node_count
-        remainder_length = 0
+        remainder_length = 0 # Remainder distance from the last data node on the arc to the start of the next arc.
         prev_node_location = 0
         for index, arc in enumerate(self.arcs):
-            lengths, _ = arc.interpolate()
-            arc_length = sum(lengths)
+            lengths, _ = arc.interpolate() # lengths is a tuple of two arrays: lengths and radii, along the arc.
+            arc_length = sum(lengths) # Total length of arc
+
             # array of cumulative distances along the arc
             cum = np.cumsum(lengths) # shape ~ (len(arc.x),) hehe
 
             # Carry remainder from previous arc into this one
             effective_length = remainder_length + arc_length
 
-            # How many whole node spacings fit in this arc when including the carried remainder?
+            # How many whole node spacings fit in this arc when including the carried remainder
             num_nodes_in_arc = math.floor(effective_length / distance_between_nodes)
 
-            # How far to the first node from the start of this arc
-            remainder_length_from_prev = effective_length - arc_length
-            node_offset = distance_between_nodes - remainder_length_from_prev
+            remainder_length_from_prev = effective_length - arc_length # How far to the first node from the start of this arc
+            node_offset = distance_between_nodes - remainder_length_from_prev # How much the data nodes' positions will be offset from previous arc's remainder.
 
             # Compute new remainder to carry to the next arc
             remainder_length = effective_length - num_nodes_in_arc * distance_between_nodes
@@ -702,33 +696,37 @@ class track():
                 # Find index to use for arc.x and arc.y positions where cumulative length of arc roughly equals node_location
                 node_index = round(len(arc.x) * (j/num_nodes_in_arc))
 
-                if node_index ==0:
+                # Find the x and y locations of data nodes along the arc
+                if node_index == 0:
                     prev_node_location = 0.0
-                    ds = lengths[0]
+                    ds = lengths[0] # Distance between points in the arc
+                    # Find the ratio between distance between data nodes and distance between points in the arc
                     t = 0.0 if ds == 0 else (node_location - prev_node_location) / ds
+                    # Interpolate/extrapolate x and y positions (t > 1, most commonly)
                     x = arc.x[0] + t * (arc.x[1] - arc.x[0])
                     y = arc.y[0] + t * (arc.y[1] - arc.y[0])
+                # If the node index is more than the amount of points in the arc, then the x and y will equal the last point in the arc.
                 elif node_index >= len(arc.x):
                     x = arc.x[-1]
                     y = arc.y[-1]
                 else:
-                    # linear interpolation between samples node_index-1 and node_index for smoother placement
                     prev_node_location = cum[node_index-1]
-                    ds = lengths[node_index] # grab small portion of arc
-                    t = 0.0 if ds == 0 else (node_location - prev_node_location) / ds # get slope of previous node location compared to this node location.
-                    # Set final x and y coordinates for the node
-                    if not node_index+1 >= len(arc.x): # If the node index is at the end of the arc, just use the end of the arc.
-                        x = arc.x[node_index] + t * (arc.x[node_index+1] - arc.x[node_index]) # Add previous node x value onto approximated additional x value.
-                        y = arc.y[node_index] + t * (arc.y[node_index+1] - arc.y[node_index]) # Add previous node y value onto approximated additional y value.
-                    else:
+                    ds = lengths[node_index] # Distance between points in the arc
+                    t = 0.0 if ds == 0 else (node_location - prev_node_location) / ds # Find the ratio between distance between data nodes and distance between x and y points on arcs
+                    # Interpolate/extrapolate x and y positions (t > 1, most commonly)
+                    if not node_index+1 >= len(arc.x):
+                        x = arc.x[node_index] + t * (arc.x[node_index+1] - arc.x[node_index])
+                        y = arc.y[node_index] + t * (arc.y[node_index+1] - arc.y[node_index])
+                    else: # If the node index is at the end of the arc, just use the end of the arc.
                         x = arc.x[-1]
                         y = arc.y[-1]
 
                 if len(x_array) < len(self.sim.nds): # Make sure that the amount of data nodes does not exceed the amount of simulation nodes.
                     x_array.append(x)
                     y_array.append(y)
-                    # track_subplot.plot(x, y, marker='o', color='black', markersize=1)
+                    # track_subplot.plot(x, y, marker='o', color='black', markersize=1) # Uncomment to visually see data nodes along track
 
+        # Plot dots on around the track to mark gates
         for i in range(len(self.nds)):
             nd = self.nds[i]
             match i % 5:
@@ -752,8 +750,12 @@ class track():
         if self.lap_data.generated_track is not None:
             self.sim.lapsim_data_storage = self.lap_data.generated_track.sim.lapsim_data_storage
 
+        # If the user wants to generate a report then display a ReportWindow instance.
         if prev_lap_data is not None and generate_report:
-            self.report_window = ReportWindow(prev_lap_data=prev_lap_data, new_lap_data=self.lap_data, changed_car_model=changed_car_model)
+            if self.report_window is None:
+                self.report_window = ReportWindow(prev_lap_data=prev_lap_data, new_lap_data=self.lap_data, changed_car_model=changed_car_model)
+            else:
+                self.report_window.display_new_values(prev_lap_data=prev_lap_data, new_lap_data=self.lap_data, changed_car_model=changed_car_model)
             self.report_window.open_window()
 
         # Load lapsim ui
@@ -790,6 +792,7 @@ class track():
         # Connect the mouse movement event to the on_hover function
         track_canvas.mpl_connect("motion_notify_event", on_hover)
 
+        # Grid stuff for graph
         ui_instance.load_track()
 
     def get_cost(self):
@@ -835,9 +838,9 @@ class track():
             k+=1
         print()
 
+    # Convert all arcs on track into lengths and radii, then run the lapsim using those.
     def run_sim(self, car, nodes = 5000, start = 0, end = 0):
-        global racecar
-        racecar = car
+        self.car = car
 
         if end == 0:
             end = len(self.arcs)
@@ -850,7 +853,7 @@ class track():
             self.rad += new_rad
         #print(np.sum(self.len))
         self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
-        self.nodes, self.v3, self.t = self.sim.run()
+        self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
         # print(f'Total Travel Time: {self.t}')
 
     def update_track(self):
@@ -860,8 +863,7 @@ class track():
             i.compute()
 
     def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
-        global racecar
-        racecar = car
+        self.car = car
 
         # setup for position vs velocity plot
         self.run_sim(car, nodes, start, end)

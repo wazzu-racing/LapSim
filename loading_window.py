@@ -3,6 +3,7 @@ import tkinter.ttk as ttk
 
 class LoadingWindow:
     def __init__(self):
+        # Initialize the window.
         self.root = tkinter.Toplevel()
         self.root.title("Loading...")
         self.root.attributes("-topmost", True)
@@ -12,6 +13,7 @@ class LoadingWindow:
         self.loading_label = tkinter.Label(self.root, text="10 seconds remaining")
         self.loading_label.pack()
 
+        # Make progress bar.
         self.progress_bar = ttk.Progressbar(self.root, orient=tkinter.HORIZONTAL, length=200, maximum=100)
         self.progress_bar["value"] = 0
         self.progress_bar.pack()
@@ -26,6 +28,7 @@ class LoadingWindow:
         self.progress_bar["value"] = 0
         self.loading_label.config(text=f"0 seconds remaining")
 
+    # Update the loading window to display a new argument progress (0-100) and the amount of seconds remaining.
     def update_loading(self, progress, seconds_left):
         self.progress_bar.config(value=progress)
         self.loading_label.config(text=f"{seconds_left} seconds remaining")

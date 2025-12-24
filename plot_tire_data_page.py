@@ -86,6 +86,7 @@ class PlotTireDataPage(tkinter.Frame):
             case "MZ to Camber Angle 4°":
                 tire.SA_MZ_plot(4)
 
+    # Function to reveal the dropdown menu to select graphs after a file has been successfully imported
     def reveal_dropdown(self, root):
         options = ["Select graph", "FX to Slip Ratio", "FY to Slip Angle", "MZ to Camber Angle 0°", "MZ to Camber Angle 2°", "MZ to Camber Angle 4°"]
         self.dropdown = ttk.Combobox(root, values=options, font=("Ariel", 24), state="readonly")

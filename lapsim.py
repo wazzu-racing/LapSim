@@ -44,6 +44,7 @@ class LapSimData:
 
         self.max_value_names = ["max_time", "max_AY","max_AX","max_FI_load","max_FO_load","max_RI_load","max_RO_load","max_FI_FY","max_FO_FY","max_RI_FY","max_RO_FY","max_FI_FX","max_FO_FX","max_RI_FX","max_RO_FX","max_FI_vector_mag","max_FO_vector_mag","max_RI_vector_mag","max_RO_vector_mag","max_D_1_dis","max_D_2_dis","max_D_3_dis","max_D_4_dis"]
 
+    # Initialize all of the arrays in LapSimData
     def initialize(self, n):
         # array for time elapsed
         self.time_array = [0]
@@ -84,46 +85,7 @@ class LapSimData:
         # theta of force on car
         self.theta_accel = np.zeros(int(n + 1))
 
-    def clear_data(self):
-        # array for time elapsed
-        self.time_array = [0]
-        # arrays for lateral and axial acceleration
-        self.AY = []
-        self.AX = []
-        # Arrays for vertical force, lateral force, and axial forces on wheels
-        self.FO_load_array = []
-        self.FI_load_array = []
-        self.RO_load_array = []
-        self.RI_load_array = []
-        self.FO_FY_array = []
-        self.FI_FY_array = []
-        self.RO_FY_array = []
-        self.RI_FY_array = []
-        self.FO_FX_array = []
-        self.FI_FX_array = []
-        self.RO_FX_array = []
-        self.RI_FX_array = []
-        # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
-        self.FI_vector = []
-        self.FO_vector = []
-        self.RI_vector = []
-        self.RO_vector = []
-        self.FI_vector_mag = []
-        self.FO_vector_mag = []
-        self.RI_vector_mag = []
-        self.RO_vector_mag = []
-        self.FI_vector_dir = []
-        self.RI_vector_dir = []
-        self.FO_vector_dir = []
-        self.RO_vector_dir = []
-        # Arrays for vertical displacement of wheels
-        self.D_1_dis = []
-        self.D_2_dis = []
-        self.D_3_dis = []
-        self.D_4_dis = []
-        # Angle of accel force of car
-        self.theta_accel = []
-
+    # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
         max_values_dict = {"max_time": self.time_array[-1], "max_AY": np.max(self.AY),
                            "max_AX": np.max(self.AX), "max_FO_load": np.max(self.FO_load_array),
@@ -140,15 +102,13 @@ class LapSimData:
 
         return max_values_dict
 
+    # Return a unit vector using the vector argument provided.
     def get_unit_vector(self, vector):
         return np.divide(vector, np.sqrt(np.sum(np.power(vector, 2))))
 
+    # Get the magnitude of the argument vector provided.
     def get_magnitude(self, vector):
         return np.sqrt(np.sum(np.power(vector, 2)))
-
-    def print_lengths(self):
-        print('AY: ', len(self.AY))
-        print('AX: ', len(self.AX))
 
 class four_wheel:
 
@@ -308,6 +268,7 @@ class four_wheel:
 
         return nds / 12, v1 / 17.6, t
 
+    # Append a data point to all arrays.
     def append_data_arrays(self, lat, axi, index):
         # Collect lateral and axial acceleration of car
         self.lapsim_data_storage.AX[index] = axi

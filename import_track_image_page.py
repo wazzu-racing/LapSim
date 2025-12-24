@@ -10,6 +10,7 @@ class ImportTrackImagePage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
+        # will be set as a tkinter button later.
         self.plot_button = None
 
         self.image_file = ""
@@ -44,14 +45,18 @@ class ImportTrackImagePage(tkinter.Frame):
         self.grid_columnconfigure(2, weight=0)
         self.grid_columnconfigure(3, weight=1)
 
+    # Run and display a LapSimGoCrazy instance in a new window.
     def run_lapsim_go_crazy(self):
+        # If this file does not already have a LapSimGoCrazy instance, make one.
         if self.lapsim_go_crazy is None:
             self.lapsim_go_crazy = LapSimGoCrazy(image_path=self.image_file)
+        # If this file already has an instance of LapSimGoCrazy, just destroy the old one and make a new one.
         elif self.lapsim_go_crazy is not None and self.image_file != self.lapsim_go_crazy.image_path_saved:
             self.lapsim_go_crazy.go_crazy_root.destroy()
             self.lapsim_go_crazy = LapSimGoCrazy(image_path=self.image_file)
         self.lapsim_go_crazy.open_window()
 
+    # prompt the user to select an image file from their computer.
     def select_file(self):
         # Asks the user to choose an image file to create the track with.
         file_path = filedialog.askopenfilename(title="Select a file", filetypes=[("Image files", ("*.png","*.jpg","*.jpeg"))])
@@ -60,7 +65,8 @@ class ImportTrackImagePage(tkinter.Frame):
             self.image_file = file_path
             self.image_check.grid(row=2, column=2, pady=(100, 10))
             self.plot_button.configure(state="normal")
-        elif self.image_file != "": # If image file was imported, Activate the plot button.
+        # If there was an image file imported before the user clicked on the import button, keep the image_check label there.
+        elif self.image_file != "":
             if not self.image_check.grid_info():
                 self.image_check.grid(row=2, column=2, pady=(100, 10))
             self.plot_button.configure(state="normal")

@@ -1,3 +1,4 @@
+# Instances of this class are saved within users' local files to store track/lap data.
 class LapData():
     def __init__(self, points):
         self.points = points

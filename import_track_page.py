@@ -15,8 +15,6 @@ class ImportTrackPage(tkinter.Frame):
         # Init to initialize itself as a Frame
         super().__init__(parent)
 
-        self.save_func = ""
-
         self.track_file = ""
         self.car_file = ""
 
@@ -26,10 +24,21 @@ class ImportTrackPage(tkinter.Frame):
         # Will be set later
         self.display_track = None
 
+        # Run LapSimUI to initialize base UI elements like track_root, track_canvas, etc.
         self.ui = LapSimUI(
-            self.display_track)  # Run LapSimUI to initialize base UI elements like track_root, track_canvas, etc.
+            self.display_track)
 
-        self.initialize_first_widgets()
+        # Make and pack "Create or Import Track" label
+        self.label = tkinter.Label(self, text="Import Track", font=("Ariel", 48), bg="Black", fg="White")
+        self.label.grid(row=1, column=1)
+
+        # Make and pack "Import Track" button
+        self.button = tkinter.Button(self, text="Import Track", bg="White", fg="Black", highlightbackground="Black",
+                                     font=("Ariel", 24), command=lambda: self.select_file(is_car_file=False))
+        self.button.grid(row=2, column=1, pady=(100, 10))
+
+        # Make and pack check label widget for "Import Track" button above.
+        self.track_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
         # Configure grid to center all widgets
         self.grid_rowconfigure(0, weight=1)
@@ -45,19 +54,7 @@ class ImportTrackPage(tkinter.Frame):
         self.grid_columnconfigure(2, weight=0)
         self.grid_columnconfigure(3, weight=1)
 
-    def initialize_first_widgets(self):
-        # Make and pack "Create or Import Track" label
-        self.label = tkinter.Label(self, text="Import Track", font=("Ariel", 48), bg="Black", fg="White")
-        self.label.grid(row=1, column=1)
-
-        # Make and pack "Import Track" button
-        self.button = tkinter.Button(self, text="Import Track", bg="White", fg="Black", highlightbackground="Black",
-                                     font=("Ariel", 24), command=lambda: self.select_file(is_car_file=False))
-        self.button.grid(row=2, column=1, pady=(100, 10))
-
-        # Make and pack check label widget for "Import Track" button above.
-        self.track_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
-
+    # Prompt the user to select either a track file or a car file from their computer.
     def select_file(self, is_car_file=False):
 
         if self.track_check is None:
@@ -106,6 +103,7 @@ class ImportTrackPage(tkinter.Frame):
         else:
             print("No file selected")
 
+    # Shows the widgets associated with importing a car.
     def show_import_car_widgets(self):
         #  Make and pack "Import Car" button
         self.car_button = tkinter.Button(self, text="Import Car", bg="White", fg="Black", highlightbackground="Black",
@@ -115,6 +113,7 @@ class ImportTrackPage(tkinter.Frame):
         # Make and pack check label widget for "Import Car" button above.
         self.car_check = tkinter.Label(self, text="File imported!", bg="Black", fg="SpringGreen2")
 
+        # Creates and grids a new frame for the node-related widgets.
         self.node_frame = tkinter.Frame(self, borderwidth=0, highlightthickness=0, bg="Black")
         self.node_frame.grid(row=4, column=1)
 
@@ -129,6 +128,7 @@ class ImportTrackPage(tkinter.Frame):
                                            fg="White")
         self.default_label.grid(row=5, column=1, pady=(0, 0))
 
+    # Show the button that allows the user to run the lapsim.
     def show_run_lapsim_button(self):
         #  Make and pack "Run LapSim" button
         self.run_lapsim_button = tkinter.Button(self, text="Run LapSim", bg="White", fg="Black",
@@ -136,6 +136,7 @@ class ImportTrackPage(tkinter.Frame):
                                                 command=lambda: self.run_track())
         self.run_lapsim_button.grid(row=6, column=1, pady=(50, 0))
 
+    # Reset everything in the window so there is no need to destroy the window then make it again.
     def reset_page(self):
         # Reset vars for data
         self.track_file = ""
@@ -152,6 +153,7 @@ class ImportTrackPage(tkinter.Frame):
         except Exception:
             pass
 
+    # Create a DisplayTrack instance that will generate and/or show the track.
     def run_track(self):
         # If there is not already a display_track instance, create one.
         if self.display_track is None and self.lap_data.generated_track is None:

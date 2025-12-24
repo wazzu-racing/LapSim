@@ -35,6 +35,7 @@ class ManageTracksPage(tkinter.Frame):
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
 
+    # Run a LapSimGoCrazy instance in order to edit the track the user selects.
     def edit_lapsim_go_crazy(self):
         track_file = self.get_file_from_user()
         if track_file:

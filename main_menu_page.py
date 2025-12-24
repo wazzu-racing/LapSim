@@ -68,8 +68,6 @@ class PageStack(tkinter.Tk):
 
         self.protocol("WM_DELETE_WINDOW", self.kill_window)
 
-
-
     # Forces the window to close when the user presses X in the upper right corner.
     def kill_window(self):
         self.destroy()
