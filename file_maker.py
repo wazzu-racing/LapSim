@@ -11,7 +11,6 @@ from car_model import car
 class FileMaker:
 
     def __init__(self):
-        # Initiate paths.
         self.lapsim_data_file_path = Path.home()/"Documents"/"LAPSIM"/"Data"
         self.models_file_path = self.lapsim_data_file_path/"Models"
         self.tracks_file_path = self.lapsim_data_file_path/"Tracks"

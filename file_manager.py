@@ -6,7 +6,6 @@ from pathlib import Path
 class FileManager:
 
     def __init__(self):
-        # Initiate paths.
         self.lapsim_data_file_path = Path.home()/"Documents"/"LAPSIM"/"Data"
         self.models_file_path = self.lapsim_data_file_path/"Models"
         self.tracks_file_path = self.lapsim_data_file_path/"Tracks"
@@ -21,9 +20,7 @@ class FileManager:
 
     # Opens folder window to let the user pick where they want to save their file.
     def get_file_from_user(self, file_types=[("Any file", "*.*")], default_exension=None):
-        # Asks the user to choose an image file to create the track with.
         file_path = filedialog.asksaveasfilename(title="Select a place to save your file.", initialdir=self.get_tracks_dir(), filetypes=file_types, defaultextension=default_exension)
-        # if the file_path is not nothing, the image file is saved and the user can use the image to create the track.
         if file_path:
             return file_path
         else:
