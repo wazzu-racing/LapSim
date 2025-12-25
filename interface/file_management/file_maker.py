@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 import pickle
 
+import numpy as np
+
+from lapsim_.spline_track import node
 from models import drivetrain_model
 from models import tire_model
 from interface.LapData import LapData
@@ -21,6 +24,10 @@ class FileMaker:
         # If the path already exists, stop running this function.
         if Path.exists(self.lapsim_data_file_path):
             return
+
+        # Create pickle files that store the nodes of the autocross and endurance tracks using .rtf files.
+        self.create_track_pickle(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Autocross.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
+        self.create_track_pickle(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Endurance.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "endurance_trk_points.pkl")), is_autocross=False)
 
         # Create folder directories in user's Documents folder.
         os.makedirs(self.lapsim_data_file_path, exist_ok=True)
@@ -93,5 +100,49 @@ class FileMaker:
         elif not Path(os.path.join(self.tracks_file_path, "Skidpad_Track.pkl")).exists():
             return False
         return True
+
+    # Purpose of this class is to create pickles for autocross and endurance
+    class points:
+        def __init__ (self):
+            self.nds = []
+
+    def create_track_pickle(self, txt_path, pkl_path, is_autocross):
+        points_arr = [np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType())]
+
+        arr_done_index = 0
+
+        with open(txt_path, "r") as f:
+            content = f.read()
+        curr_num = ""
+        writing = False
+        for char in content:
+            if char == '[':
+                writing = True
+            elif char == ']' and writing:
+                points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
+                curr_num = ""
+                arr_done_index += 1
+                writing = False
+            elif char == ',' and writing:
+                points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
+                curr_num = ""
+            elif char != " " and writing:
+                curr_num += char
+
+        points_x = points_arr[0].astype(float)
+        points_y = points_arr[1].astype(float)
+        points_x2 = points_arr[2].astype(float)
+        points_y2 = points_arr[3].astype(float)
+
+        track = self.points()
+
+        rang = 97 if is_autocross else 129
+        for i in range(rang):
+            n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
+            track.nds.append(n)
+
+        with open(pkl_path, "wb") as f:
+            pickle.dump(track, f)
+
 
 file_maker = FileMaker()
