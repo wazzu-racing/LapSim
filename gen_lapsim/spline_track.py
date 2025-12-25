@@ -5,7 +5,7 @@ from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-from lapsim_ import lapsim
+from gen_lapsim import lapsim
 import tkinter
 import csv
 

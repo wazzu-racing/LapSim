@@ -4,10 +4,9 @@ import pickle
 
 import numpy as np
 
-from lapsim_.spline_track import node
-from models import drivetrain_model
-from models import tire_model
-from interface.LapData import LapData
+from gen_lapsim.spline_track import node
+from models import tire_model, drivetrain_model
+from LapData import LapData
 from .file_manager import file_manager
 from models.car_model import car
 

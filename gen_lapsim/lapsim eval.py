@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pickle as pkl
 import lapsim as lpsm
-from drivetrain_model import drivetrain
+from models.drivetrain_model import drivetrain
 
 # with open('endurance_trk.pkl', 'rb') as f:
 #     endurance = pkl.load(f)ß

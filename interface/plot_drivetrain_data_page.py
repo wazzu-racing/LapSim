@@ -3,7 +3,7 @@ from tkinter import filedialog
 from tkinter import ttk
 import pickle as pkl
 
-from file_management.file_manager import file_manager
+from interface.file_management.file_manager import file_manager
 
 class PlotDrivetrainDataPage(tkinter.Frame):
 

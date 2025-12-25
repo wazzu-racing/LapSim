@@ -1,6 +1,6 @@
 import threading
 
-from lapsim_ import spline_track as spln
+from gen_lapsim import spline_track as spln
 import pickle
 import tqdm as tq
 

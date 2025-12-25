@@ -4,8 +4,8 @@ import matplotlib as mat
 from PIL import Image, ImageTk
 from pathlib import Path
 
-from file_management.file_manager import file_manager
-from file_management.file_maker import file_maker
+from interface.file_management.file_manager import file_manager
+from interface.file_management.file_maker import file_maker
 from import_track_image_page import ImportTrackImagePage
 from import_track_page import ImportTrackPage
 from create_new_car_page import CreateNewCarPage
@@ -97,6 +97,8 @@ class PageStack(tkinter.Tk):
             self.current_page = self.page_history[-1]
 
 
+# TODO: pyinstaller cant recognize modules in project files, cant use abs path because it would be unusable on other computers.
+# TODO: possible fix: whenever exporting to executable just move all files out.
 # The "MainMenuPage" page.
 class MainMenuPage(tkinter.Frame):
     def __init__(self, parent, controller):

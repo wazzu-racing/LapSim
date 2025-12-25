@@ -13,7 +13,7 @@ cmpt_vel = 1
 
 import numpy as np
 from matplotlib import pyplot as plt
-from lapsim_ import lapsim
+from gen_lapsim import lapsim
 
 plt_resolution = 3
 

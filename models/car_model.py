@@ -126,7 +126,7 @@ class car():
             with open(self.drivetrain_file_path, 'rb') as f:
                 self.drivetrain = pickle.load(f)
         except Exception:
-            self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data","engine_array.csv")))
+            self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "engine_array.csv")))
 
         self.file_location = ""
 

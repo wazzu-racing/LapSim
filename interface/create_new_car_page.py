@@ -3,8 +3,9 @@ from tkinter import filedialog
 import pickle as pkl
 
 from car_settings_window import CarSettingsWindow
-from file_management.file_manager import file_manager
+from interface.file_management.file_manager import file_manager
 from models import car_model
+
 
 # The "CreateNewCarPage" page.
 class CreateNewCarPage(tkinter.Frame):

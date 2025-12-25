@@ -1,4 +1,4 @@
-from main_menu_page import PageStack
+from interface.main_menu_page import PageStack
 import multiprocessing
 
 multiprocessing.set_start_method('spawn', force=True)
