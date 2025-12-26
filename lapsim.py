@@ -86,7 +86,7 @@ class four_wheel:
                 else: # if gear is not optimal gear, then shift to the optimal gear
                     shifting = True
                     #a_tan = self.car.curve_idle(v1[int(i)])
-                    a_tan = 0
+                    a_tan = -(self.car.C_rr * self.car.W_1 + self.car.C_rr * self.car.W_2 + self.car.C_rr * self.car.W_3 + self.car.C_rr * self.car.W_4)/self.car.W_car
                     shift_time -= dx / v1[int(i)] # keep track of how much time has passed while shifting and not accelerating
                     if shift_time <= 0: # if the time needed to shift has passed, shift gears.
                         gear += 1

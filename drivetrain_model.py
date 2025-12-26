@@ -26,7 +26,7 @@ class drivetrain:
         self.shift_time = 0 # seconds
 
         # importing engine data
-        engine_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/Data/csv/engine_array.csv' # engine file location
+        engine_data = '/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/Data/csv/engine_array.csv' # engine file location
         delim = '\t' # csv delimiter
 
         with open(engine_data, newline='') as dat_file:
