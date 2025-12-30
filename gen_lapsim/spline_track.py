@@ -1,3 +1,5 @@
+from enum import Enum
+
 import numpy as np
 import math
 
@@ -5,7 +7,6 @@ from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
-from gen_lapsim import lapsim
 import tkinter
 import csv
 
@@ -26,6 +27,7 @@ data_label = None
 # Keeps track of locations of data nodes
 x_array = []
 y_array = []
+turn_array = []
 
 # Global variables to keep track of track loading in other files
 len_s = 100
@@ -390,43 +392,56 @@ class node():
 
         self.update_shift()
 
+    # Update all nodes' positions to be equal to the absolute most optimized points for the car to move through.
     def update_shift(self):
-        # if the car's width cannot fit within the gates, change node point to the closest it can be to the turn
+        # if the current node position is not the apex of the turn, change node position to the closest it can be to the turn (apex)
         if self.shift > self.dist-self.car_rad:
             self.shift = self.dist-self.car_rad
-        # if the distance between the center and outline of the gates is smaller than the car's width, change node point to the car's width (closest the car can be to the turn)
+        # if the current node position is making the car turn too sharply (past the apex of the turn) change node position to the apex of the turn (car's radius).
         elif self.shift < self.car_rad:
             self.shift = self.car_rad
 
+        # Update the position of the node to match it's shifted coordinates
         self.x = self.x1 + (self.x2 - self.x1) * self.shift / self.dist
         self.y = self.y1 + (self.y2 - self.y1) * self.shift / self.dist
 
+        # If the magnitude of vx and vy is lower than v_min, set vx and vy equal to the required amount in order for
+        # the magnitude of vx and vy to equal v_min. (vx, vy) is the vector that controls the curvature of the Bézier curve at this node. i.e. the  "control handle".
         if self.vx**2 + self.vy**2 < self.v_min **2:
             v = self.v_min /(self.vx**2 + self.vy**2)**0.5
             self.vx *= v
             self.vy *= v
 
+    # Get the most natural point along the line between the 2 points of this node for the car to move through
+    # by finding where that line and the line between the midpoint of the previous node and the next node intercept.
     def start_shift(self):
+        # Get slope and y-intercept for the line between point 1 and point 2.
         m1 = 0
-        if self.x2 == self.x1:
+        if self.x2 == self.x1: # Both x's being the same suggests vertical slope
             m1 = 9999
         else:
             m1 = (self.y2 - self.y1) / (self.x2 - self.x1)
-        b1 = self.y1 - m1 * self.x1
+        b1 = self.y1 - m1 * self.x1 # Get the y-intercept for equation for the line between both points
 
+        # Get the slope and y-intercept for the line between the previous and next node.
         m2 = 0
-        if self.next_nd.x2 + self.next_nd.x1 == self.prev_nd.x2 + self.prev_nd.x1:
+        if self.next_nd.x2 + self.next_nd.x1 == self.prev_nd.x2 + self.prev_nd.x1: # If the midpoint of the previous node and next node is the same
             m2 = 9999
         else:
-            m2 = (self.next_nd.y2 + self.next_nd.y1 - self.prev_nd.y2 - self.prev_nd.y1) / (self.next_nd.x2 + self.next_nd.x1 - self.prev_nd.x2 - self.prev_nd.x1)
-        b2 = (self.next_nd.y1 + self.next_nd.y2)/2 - m2 * (self.next_nd.x1 + self.next_nd.x2)/2
+            m2 = (self.next_nd.y2 + self.next_nd.y1 - self.prev_nd.y2 - self.prev_nd.y1) / (self.next_nd.x2 + self.next_nd.x1 - self.prev_nd.x2 - self.prev_nd.x1) # Slope of the line between the midpoint of the previous node and the next node
+        b2 = (self.next_nd.y1 + self.next_nd.y2)/2 - m2 * (self.next_nd.x1 + self.next_nd.x2)/2 # Get the y-intercept for equation for the line between the midpoint of both nodes
 
+        # If the line between both points of this node is vertical or if both slopes are the same (and therefore, they are vertical and will never intercept)
+        # then shift is just half of the distance between the 2 points.
         if (self.x2 == self.x1) or (m1 == m2):
             self.shift = self.dist/2
         else:
+            # Find point where both lines intercept by getting a fraction along the segment and multiplying it by the distance between points of this node
             self.shift = self.dist * ((b2-b1)/(m1-m2) - self.x1) / (self.x2 - self.x1)
         self.update_shift()
 
+    # Define the control handle for this node by getting the difference in the x and y of the previous and next nodes
+    # and then getting an average of those. (dividing by 4 creates a more stable, smoother Bezier than dividing by 2)
     def start_v(self):
         #if abs(self.x - self.prev_nd.x) < abs(self.next_nd.x - self.x):
         #    self.vx = (self.x - self.prev_nd.x) / 2**0.5
@@ -438,31 +453,50 @@ class node():
         #else:
         #    self.vy = (self.next_nd.y - self.y) / 2**0.5 + 1
 
-        self.vx = (self.next_nd.x - self.x + self.x - self.prev_nd.x) / 4
-        self.vy = (self.next_nd.y - self.y + self.y - self.prev_nd.y) / 4
+        self.vx = (self.next_nd.x - self.prev_nd.x) / 4
+        self.vy = (self.next_nd.y - self.prev_nd.y) / 4
 
+    # Create vars that will later be used to smooth the connections between curves in the adjust_track function.
     def gradient(self):
+        # Gets the total change between the x and y coordinates of the next and previous arcs' control handles.
         self.d_vx = self.next_arc.dcx[1] - self.prev_arc.dcx[2]
         self.d_vy = self.next_arc.dcy[1] - self.prev_arc.dcy[2]
 
+        # Computes number that is positive if moving the node forward along the line between point 1 and point 2
+        # will increase curvature (bad) and negative if moving the node forward will decrease curvature (good)
         self.d_shift = ((self.next_arc.dcx[0] + self.next_arc.dcx[1] + self.prev_arc.dcx[2]) * (self.x2 - self.x1) +
                         (self.next_arc.dcy[0] + self.next_arc.dcy[1] + self.prev_arc.dcy[2]) * (self.y2 - self.y1)) / self.dist
 
+        # If shift is already more than the length of the line between point 1 and point 2 AND d_shift is saying to push shift farther, cancel this function.
+        # OR if shift is already off of the line on the other side AND d_shift is saying to push farther away, cancel this function.
         if ((self.shift >= self.dist) and (self.d_shift < 0)) or ((self.shift <= 0) and (self.d_shift > 0)):
             self.shift = 0
 
 
 class curve():
 
+    class Turn(Enum):
+        LEFT = 0
+        RIGHT = 1
+
     def __init__(self, n1, n2, elem = 50):
         self.n1 = n1
         self.n2 = n2
         self.elem = elem
 
+        # Initialization of basis functions, which describe how much each control point influences the shape of the
+        # Bezier at any point 0 <= t <= 1.
         self.s_dA = [[],[],[],[]]
         self.ds_dA = [[],[],[],[]]
         self.dds_dA = [[],[],[],[]]
 
+        # Initialize turn direction array
+        self.turn_dirs = []
+
+        self.ddx_n = []
+        self.ddy_n = []
+
+        # Create solutions to basis functions at multiple points within the function, derivative and 2nd derivative.
         for t in np.linspace(0, 1, self.elem):
             self.s_dA[0].append(1 - 3*t + 3*t**2 - t**3)
             self.s_dA[1].append(3*t - 6*t**2 + 3*t**3)
@@ -485,6 +519,7 @@ class curve():
         n1 = self.n1
         n2 = self.n2
 
+        # Create all control points for the curve. (2 and 3 are control handles)
         p1x, p1y = n1.x,           n1.y
         p2x, p2y = n1.x + n1.vx,   n1.y + n1.vy
         p3x, p3y = n2.x - n2.vx,   n2.y - n2.vy
@@ -493,12 +528,15 @@ class curve():
         self.x, self.dx, self.ddx = [], [], []
         self.y, self.dy, self.ddy = [], [], []
 
+        self.ddy_n, self.ddx_n = [], []
+
         self.dcx = [0, 0, 0, 0]
         self.dcy = [0, 0, 0, 0]
 
         self.c = 0
 
         for i in range(0, self.elem):
+            # Computes the positions of the curve for the regular curve, its derivative, and its 2nd derivative.
             self.x.append(p1x * self.s_dA[0][i] + p2x * self.s_dA[1][i] + p3x * self.s_dA[2][i] + p4x * self.s_dA[3][i])
             self.y.append(p1y * self.s_dA[0][i] + p2y * self.s_dA[1][i] + p3y * self.s_dA[2][i] + p4y * self.s_dA[3][i])
 
@@ -507,6 +545,14 @@ class curve():
 
             self.ddx.append(p1x * self.dds_dA[0][i] + p2x * self.dds_dA[1][i] + p3x * self.dds_dA[2][i] + p4x * self.dds_dA[3][i])
             self.ddy.append(p1y * self.dds_dA[0][i] + p2y * self.dds_dA[1][i] + p3y * self.dds_dA[2][i] + p4y * self.dds_dA[3][i])
+
+            # Calculate normal ddx and ddy along the curve (only incorporates centripetal acceleration, not tangential)
+            speed = math.sqrt(self.dx[i]**2 + self.dy[i]**2)
+            tang_speed_unit_x = self.dx[i] / speed
+            tang_speed_unit_y = self.dy[i] / speed
+            accel_tang = self.ddx[i]*tang_speed_unit_x + self.ddy[i]*tang_speed_unit_y
+            self.ddx_n.append(self.ddx[i] - accel_tang * tang_speed_unit_x)
+            self.ddy_n.append(self.ddy[i] - accel_tang * tang_speed_unit_y)
 
             #self.c += abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5 / (self.dx[i]**2 + self.dy[i]**2)**0.25 / self.elem
             #num = abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5
@@ -518,9 +564,9 @@ class curve():
             self.c += num/dom * 1000/self.elem
 
 
-            H = 1
-            if self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i] < 0:
-                H = -1
+            # H = 1
+            # if self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i] < 0:
+            #     H = -1
 
             for j in range(4):
                 #d_num = (self.ds_dA[j][i] * self.ddy[i] - self.dds_dA[j][i] * self.dy[i]) / (2 * num * H)
@@ -540,11 +586,30 @@ class curve():
                 dc = (d_num * dom - d_dom * num) / dom**2
                 self.dcy[j] += dc / self.elem
 
+    # Determine the turning dir at each point along the arc.
+    def determine_turn_dirs(self):
+
+        # Uses cross product of derivatives on a point of an arc to get the concavity of the arc, and therefore turning dir.
+        def determine_turn_dir_on_one_point(ddx, ddy, dx, dy):
+            cross = dx * ddy - dy * ddx
+            if cross > 0:
+                return self.Turn.LEFT
+            else:
+                return self.Turn.RIGHT
+
+        # Calculate direction of turn for each point in arc.
+        turn_dir_arr = []
+        for i in range(self.elem):
+            curr_turn = determine_turn_dir_on_one_point(self.ddx_n[i], self.ddy_n[i], self.dx[i], self.dy[i])
+            turn_dir_arr.append(curr_turn)
+
+        self.turn_dirs = turn_dir_arr
+
     def interpolate(self):
         len = []
         rad = []
         for i in range(0, self.elem):
-            rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i]))
+            rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy_n[i] - self.dy[i] * self.ddx_n[i]))
             len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
 
         return(len, rad)
@@ -584,7 +649,7 @@ class track():
     global x_array, y_array
 
     def __init__(self, p1x, p1y, p2x, p2y, car):
-        global x_array, y_array
+        global x_array, y_array, turn_array
 
         self.car = car
 
@@ -604,6 +669,7 @@ class track():
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i], self.car_rad))
         print(f"nodes: {len(self.nds)}")
 
+        # Initializes next node and previous node vars for each node and
         for i in range(-1, len(self.nds)-1):
             self.nds[i].prev_nd = self.nds[i-1]
             self.nds[i].next_nd = self.nds[i+1]
@@ -622,6 +688,7 @@ class track():
         # Keeps track of locations of data nodes
         x_array = []
         y_array = []
+        turn_array = []
 
         print(f"created track")
 
@@ -640,7 +707,7 @@ class track():
         return closest_index
 
     def plot(self, display_track, ui_instance, lap_data_stuff, prev_lap_data=None, save_lap_data_func = None, generate_report = False, changed_car_model=False):
-        global track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools
+        global track_canvas, track_subplot, track_root, track_fig, data_label, tkinter_data_bools, turn_array
 
         # Clear figures and plots by setting them equal to new ones
         track_fig = Figure(figsize=(8, 7), dpi=100) # Adjust figsize and dpi as needed
@@ -702,13 +769,15 @@ class track():
                     ds = lengths[0] # Distance between points in the arc
                     # Find the ratio between distance between data nodes and distance between points in the arc
                     t = 0.0 if ds == 0 else (node_location - prev_node_location) / ds
-                    # Interpolate/extrapolate x and y positions (t > 1, most commonly)
+                    # Interpolate/extrapolate x and y positions (t > 1 most of the time, so most common is extrapolating)
                     x = arc.x[0] + t * (arc.x[1] - arc.x[0])
                     y = arc.y[0] + t * (arc.y[1] - arc.y[0])
+                    turn = arc.turn_dirs[int(t)]
                 # If the node index is more than the amount of points in the arc, then the x and y will equal the last point in the arc.
                 elif node_index >= len(arc.x):
                     x = arc.x[-1]
                     y = arc.y[-1]
+                    turn = arc.turn_dirs[-1]
                 else:
                     prev_node_location = cum[node_index-1]
                     ds = lengths[node_index] # Distance between points in the arc
@@ -717,14 +786,22 @@ class track():
                     if not node_index+1 >= len(arc.x):
                         x = arc.x[node_index] + t * (arc.x[node_index+1] - arc.x[node_index])
                         y = arc.y[node_index] + t * (arc.y[node_index+1] - arc.y[node_index])
+                        turn = arc.turn_dirs[int(node_index)]
                     else: # If the node index is at the end of the arc, just use the end of the arc.
                         x = arc.x[-1]
                         y = arc.y[-1]
+                        turn = arc.turn_dirs[-1]
 
                 if len(x_array) < len(self.sim.nds): # Make sure that the amount of data nodes does not exceed the amount of simulation nodes.
                     x_array.append(x)
                     y_array.append(y)
-                    # track_subplot.plot(x, y, marker='o', color='black', markersize=1) # Uncomment to visually see data nodes along track
+                    turn_array.append(turn)
+
+        points = []
+        for index in range(len(x_array)):
+            points.append((x_array[index], y_array[index]))
+            # track_subplot.plot(x_array[index], y_array[index], marker='o', color="Green" if turn_array[index] == curve.Turn.RIGHT else "red", markersize=1) # Uncomment to visually see left and right turns along track
+            # track_subplot.plot(x_array[index], y_array[index], marker='o', color="Black", markersize=1) # Uncomment to visually see data nodes along track
 
         # Plot dots on around the track to mark gates
         for i in range(len(self.nds)):
@@ -773,10 +850,6 @@ class track():
 
                     # If not -1, the algorithm below found a relatively close by data node to extract information from and the index of that information is this (within arrays found in append_data_arrays).
                     closest_index = -1
-
-                    points = []
-                    for i in range(len(x_array)):
-                        points.append((x_array[i], y_array[i]))
 
                     closest_index = self.k_closest(points, (x, y))
 
@@ -838,28 +911,38 @@ class track():
             k+=1
         print()
 
+    # Get and store the dirs of motion within each turn
+    def determine_turn_dirs_on_track(self):
+        for arc in self.arcs:
+            arc.determine_turn_dirs()
+
     # Convert all arcs on track into lengths and radii, then run the lapsim using those.
     def run_sim(self, car, nodes = 5000, start = 0, end = 0):
+        from gen_lapsim import lapsim
+
         self.car = car
 
         if end == 0:
             end = len(self.arcs)
 
+        self.determine_turn_dirs_on_track()
+
         self.len = []
         self.rad = []
+        self.turn_dirs = []
         for i in self.arcs[start:end]:
             new_len, new_rad = i.interpolate()
             self.len += new_len
             self.rad += new_rad
-        #print(np.sum(self.len))
-        self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
+            self.turn_dirs += i.turn_dirs
+        self.sim = lapsim.four_wheel(self.len, self.rad, self.turn_dirs, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
         # print(f'Total Travel Time: {self.t}')
 
     def update_track(self):
         for i in self.nds:
             i.update_shift()
-        for i in self.arcs:
+        for index, i in enumerate(self.arcs):
             i.compute()
 
     def plt_sim(self, car, nodes = 5000, start = 0, end = 0):

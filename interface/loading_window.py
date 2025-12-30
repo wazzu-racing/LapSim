@@ -9,6 +9,7 @@ class LoadingWindow:
         self.root.attributes("-topmost", True)
         self.root.resizable(False, False)
         self.root.geometry("300x50")
+        self.center_window_on_screen()
 
         self.loading_label = tkinter.Label(self.root, text="10 seconds remaining")
         self.loading_label.pack()
@@ -37,7 +38,28 @@ class LoadingWindow:
             self.close_window()
             self.progress_bar["value"] = 0
 
+    def center_window_on_screen(self):
+        # 1. Update idle tasks to ensure accurate dimension calculation
+        self.root.update_idletasks()
+
+        # 2. Get window dimensions (excluding title bar/borders for calculation)
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+
+        # 3. Get screen dimensions
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        # 4. Calculate the center position
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+
+        # 5. Set the window's position using the geometry method
+        # The format is "widthxheight+x+y"
+        self.root.geometry(f'{width}x{height}+{x}+{y}')
+
     def open_window(self):
+        self.center_window_on_screen()
         self.root.deiconify()  # Show the window
 
     def close_window(self):

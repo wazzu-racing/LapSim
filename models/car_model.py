@@ -288,7 +288,7 @@ class car():
         self.W_out_f = W_out_f
         self.W_in_f = W_in_f
         self.W_out_r = W_out_r
-        self.W_in_r = W_out_r
+        self.W_in_r = W_in_r
 
         # Set displacement vars to their values
         self.D_1 = (self.W_out_f - self.W_1) / self.K_RF # doesn't matter whether W_1 is the outer or inner tire at the moment since both front tires have the same weight.
@@ -341,7 +341,7 @@ class car():
         self.FX_out_r = FX_out_r
         self.FX_in_r = FX_in_r
 
-        self.theta_accel = math.atan(AY/math.fabs(AX)) * 180/math.pi
+        self.theta_accel = math.atan2(abs(AY), AX) * 180/math.pi
 
         # Calculating max lateral acceleration from tire traction
         if AX > 0:
