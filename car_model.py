@@ -1,24 +1,14 @@
 import numpy as np
 import pickle as pkl
-
-from numpy.ma.core import arctan
-
-import tire_model
-import drivetrain_model
 import csv
 import time
 import math
-import random
-import pandas
-import pickle
+
 from dataclasses import dataclass
-
-from enum import Enum
-
-from tire_model import curve_set
+from spline_track import track
 
 
-class car():
+class Car():
 
     # weight over front left wheel
     W_1 = 185.7365
@@ -109,7 +99,14 @@ class car():
         
         self.aero_arr.reverse()
 
-        self.r_carangle_2d_array = []
+        # Initialize arrays
+        self.radius_array = []
+        self.car_angle_array = []
+        self.AX_AY_array = []
+        self.AX_AY_array = self.create_accel_2D_array(50, print_info=False)
+
+        self.max_corner = self.max_lateral_accel()
+        self.count = 0
 
     # future code for accounting for tire orientation
         '''
@@ -259,11 +256,9 @@ class car():
             iterations+=1
 
             # Prevent infinite loop
-            if iterations > 1000:
-                print("Max iterations reached in find_accurate_accel")
+            if iterations > 100:
+                print(f"Max iterations reached in find_accurate_accel. Output AX: {output_AX}, input AX: {input_AX}")
                 break
-
-            # c_angle += n
 
         if print_info or print_every_iteration:
             print(f"iterations: {iterations}")
@@ -283,47 +278,51 @@ class car():
             n = 20
 
         # set up radius and car angle arrays
-        radius_array = [] # 20 radii.
-        radius_array = np.concatenate([radius_array, np.linspace(100, 1000, int(n/2))])
-        radius_array = np.concatenate([radius_array, np.linspace(1050, 10000, int(n/4))])
-        radius_array = np.concatenate([radius_array, np.linspace(11000, 100000, int(n/4))])
-        print(f"Radii: {radius_array}")
-        car_angle_array = []
-        car_angle_array = np.concatenate([car_angle_array, np.linspace(0, 80, n)])
-        print(f"Car angles: {car_angle_array}")
+        self.radius_array = []
+        self.radius_array = np.concatenate([self.radius_array, np.linspace(100, 1000, int(n/2))])
+        self.radius_array = np.concatenate([self.radius_array, np.linspace(1050, 10000, int(n/4))])
+        self.radius_array = np.concatenate([self.radius_array, np.linspace(11000, 100000, int(n/4))])
+        print(f"Radii: {self.radius_array}")
+        self.car_angle_array = []
+        self.car_angle_array = np.concatenate([self.car_angle_array, np.linspace(0, 45, n)])
+        print(f"Car angles: {self.car_angle_array}")
 
         # go through each radius
-        for radius in radius_array:
+        for radius in self.radius_array:
             row = []
             # go through each car angle
-            for c_angle in car_angle_array:
+            for c_angle in self.car_angle_array:
                 # convert c_angle to radians
                 c_angle *= math.pi/180
 
-                # Compute accurate acceleration and torque for radius and c_angle (car angle)
-                accel = self.find_accurate_accel(radius, c_angle, print_info=print_info)
+                # Compute accurate acceleration and torque for radius and c_angle (car angle) if the car is launching
+                accel = self.find_accurate_accel(radius, c_angle, print_info=print_info, print_every_iteration=False)
                 output_AX, output_AY, torque = accel.AX, accel.AY, accel.torque
 
+                # Compute accurate acceleration and torque for radius and c_angle (car angle) if the car is braking
+                accel = self.find_accurate_accel(radius, c_angle, braking=True, print_info=print_info, print_every_iteration=False)
+                output_AX_brake, output_AY_brake, torque_brake = accel.AX, accel.AY, accel.torque
+
                 # add Car_Data_Snippet object to row of a singular radius
-                row.append(self.Car_Data_Snippet(output_AX, output_AY, torque))
+                row.append({"launch": self.Car_Data_Snippet(output_AX, output_AY, torque),"brake": self.Car_Data_Snippet(output_AX_brake, output_AY_brake, torque_brake)})
 
             # add row that contains Car_Data_Snippet objects to r_carangle_2d_array
-            self.r_carangle_2d_array.append(row)
+            self.AX_AY_array.append(row)
 
         # end timer, print result
         self.end = time.perf_counter()
-        print(f"Total runtime: {self.end - self.start} seconds")
 
         # print(car_angle_array)
 
         # Print out values of r_carangle_2d_array in readable format.
-        for index, radius_values in enumerate(self.r_carangle_2d_array):
-            print(f"Radius: {radius_array[index]} ----- ", end="")
-            for c_angle_values in radius_values:
-                print(f"AX: {c_angle_values.AX}, AY: {c_angle_values.AY}, Torque: {c_angle_values.torque} | ", end="")
+        for index, radius_values in enumerate(self.AX_AY_array):
+            print(f"Radius: {self.radius_array[index]} ----- ", end="")
+            for data in radius_values:
+                print(f"AX: {data["launch"].AX}, AY: {data["launch"].AY}, Torque: {data["launch"].torque} | ", end="")
             print("")
 
-        return self.r_carangle_2d_array
+        print(f"Created 2D array!")
+        return self.AX_AY_array
 
     def accel_updated(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False):
         """
@@ -344,7 +343,7 @@ class car():
         FI_length = r - self.a * np.sin(car_angle) - (self.t_f/2) * np.cos(car_angle)
         FI_height = self.a * np.cos(car_angle) - (self.t_f/2) * np.sin(car_angle)
         FI_dir_motion = car_angle + np.atan2(FI_height, FI_length)
-        print(car_angle * 180/math.pi)
+        # print(car_angle * 180/math.pi)
 
         # Rear inner tire direction motion calcs
         RI_length = r + self.b * np.sin(car_angle) - (self.t_r/2) * np.cos(car_angle)
@@ -361,7 +360,7 @@ class car():
         RO_height = - self.b * np.cos(car_angle) + (self.t_r/2) * np.sin(car_angle)
         RO_dir_motion = car_angle + np.atan2(RO_height, RO_length)
 
-        # Calculate slip angles (added negative sign because negative slip angle is standard convention for positive FY)
+        # Calculate slip angles (added negative sign because a negative slip angle is the standard convention for positive FY)
         FI_slip_angle = -(FI_dir_motion + steering)
         RI_slip_angle = -RI_dir_motion
         FO_slip_angle = -(FO_dir_motion + steering)
@@ -402,20 +401,26 @@ class car():
         net_lat_accel = FY_car / self.W_car
 
         # Multiple that is used to make FX closer what the real-world number would look like.
-        FX_scale_factor = 1.3
+        FX_scale_factor = 1.2
+
+        # Determine max FY for each tire.
+        max_RI_FY = self.tires.FY_curves.get_max(RI_load, RI_camber)
+        max_RO_FY = self.tires.FY_curves.get_max(RO_load, RO_camber)
+        max_FI_FY = self.tires.FY_curves.get_max(FI_load, FI_camber)
+        max_FO_FY = self.tires.FY_curves.get_max(FO_load, FO_camber)
 
         # Calculating max axial acceleration by using a friction ellipse to put the remaining force into axial acceleration.
         if not braking:
-            RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY/self.tires.FY_curves.get_max(RI_load, RI_camber))) * FX_scale_factor
-            RO_FX = self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY/self.tires.FY_curves.get_max(RO_load, RO_camber))) * FX_scale_factor
+            RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * ((1 - (RI_FY**2)/(max_RI_FY**2)) if max_RI_FY > RI_FY else 0)**0.5 * FX_scale_factor
+            RO_FX = self.tires.FX_curves.get_max(RO_load, RO_camber) * ((1 - (RO_FY**2)/(max_RO_FY**2)) if max_RO_FY > RO_FY else 0)**0.5 * FX_scale_factor
             FI_FX = 0
             FO_FX = 0
             FX_car = RO_FX + RI_FX
         else:
-            FI_FX = self.tires.FX_curves.get_max(FI_load, FI_camber) * (1 - (FI_FY/self.tires.FY_curves.get_max(FI_load, FI_camber))) * FX_scale_factor
-            RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * (1 - (RI_FY/self.tires.FY_curves.get_max(RI_load, RI_camber))) * FX_scale_factor
-            FO_FX = self.tires.FX_curves.get_max(FO_load, FO_camber) * (1 - (FO_FY/self.tires.FY_curves.get_max(FO_load, FO_camber))) * FX_scale_factor
-            RO_FX = self.tires.FX_curves.get_max(RO_load, RO_camber) * (1 - (RO_FY/self.tires.FY_curves.get_max(RO_load, RO_camber))) * FX_scale_factor
+            RI_FX = self.tires.FX_curves.get_max(RI_load, RI_camber) * ((1 - (RI_FY**2)/(max_RI_FY**2))**0.5 if max_RI_FY > RI_FY else 0) * FX_scale_factor
+            RO_FX = self.tires.FX_curves.get_max(RO_load, RO_camber) * ((1 - (RO_FY**2)/(max_RO_FY**2))**0.5 if max_RO_FY > RO_FY else 0) * FX_scale_factor
+            FI_FX = self.tires.FX_curves.get_max(FI_load, FI_camber) * ((1 - (FI_FY**2)/(max_FI_FY**2))**0.5 if max_FI_FY > FI_FY else 0) * FX_scale_factor
+            FO_FX = self.tires.FX_curves.get_max(FO_load, FO_camber) * ((1 - (FO_FY**2)/(max_FO_FY**2))**0.5 if max_FO_FY > FO_FY else 0) * FX_scale_factor
             FX_car = -(RO_FX + RI_FX + FI_FX + FO_FX)
 
         # Calculate total axial acceleration
@@ -440,10 +445,6 @@ class car():
         total_aligning_torque = FI_aligning_torque + RI_aligning_torque + FO_aligning_torque + RO_aligning_torque
         total_aligning_torque *= 12 # Convert to inch pounds
 
-
-        print(f"input_AX: {AX}, output_AX: {net_axial_accel}")
-        print(f"input_AY: {AY}, output_AY: {net_lat_accel}")
-
         # Print out info depending on certain vars
         if print_every_iteration or (abs(AY - net_lat_accel) <= 0.0001 and abs(AX - net_axial_accel) <= 0.0001 and print_info):
             print(f"\n------------------- radius: {r} inches, car angle: {car_angle * 180/math.pi} degrees -------------------")
@@ -454,124 +455,208 @@ class car():
             print(f"FI_displacement: {front_inner_displacement} in\nRI_displacement: {rear_inner_displacement} in\nFO_displacement: {front_outer_displacement} in\nRO_displacement: {rear_outer_displacement} in")
             print(f"FI_FY: {FI_FY} pounds\nRI_FY: {RI_FY} pounds\nFO_FY: {FO_FY} pounds\nRO_FY: {RO_FY} pounds")
             print(f"FI_FX: {FI_FX} pounds\nRI_FX: {RI_FX} pounds\nFO_FX: {FO_FX} pounds\nRO_FX: {RO_FX} pounds")
+            print(f"RI_FX Max: {self.tires.FX_curves.get_max(RI_load, RI_camber) * FX_scale_factor} pounds\nRO_FX Max: {self.tires.FX_curves.get_max(RO_load, RO_camber) * FX_scale_factor} pounds")
             print(f"lat accel: {net_lat_accel} g's\naxial accel: {net_axial_accel} g's")
             print(f"total_torque: {total_torque_about_z} in pounds")
             print(f"total_aligning_torque: {total_aligning_torque} inch pounds")
 
         return net_axial_accel, net_lat_accel, total_torque_about_z
 
-    def max_axial_accel(self):
+    def find_closest_radius_index(self, radius):
         """
-        Runs the find_accurate_accel function with radius 10000000 and car angle 0.
-        :return: The maximum axial acceleration of the car.
+        Determines the index of the radius array that is closest to the given radius.
+        :param radius: The given radius. (inches)
+        :return: The index within the radius array that's value is closest to the given radius.
         """
-        return self.find_accurate_accel(10000000, 0).AX
+        # If the actual radius (r) is too big for the radius array, then use the last radius in the array.
+        if radius > self.radius_array[-1]:
+            return len(self.radius_array)-1
 
-    def max_lateral_accel(self, n):
+        # Find the closest radius to the given radius
+        r_index = 0
+        prev_rad = self.radius_array[0]
+        for index, rad in enumerate(self.radius_array):
+            if rad > radius:
+                if radius - prev_rad < (rad-prev_rad)/2:
+                    # Make sure r_index does not equal -1.
+                    if radius < self.radius_array[0]:
+                        return index
+                    else:
+                        return index - 1
+                else:
+                    return index
+            prev_rad = rad
+
+
+    def curve_brake(self, r, v):
         """
-        Starting at a 200-inch radius, decrements by 1 inch and checks the needed lateral acceleration for that radius until getting
-        a lateral acceleration that is lower than the previous. The lateral acceleration of the previous check is then returned.
-        :return: The maximum lateral acceleration of the car.
+        Calculates the negative axial acceleration of the car at a given radius and velocity.
+        :param r: The radius of the car at which to calculate the brake acceleration. (inches)
+        :param v: The velocity of the car at which to calculate the brake acceleration. (in/s)
+        :return: The negative axial acceleration of the car at the given radius and velocity. (g's)
         """
-        self.create_accel_2D_array(n)
 
-        max = self.r_carangle_2d_array[0][0].AY
-
-        for radius in range(0, len(self.r_carangle_2d_array)):
-            for c_angle in range(0, len(self.r_carangle_2d_array[0])):
-                if self.r_carangle_2d_array[radius][c_angle].AY > max:
-                    max = self.r_carangle_2d_array[radius][c_angle].AY
-
-        return max
-
-    # recursive function; AY is lateral acceleration
-    def max_accel(self, AY, low_guess = 0, high_guess = 2):
-        guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
-
-        # returns the guess value if high and low estimates have converged
-        if high_guess - low_guess < 0.0001:
-            # print(f"maximum axial acceleration at {AY} lateral g's is {guess}")
-            return guess
-
-        if self.accel(AY, guess): # sets low estimate to the guess value if the car can handle cornering acceleration equal to the guess value
-            return self.max_accel(AY, guess, high_guess)
-        else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
-            return self.max_accel(AY, low_guess, guess)
-
-    def max_brake(self, AY, low_guess = -3, high_guess = 0):
-        guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
-        
-        # returns the guess value if high and low estimates have converged
-        if high_guess - low_guess < 0.0001:
-            return guess
-
-        if self.accel(AY, guess): # sets high estimate to the guess value if the car can handle breaking acceleration equal to the guess value
-            return self.max_brake(AY, low_guess, guess)
-        else: # sets low estimate to the guess value if the car cannot handle breaking acceleration equal to the guess value
-            return self.max_brake(AY, guess, high_guess)
-    
-    # calculates the max acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
-    # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
-    # set r to zero for a track straight track with no curvature
-    def curve_accel(self, v, r, transmission_gear='optimal'):
-        AY = 0
         if r > 0:
-            AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
+            AY = v**2/r / 12 / 32.17 # g's
         else:
-            AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
-        
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
-        
-        A_tire = 0
-        for i in range(1, len(self.AY)):
-            if self.AY[i] >= AY:
-                # linearly interpolating self.A_brake to find the max acceleration at lateral acceleration AY
-                A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1] - self.get_drag(v * 0.0568182))
+            self.count+=1
+            AY = 0
+
+        if AY == 0:
+            return self.max_axial_accel()
+
+        r_index = self.find_closest_radius_index(r)
+
+        output_AY = 1.0
+        prev_AY = 0.0
+        output_AX = 0.0
+        prev_AX = 0.0
+        car_angle_array_index = 0
+        count = 0
+        # Find car body angle by increasing car body angle until the car can produce the appropriate AY.
+        while output_AY < AY or count == 0:
+            if count != 0:
+                prev_AY = output_AY
+                prev_AX = output_AX
+
+            accel = self.AX_AY_array[r_index][car_angle_array_index]["brake"]
+
+            output_AY = accel.AY
+            output_AX = accel.AX
+
+            # If output AY is starting to decrease with increased iterations of car_angle_array_index, maximum AY has been reached.
+            if output_AY < prev_AY and count != 0:
                 break
-        
+
+            car_angle_array_index += 1
+            count += 1
+
+        # If the correct car angle was found in the first iteration above, then use the next car angle instead of the
+        # previous one to interpolate AX. Else, use the previous car angle to interpolate AX.
+        # if count == 1:
+        #     next_output_AX = self.AX_AY_array[r_index][car_angle_array_index+1]["brake"].AX
+        #     next_output_AY = self.AX_AY_array[r_index][car_angle_array_index+1]["brake"].AY
+        #     output_AX = (next_output_AX - output_AX) * (AY - output_AY)/(next_output_AY - output_AY) + output_AX
+        # else:
+        #     output_AX = (output_AX - prev_AX) * (AY - prev_AY)/(output_AY - prev_AY) + prev_AX
+
+        print(f"{self.count}: using car angle {self.car_angle_array[car_angle_array_index]}, radius {r} -- AX: {output_AX}, AY: {AY}")
+
+        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
+        output_AX -= drag # incorporating drag
+
+        self.count+=1
+
+        output_AX *= 32.17 * 12 # Converting from G's to in/s^2
+        return output_AX
+
+    # Calculates the positive axial acceleration of the car at a given radius and velocity.
+    def curve_accel(self, r, v, transmission_gear ='optimal'):
+        """
+        Calculates the axial acceleration of the car at a given radius and velocity.
+        :param r: The radius of the car at which to calculate the acceleration. (inches)
+        :param v: The velocity of the car at which to calculate the acceleration. (in/s)
+        :param transmission_gear: The gear the car is in.
+        :return: The axial acceleration of the car at the given radius and velocity. (g's)
+        """
+
+        if r > 0:
+            AY = v**2/r / 12 / 32.17 # g's
+        else:
+            self.count+=1
+            AY = 0
+
+        if AY == 0:
+            return self.max_axial_accel()
+
+        r_index = self.find_closest_radius_index(r)
+
+        # Interpolate AX using AX_AY_array
+        output_AY = 1.0
+        prev_AY = 0.0
+        output_AX = 0.0
+        prev_AX = 0.0
+        car_angle_array_index = 0
+        count = 0
+        # Find car body angle by increasing car body angle until the car can produce the appropriate AY.
+        while output_AY < AY or count == 0:
+            if count != 0:
+                prev_AY = output_AY
+                prev_AX = output_AX
+
+            accel = self.AX_AY_array[r_index][car_angle_array_index]["launch"]
+
+            output_AY = accel.AY
+            output_AX = accel.AX
+
+            # If output AY is starting to decrease with increased iterations of car_angle_array_index, maximum AY has been reached.
+            if output_AY < prev_AY and count != 0:
+                car_angle_array_index += 1
+                break
+
+            car_angle_array_index += 1
+            count += 1
+
+        # If the correct car angle was found in the first iteration above, then use the next car angle instead of the
+        # previous one to interpolate AX. Else, use the previous car angle to interpolate AX.
+        # if count == 1:
+        #     next_output_AX = self.AX_AY_array[r_index][car_angle_array_index+1]["launch"].AX
+        #     next_output_AY = self.AX_AY_array[r_index][car_angle_array_index+1]["launch"].AY
+        #     output_AX = (next_output_AX - output_AX) * (AY - output_AY)/(next_output_AY - output_AY) + output_AX
+        # else:
+        #     output_AX = (AY - prev_AY) * (output_AX - prev_AX)/(output_AY - prev_AY) + prev_AX
+
+        print(f"{self.count}: using car angle {self.car_angle_array[car_angle_array_index-1]}, closest radius {self.radius_array[r_index]}, actual radius {r} -- AX: {output_AX}, AY: {AY}")
+
+        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
+
+        A_tire = output_AX # Tire traction G's
         A_tire -= drag # incorporating drag
-        A_tire *= 32.17 * 12 # Converting from G's to in/s^2
+        A_tire *= 32.17*12# converting from G's to in/s^2
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
         A_engn -= drag # incorporating drag
         A_engn *= 32.17*12 # converting from G's to in/s^2
+
+        self.count+=1
 
         # returns either tire or engine acceleration depending on which is the limiting factor
         if A_tire < A_engn:
             return A_tire
         else:
             return A_engn
-        
-    
-    # calculates the max braking acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
-    # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
-    # set r to zero for a track straight track with no curvature
-    def curve_brake(self, v, r):
-        AY = 0
-        if r > 0:
-            AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
-        else:
-            AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
-        
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
 
-        A_tire = 0
-        for i in range(1, len(self.AY)):
-            if self.AY[i] >= AY:
-                # linearly interpolating self.A_brake to find the braking acceleration at lateral acceleration AY
-                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1] )*self.A_brake[i-1]
-                break
-        
-        A_tire -= drag # incorporating drag
-        A_tire *= 32.17 * 12 # Converting from G's to in/s^2
-        
-        return A_tire
+    def max_axial_accel(self):
+        """
+        Runs the find_accurate_accel function with radius 10000000 and car angle 0.
+        :return: The maximum axial acceleration of the car in g's.
+        """
+        return self.find_accurate_accel(10000000, 0).AX
+
+    def max_lateral_accel(self):
+        """
+        Starting at a 200-inch radius, decrements by 1 inch and checks the needed lateral acceleration for that radius until getting
+        a lateral acceleration that is lower than the previous. The lateral acceleration of the previous check is then returned.
+        :return: The maximum lateral acceleration of the car. (g's)
+        """
+        # Ensure AX_AY_array is created
+        if self.AX_AY_array is None:
+            self.AX_AY_array = self.create_accel_2D_array(50)
+
+        max = self.AX_AY_array[0][0]["launch"].AY
+
+        # Go through each radius and car angle until maximum lateral acceleration is found.
+        for radius in range(0, len(self.AX_AY_array)):
+            for c_angle in range(0, len(self.AX_AY_array[0])):
+                if self.AX_AY_array[radius][c_angle]["launch"].AY > max:
+                    max = self.AX_AY_array[radius][c_angle]["launch"].AY
+
+        return max
     
     # returns drag acceleration (in/s^2) given vehicle speed
     # v = speed (in/s)
     def curve_idle(self, v):
         drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
-        drag *= 32.17 * 12 # converting from G's to in/s^2
         return -drag # returns negative because drag slows the car
     
     # returns drag force in G's (index = speed of car (mph))
@@ -596,8 +681,8 @@ class car():
         self.K_RR *= ratio
         self.K_rollF *= ratio
         self.K_rollR *= ratio
-        self.compute_traction_updated()
-    
+        # Recalculate AX_AY_array since weight has changed
+        self.AX_AY_array = self.create_accel_2D_array(50)
 
     def adjust_height(self, h):
         ratio = h / self.h
@@ -605,10 +690,72 @@ class car():
         self.H *= ratio
         self.z_rf *= ratio
         self.z_rr *= ratio
-        self.compute_traction_updated()
+        # Recalculate AX_AY_array since height has changed
+        self.AX_AY_array = self.create_accel_2D_array(50)
 
-racecar = car()
-racecar.find_accurate_accel(radius=10000000, car_angle=0 * math.pi/180, braking=False, print_info=True, print_every_iteration=False)
-# racecar.find_AY_AX_for_every_r_carangle()
-# print(f"\n\n\nMAX: {racecar.max_lateral_accel(50)}")
-# racecar.max_axial_accel()
+# Purpose of this class is to create pickles for autocross and endurance
+# class points:
+#     def __init__ (self):
+#         self.nds = []
+#
+# def create_track_pickle(txt_path, pkl_path, is_autocross):
+#     points_arr = [np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType())]
+#
+#     arr_done_index = 0
+#
+#     with open(txt_path, "r") as f:
+#         content = f.read()
+#     curr_num = ""
+#     writing = False
+#     for char in content:
+#         if char == '[':
+#             writing = True
+#         elif char == ']' and writing:
+#             points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
+#             curr_num = ""
+#             arr_done_index += 1
+#             writing = False
+#         elif char == ',' and writing:
+#             points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
+#             curr_num = ""
+#         elif char != " " and writing:
+#             curr_num += char
+#
+#     points_x = points_arr[0].astype(float)
+#     points_y = points_arr[1].astype(float)
+#     points_x2 = points_arr[2].astype(float)
+#     points_y2 = points_arr[3].astype(float)
+#
+#     track = points()
+#
+#     rang = 97 if is_autocross else 129
+#     for i in range(rang):
+#         n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
+#         track.nds.append(n)
+#
+#     with open(pkl_path, "wb") as f:
+#         pickle.dump(track, f)
+
+racecar = Car()
+
+# print(racecar.max_axial_accel())
+
+print(f"Total runtime: {racecar.end - racecar.start} seconds")
+
+with open("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/autocross_trk_points.pkl", "rb") as f:
+    points_trk = pkl.load(f)
+
+points_x = []
+points_y = []
+points_x2 = []
+points_y2 = []
+for node in points_trk.nds:
+    points_x.append(node.x1)
+    points_y.append(node.y1)
+    points_x2.append(node.x2)
+    points_y2.append(node.y2)
+
+track = track(points_x, points_y, points_x2, points_y2, racecar)
+track.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
+track.run_sim(racecar)
+# print(racecar.AY_arr)

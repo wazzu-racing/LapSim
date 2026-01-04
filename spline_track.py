@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from matplotlib import pyplot as plt
 import time
@@ -131,6 +133,9 @@ class curve():
         self.x, self.dx, self.ddx = [], [], []
         self.y, self.dy, self.ddy = [], [], []
 
+        self.ddx_n = []
+        self.ddy_n = []
+
         self.dcx = [0, 0, 0, 0]
         self.dcy = [0, 0, 0, 0]
 
@@ -145,6 +150,14 @@ class curve():
 
             self.ddx.append(p1x * self.dds_dA[0][i] + p2x * self.dds_dA[1][i] + p3x * self.dds_dA[2][i] + p4x * self.dds_dA[3][i])
             self.ddy.append(p1y * self.dds_dA[0][i] + p2y * self.dds_dA[1][i] + p3y * self.dds_dA[2][i] + p4y * self.dds_dA[3][i])
+
+            # Calculate normal ddx and ddy along the curve (only incorporates centripetal acceleration, not tangential)
+            speed = math.sqrt(self.dx[i]**2 + self.dy[i]**2)
+            tang_speed_unit_x = self.dx[i] / speed
+            tang_speed_unit_y = self.dy[i] / speed
+            accel_tang = self.ddx[i]*tang_speed_unit_x + self.ddy[i]*tang_speed_unit_y
+            self.ddx_n.append(self.ddx[i] - accel_tang * tang_speed_unit_x)
+            self.ddy_n.append(self.ddy[i] - accel_tang * tang_speed_unit_y)
 
             #self.c += abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5 / (self.dx[i]**2 + self.dy[i]**2)**0.25 / self.elem
             #num = abs(self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i])**0.5
@@ -196,7 +209,10 @@ class curve():
 
 class track():
 
-    def __init__(self, p1x, p1y, p2x, p2y):
+    def __init__(self, p1x, p1y, p2x, p2y, car):
+        self.car = car
+        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
+
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i]))
@@ -281,7 +297,7 @@ class track():
             self.len += new_len
             self.rad += new_rad
         #print(np.sum(self.len))
-        self.sim = lapsim.four_wheel(self.len, self.rad, car, nodes)
+        self.sim = lapsim.Four_Wheel(self.len, self.rad, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run()
         print(f'Total Travel Time: {self.t}')
 
