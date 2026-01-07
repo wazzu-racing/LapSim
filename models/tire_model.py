@@ -71,7 +71,6 @@ class magic_curve():
         return magic_func(x, *self.coeff)
 
 
-
 # stores a section of data and finds the average and standard devation of each list of data
 class data_section():
     def __init__(self, data):

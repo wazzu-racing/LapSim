@@ -57,6 +57,9 @@ class LapSimUI:
         # Create a toplevel window for max values
         self.max_values_window = None
 
+        # Create a toplevel window for downloading CSV
+        self.csv_window = None
+
         # Create a toplevel window for loading
         self.loading_window = LoadingWindow()
 
@@ -308,6 +311,7 @@ class LapSimUI:
                 writer.writerows(master_array)
         else:
             print("No file selected")
+        self.csv_window.withdraw()
 
     # Create widgets if necessary and show already made widgets for the lapsim graph/viewer and pack them.
     def load_lapsim(self, display_track):
@@ -638,7 +642,7 @@ def get_data_string(self, lapsim_data_storage, tkinter_data_bools, index):
     if tkinter_data_bools[7].get():
         content += f"Force direction on front outer tire: {np.round(lapsim_data_storage.FO_vector_dir[index], 2)}\nForce direction on front inner tire: {np.round(lapsim_data_storage.FI_vector_dir[index], 2)}\nForce direction on rear outer tire: {np.round(lapsim_data_storage.RO_vector_dir[index], 2)}\nForce direction on rear inner tire: {np.round(lapsim_data_storage.RI_vector_dir[index], 2)}\n\n"
     if tkinter_data_bools[8].get():
-        content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.D_1_dis[index], 2)} in\nVertical displacement of front inner tire: {round(lapsim_data_storage.D_2_dis[index], 2)} in\nVertical displacement of rear outer tire: {round(lapsim_data_storage.D_3_dis[index], 2)} in\nVertical displacement of rear inner tire: {round(lapsim_data_storage.D_4_dis[index], 2)} in\n\n"
+        content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.front_outer_displacement[index], 2)} in\nVertical displacement of front inner tire: {round(lapsim_data_storage.front_inner_displacement[index], 2)} in\nVertical displacement of rear outer tire: {round(lapsim_data_storage.rear_outer_displacement[index], 2)} in\nVertical displacement of rear inner tire: {round(lapsim_data_storage.rear_inner_displacement[index], 2)} in\n\n"
     if tkinter_data_bools[9].get():
         content += f"Theta of Force on Car: {round(lapsim_data_storage.theta_accel[index], 2)} deg\n\n"
     content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."

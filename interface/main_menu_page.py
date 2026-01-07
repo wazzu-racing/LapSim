@@ -1,5 +1,4 @@
 import os
-import pickle
 import tkinter
 import matplotlib as mat
 from PIL import Image, ImageTk
@@ -24,7 +23,7 @@ from plot_tire_data_page import PlotTireDataPage
 # PageStack holds all the Frames that hold the widgets for each page.
 class PageStack(tkinter.Tk):
     def __init__(self):
-        # Init to initxialize itself as a Tk
+
         super().__init__()
 
         file_maker.create_LAPSIM_folder_in_documents()
@@ -59,8 +58,6 @@ class PageStack(tkinter.Tk):
             frame.configure(bg="Black")
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
-
-        self.protocol("WM_DELETE_WINDOW", self.kill_window)
 
         # If the user right clicks or presses the escape key, the previous page is raised to the top of PageStack
         self.bind("<Escape>", self.go_back)
@@ -97,9 +94,6 @@ class PageStack(tkinter.Tk):
             self.page_history.pop()
             self.current_page = self.page_history[-1]
 
-
-# TODO: pyinstaller cant recognize modules in project files, cant use abs path because it would be unusable on other computers.
-# TODO: possible fix: whenever exporting to executable just move all files out.
 # The "MainMenuPage" page.
 class MainMenuPage(tkinter.Frame):
     def __init__(self, parent, controller):

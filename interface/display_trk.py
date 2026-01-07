@@ -125,7 +125,7 @@ class DisplayTrack:
             self.last_k = spln.k # Set last k to the current k so we can use it in the next iteration.
             if x is not None and x.is_alive(): # If loading has not finished, update the loading window to display loading progress.
                 self.loading_window.update_loading(spln.k / spln.len_s * 100, seconds_left)
-                spln.track_root.after(100, update_loading_window) # Call this same function again after 0.1 seconds.
+                spln.track_root.after(1000, update_loading_window) # Call this same function again after 0.1 seconds.
             else:
                 self.loading_window.update_loading(100,0)
                 run_and_plot() # Once loading is done, run the LapSimUI class and plot the track.

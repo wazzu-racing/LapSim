@@ -5,10 +5,11 @@ import pickle
 import numpy as np
 
 from gen_lapsim.spline_track import node
+from gen_lapsim.spline_track import track
 from models import tire_model, drivetrain_model
-from LapData import LapData
+from interface.LapData import LapData
 from .file_manager import file_manager
-from models.car_model import car
+from models.car_model import Car
 
 class FileMaker:
 
@@ -47,7 +48,8 @@ class FileMaker:
             pickle.dump(drivetrain, f)
 
         # Create car model and put into user's documents folder.
-        racecar = car()
+        racecar = Car(tire_path=os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), drivetrain_path=os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"))
+        print("reached")
         with open(os.path.join(self.models_file_path, "CAR_73.pkl"), 'wb') as f:
             pickle.dump(racecar, f)
 
@@ -85,18 +87,25 @@ class FileMaker:
     # Checks if the files were written correctly by checking each individual file.
     def files_written_successfully(self):
         if not Path(os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl")).exists():
+            print("Failed to write HOOSIER_18(18x6-10_R20).pkl")
             return False
         elif not Path(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl")).exists():
+            print("Failed to write DEFAULT_DRIVETRAIN(CBR_650).pkl")
             return False
         elif not Path(os.path.join(self.models_file_path, "CAR_73.pkl")).exists():
+            print("Failed to write CAR_73.pkl")
             return False
         elif not Path(os.path.join(self.tracks_file_path, "Acceleration_Track.pkl")).exists():
+            print("Failed to write Acceleration_Track.pkl")
             return False
         elif not Path(os.path.join(self.tracks_file_path, "Autocross_Track.pkl")).exists():
+            print("Failed to write Autocross_Track.pkl")
             return False
         elif not Path(os.path.join(self.tracks_file_path, "Endurance_Track.pkl")).exists():
+            print("Failed to write Endurance_Track.pkl")
             return False
         elif not Path(os.path.join(self.tracks_file_path, "Skidpad_Track.pkl")).exists():
+            print("Failed to write Skidpad_Track.pkl")
             return False
         return True
 
@@ -145,3 +154,24 @@ class FileMaker:
 
 
 file_maker = FileMaker()
+
+# racecar = Car()
+#
+# print(f"Total runtime: {racecar.end - racecar.start} seconds")
+#
+# with open(file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent.parent, "config_data", "track_points", "autocross_trk_points.pkl")), "rb") as f:
+#     points_trk = pickle.load(f)
+#
+# points_x = []
+# points_y = []
+# points_x2 = []
+# points_y2 = []
+# for node in points_trk.nds:
+#     points_x.append(node.x1)
+#     points_y.append(node.y1)
+#     points_x2.append(node.x2)
+#     points_y2.append(node.y2)
+#
+# track = track(points_x, points_y, points_x2, points_y2, racecar)
+# track.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
+# track.run_sim(racecar)
