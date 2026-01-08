@@ -8,13 +8,15 @@ from loading_window import LoadingWindow
 
 class DisplayTrack:
 
-    def __init__(self, ui_instance, nodes = 5000):
+    def __init__(self, ui_instance, controller, nodes = 5000):
 
         print("[Displaying Track...]")
 
         self.nodes = nodes
 
         self.ui_instance = ui_instance
+
+        self.controller = controller
 
         # Will set later.
         self.loading_window = None
@@ -87,9 +89,8 @@ class DisplayTrack:
         # initialize points and stuff
         self.initialize_notgenerated_track(lap_data)
 
-        # close track graph if open, also need this if statement to run without errors
+        # Need this if statement to run without errors
         if self.ui_instance is not None:
-            self.ui_instance.close_LapsimUI_window()
             self.ui_instance.running_from_ungenerated_track = True
 
         # creating track object
@@ -107,27 +108,15 @@ class DisplayTrack:
         else:
             self.loading_window.reset()
         if len(self.points_x) > 18: # Loading window will stay on screen if there is not enough to load, so set a minimum.
+            self.loading_window.root.title("Loading LAPSIM...")
             self.loading_window.open_window()
 
-        instance = tq.tqdm(total=100) # Create instance of tqdm (library used to estimate time remaining)
-        self.last_k = 0 # Set last_k to 0 for now, used to track how many k's have been added since last time loading was checked
         def update_loading_window():
-            # update instance to contain how many k's have been added since last time loading was checked
-            instance.update((spln.k - self.last_k) / spln.len_s * 100)
-
-            # Use tqdm library to calculate rate of loading in iterations per second. 1 if rate is None.
-            rate = 1
-            if instance.format_dict['rate']:
-                rate = instance.format_dict['rate']
-
-            # Calculate the amount of seconds left.
-            seconds_left = int((100 - (spln.k / spln.len_s * 100)) / rate)
-            self.last_k = spln.k # Set last k to the current k so we can use it in the next iteration.
             if x is not None and x.is_alive(): # If loading has not finished, update the loading window to display loading progress.
-                self.loading_window.update_loading(spln.k / spln.len_s * 100, seconds_left)
+                self.loading_window.update_loading(curr_n=spln.k, total_n=spln.len_s)
                 spln.track_root.after(1000, update_loading_window) # Call this same function again after 0.1 seconds.
             else:
-                self.loading_window.update_loading(100,0)
+                self.loading_window.update_loading(100,100)
                 run_and_plot() # Once loading is done, run the LapSimUI class and plot the track.
 
         update_loading_window() # Call function to start the loop.

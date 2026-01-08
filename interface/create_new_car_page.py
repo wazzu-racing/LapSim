@@ -6,6 +6,7 @@ from pathlib import Path
 
 from car_settings_window import CarSettingsWindow
 from interface.file_management.file_manager import file_manager
+from interface.file_management.file_maker import file_maker
 from models import car_model
 
 
@@ -18,6 +19,8 @@ class CreateNewCarPage(tkinter.Frame):
         super().__init__(parent)
 
         self.car = car_model.Car(False)
+
+        file_maker.make_car_file(controller=controller)
 
         # sets path vars to the default car
         self.tire_file_path = ""
@@ -58,7 +61,7 @@ class CreateNewCarPage(tkinter.Frame):
         self.resolution_entry = tkinter.Entry(self.resolution_frame, bg="White", fg="Black", font=("Ariel", 12), width=10)
         self.resolution_entry.grid(row=0, column=1, pady=(10, 0))
 
-        self.default_label = tkinter.Label(self, text="Default: 50", font=("Ariel", 10), bg="Black",
+        self.default_label = tkinter.Label(self, text="Default: 100", font=("Ariel", 10), bg="Black",
                                            fg="White")
         self.default_label.grid(row=6, column=1, pady=(0, 0))
 
@@ -108,9 +111,11 @@ class CreateNewCarPage(tkinter.Frame):
 
     # Saves the car in a dir
     def save_file(self, controller):
-
         # Apply changes made by user to car object
-        self.settings_window.apply_changes(car=self.car, resolution=int(self.resolution_entry.get()))
+        self.settings_window.apply_changes(car=self.car, resolution=int(self.resolution_entry.get()) if self.resolution_entry.get() != "" else 100, func=self.save_file_continued,controller=controller, run_from="create_new_car_page")
+
+    # Continuation of the save_file function above, called once the car is done loading.
+    def save_file_continued(self, controller):
         self.car = self.settings_window.car
 
         # Create and save car object into saved_files dir using imported files after setting car_model paths equal to user selection

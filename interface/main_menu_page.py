@@ -26,6 +26,7 @@ class PageStack(tkinter.Tk):
 
         super().__init__()
 
+        file_maker.show_main_window = self.show_window
         file_maker.create_LAPSIM_folder_in_documents()
 
         # Make sure that plots open in a new window and not in the tkinter window.
@@ -35,6 +36,10 @@ class PageStack(tkinter.Tk):
         self.title("LAPSIM")
         self.geometry("1000x600")
         self.configure(bg="Black")
+
+        # If the car file has not been created yet, then hide this window so the loading window can take precedence.
+        if not file_maker.car_file_exists():
+            self.withdraw()
 
         # Create a container frame for each page
         container = tkinter.Frame(self, bg="Black")
@@ -73,6 +78,9 @@ class PageStack(tkinter.Tk):
     def kill_window(self):
         self.destroy()
         os._exit(0)
+
+    def show_window(self):
+        self.deiconify()
 
     # Raises the frame that corresponds with the page_name to the top of PageStack
     def go_to_page(self, page_name):

@@ -105,52 +105,52 @@ class LapSimData:
         self.AY[index] = car_data_snippet.AY
 
         # Collect car body angle
-        self.car_body_angle[index] = round(car_data_snippet.car_body_angle, 3)
+        self.car_body_angle[index] = car_data_snippet.car_body_angle
 
         # lateral, axial, and vertical forces on tires
-        self.FO_load_array[index] = round(car_data_snippet.FO_load, 3)
-        self.FI_load_array[index] = round(car_data_snippet.FI_load, 3)
-        self.RO_load_array[index] = round(car_data_snippet.RO_load, 3)
-        self.RI_load_array[index] = round(car_data_snippet.RI_load, 3)
-        self.FO_FY_array[index] = round(car_data_snippet.FO_FY, 3)
-        self.FI_FY_array[index] = round(car_data_snippet.FI_FY, 3)
-        self.RO_FY_array[index] = round(car_data_snippet.RO_FY, 3)
-        self.RI_FY_array[index] = round(car_data_snippet.RI_FY, 3)
-        self.FO_FX_array[index] = round(car_data_snippet.FO_FX, 3)
-        self.FI_FX_array[index] = round(car_data_snippet.FI_FX, 3)
-        self.RO_FX_array[index] = round(car_data_snippet.RO_FX, 3)
-        self.RI_FX_array[index] = round(car_data_snippet.RI_FX, 3)
+        self.FO_load_array[index] = car_data_snippet.FO_load
+        self.FI_load_array[index] = car_data_snippet.FI_load
+        self.RO_load_array[index] = car_data_snippet.RO_load
+        self.RI_load_array[index] = car_data_snippet.RI_load
+        self.FO_FY_array[index] = car_data_snippet.FO_FY
+        self.FI_FY_array[index] = car_data_snippet.FI_FY
+        self.RO_FY_array[index] = car_data_snippet.RO_FY
+        self.RI_FY_array[index] = car_data_snippet.RI_FY
+        self.FO_FX_array[index] = car_data_snippet.FO_FX
+        self.FI_FX_array[index] = car_data_snippet.FI_FX
+        self.RO_FX_array[index] = car_data_snippet.RO_FX
+        self.RI_FX_array[index] = car_data_snippet.RI_FX
 
         # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
-        self.FI_vector[index] = np.round(np.array([car_data_snippet.FI_FX,car_data_snippet.FI_FY, car_data_snippet.FI_load]), decimals=3)
-        self.RI_vector[index] = np.round(np.array([car_data_snippet.RI_FX, car_data_snippet.RI_FY, car_data_snippet.RI_load]), decimals=3)
-        self.FO_vector[index] = np.round(np.array([car_data_snippet.FO_FX,car_data_snippet.FO_FY,car_data_snippet.FO_load]), decimals=3)
-        self.RO_vector[index] = np.round(np.array([car_data_snippet.RO_FX,car_data_snippet.RO_FY,car_data_snippet.RO_load]), decimals=3)
-        self.FI_vector_mag[index] = round(self.get_magnitude(
-            self.FI_vector[index]), 3)
-        self.FO_vector_mag[index] = round(self.get_magnitude(
-            self.FO_vector[index]), 3)
-        self.RI_vector_mag[index] = round(self.get_magnitude(
-            self.RI_vector[index]), 3)
-        self.RO_vector_mag[index] = round(self.get_magnitude(
-            self.RO_vector[index]), 3)
-        self.FI_vector_dir[index] = np.round(np.array(
-            self.get_unit_vector(self.FI_vector[index])), decimals=3)
-        self.RI_vector_dir[index] = np.round(np.array(
-            self.get_unit_vector(self.RI_vector[index])), decimals=3)
-        self.FO_vector_dir[index] = np.round(np.array(
-            self.get_unit_vector(self.FO_vector[index])), decimals=3)
-        self.RO_vector_dir[index] = np.round(np.array(
-            self.get_unit_vector(self.RO_vector[index])), decimals=3)
+        self.FI_vector[index] = np.array([car_data_snippet.FI_FX,car_data_snippet.FI_FY, car_data_snippet.FI_load])
+        self.RI_vector[index] = np.array([car_data_snippet.RI_FX, car_data_snippet.RI_FY, car_data_snippet.RI_load])
+        self.FO_vector[index] = np.array([car_data_snippet.FO_FX,car_data_snippet.FO_FY,car_data_snippet.FO_load])
+        self.RO_vector[index] = np.array([car_data_snippet.RO_FX,car_data_snippet.RO_FY,car_data_snippet.RO_load])
+        self.FI_vector_mag[index] = self.get_magnitude(
+            self.FI_vector[index])
+        self.FO_vector_mag[index] = self.get_magnitude(
+            self.FO_vector[index])
+        self.RI_vector_mag[index] = self.get_magnitude(
+            self.RI_vector[index])
+        self.RO_vector_mag[index] = self.get_magnitude(
+            self.RO_vector[index])
+        self.FI_vector_dir[index] = np.array(
+            self.get_unit_vector(self.FI_vector[index]))
+        self.RI_vector_dir[index] = np.array(
+            self.get_unit_vector(self.RI_vector[index]))
+        self.FO_vector_dir[index] = np.array(
+            self.get_unit_vector(self.FO_vector[index]))
+        self.RO_vector_dir[index] = np.array(
+            self.get_unit_vector(self.RO_vector[index]))
 
         # lapsim_data_storage vertical displacement of wheels
-        self.front_inner_displacement[index] = round(car_data_snippet.front_inner_displacement, 3)
-        self.rear_inner_displacement[index] = round(car_data_snippet.rear_inner_displacement, 3)
-        self.front_outer_displacement[index] = round(car_data_snippet.front_outer_displacement, 3)
-        self.rear_outer_displacement[index] = round(car_data_snippet.rear_outer_displacement, 3)
+        self.front_inner_displacement[index] = car_data_snippet.front_inner_displacement
+        self.rear_inner_displacement[index] = car_data_snippet.rear_inner_displacement
+        self.front_outer_displacement[index] = car_data_snippet.front_outer_displacement
+        self.rear_outer_displacement[index] = car_data_snippet.rear_outer_displacement
 
         # Angle of accel force of car
-        self.theta_accel[index] = round(car_data_snippet.theta_accel, 3)
+        self.theta_accel[index] = car_data_snippet.theta_accel
 
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
@@ -170,6 +170,54 @@ class LapSimData:
 
         return max_values_dict
 
+    def round_all_arrays(self, decimals=3):
+        self.time_array = np.round(np.array(self.time_array), decimals=decimals)
+
+        # Collect lateral and axial acceleration of car
+        self.AX = np.round(np.array(self.AX), decimals=decimals)
+        self.AY = np.round(np.array(self.AY), decimals=decimals)
+
+        # Collect car body angle
+        self.car_body_angle = np.round(np.array(self.car_body_angle), decimals=decimals)
+
+        # lateral, axial, and vertical forces on tires
+        self.FO_load_array = np.round(np.array(self.FO_load_array), decimals=decimals)
+        self.FI_load_array = np.round(np.array(self.FI_load_array), decimals=decimals)
+        self.RO_load_array = np.round(np.array(self.RO_load_array), decimals=decimals)
+        self.RI_load_array = np.round(np.array(self.RI_load_array), decimals=decimals)
+        self.FO_FY_array = np.round(np.array(self.FO_FY_array), decimals=decimals)
+        self.FI_FY_array = np.round(np.array(self.FI_FY_array), decimals=decimals)
+        self.RO_FY_array = np.round(np.array(self.RO_FY_array), decimals=decimals)
+        self.RI_FY_array = np.round(np.array(self.RI_FY_array), decimals=decimals)
+        self.FO_FX_array = np.round(np.array(self.FO_FX_array), decimals=decimals)
+        self.FI_FX_array = np.round(np.array(self.FI_FX_array), decimals=decimals)
+        self.RO_FX_array = np.round(np.array(self.RO_FX_array), decimals=decimals)
+        self.RI_FX_array = np.round(np.array(self.RI_FX_array), decimals=decimals)
+
+        # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
+        self.FI_vector = np.round(np.array(self.FI_vector), decimals=decimals)
+        self.RI_vector = np.round(np.array(self.RI_vector), decimals=decimals)
+        self.FO_vector = np.round(np.array(self.FO_vector), decimals=decimals)
+        self.RO_vector = np.round(np.array(self.RO_vector), decimals=decimals)
+        self.FI_vector_mag = np.round(np.array(self.FI_vector_mag), decimals=decimals)
+        self.FO_vector_mag = np.round(np.array(self.FO_vector_mag), decimals=decimals)
+        self.RI_vector_mag = np.round(np.array(self.RI_vector_mag), decimals=decimals)
+        self.RO_vector_mag = np.round(np.array(self.RO_vector_mag), decimals=decimals)
+        self.FI_vector_dir = np.round(np.array(self.FI_vector_dir), decimals=decimals)
+        self.RI_vector_dir = np.round(np.array(self.RI_vector_dir), decimals=decimals)
+        self.FO_vector_dir = np.round(np.array(self.FO_vector_dir), decimals=decimals)
+        self.RO_vector_dir = np.round(np.array(self.RO_vector_dir), decimals=decimals)
+
+        # lapsim_data_storage vertical displacement of wheels
+        self.front_inner_displacement = np.round(np.array(self.front_inner_displacement), decimals=decimals)
+        self.rear_inner_displacement = np.round(np.array(self.rear_inner_displacement), decimals=decimals)
+        self.front_outer_displacement = np.round(np.array(self.front_outer_displacement), decimals=decimals)
+        self.rear_outer_displacement = np.round(np.array(self.rear_outer_displacement), decimals=decimals)
+
+        # Angle of accel force of car
+        self.theta_accel = np.round(np.array(self.theta_accel), decimals=decimals)
+
+    # Fill the theta_accel array.
     def make_force_thetas(self):
         for index, AX in enumerate(self.AX):
             self.theta_accel[index] = math.atan2(abs(self.AY[index]), AX) * 180/math.pi
@@ -306,9 +354,11 @@ class four_wheel:
                     # if car_data_snippet.AX == 0:
                     #     print("Equals 0")
                 else:
+                    # Store data when the car is changing gears
                     car_data_snippet = self.car.accel_updated(
                         self.car.find_closest_radius_index(self.nd_rad[int(i)]), self.lapsim_data_storage.car_body_angle[int(i)-1],
                         v1[int(i)]**2 / self.nd_rad[int(i)] / 32.17 / 12, self.car.a_rr + self.car.curve_idle(v1[int(i)]), changing_gears=True)
+                    # Handle shifting logic
                     shifting = True
                     a_tan = car_data_snippet.AX * 32.17 * 12 + self.car.curve_idle(v1[int(i)])  # While shifting, the car has negative acceleration because of rolling resistance
                     shift_time -= dx / v1[int(i)]
@@ -319,8 +369,7 @@ class four_wheel:
                 if (np.sqrt(v1[int(i)] ** 2 + 2 * a_tan * dx) < v1[int(i + 1)]) or (v1[int(i + 1)] == 0.):
                     v1[int(i + 1)] = np.sqrt(v1[int(i)] ** 2 + 2 * a_tan * dx)
 
-                # Calculate acceleration
-                a_tan /= (32.17 * 12)  # in g's
+                a_tan /= (32.17 * 12)  # convert to g's
 
                 # Store data in lapsim_data_storage
                 car_data_snippet.AX = a_tan
@@ -345,6 +394,7 @@ class four_wheel:
         print(f"Time: {t} seconds")
 
         self.lapsim_data_storage.make_force_thetas()
+        self.lapsim_data_storage.round_all_arrays(decimals=3)
 
         self.dx = dx
         self.n = n

@@ -1,11 +1,9 @@
 import os
 from pathlib import Path
 import pickle
-
 import numpy as np
 
 from gen_lapsim.spline_track import node
-from gen_lapsim.spline_track import track
 from models import tire_model, drivetrain_model
 from interface.LapData import LapData
 from .file_manager import file_manager
@@ -19,6 +17,8 @@ class FileMaker:
         self.lapsim_data_file_path = Path.home()/"Documents"/"LAPSIM"/"Data"
         self.models_file_path = self.lapsim_data_file_path/"Models"
         self.tracks_file_path = self.lapsim_data_file_path/"Tracks"
+
+        self.show_main_window = None
 
     def create_LAPSIM_folder_in_documents(self):
         # If the path already exists, stop running this function.
@@ -46,12 +46,6 @@ class FileMaker:
         drivetrain = drivetrain_model.drivetrain(engine_data=engine_data)
         with open(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"), 'wb') as f:
             pickle.dump(drivetrain, f)
-
-        # Create car model and put into user's documents folder.
-        racecar = Car(tire_path=os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), drivetrain_path=os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"))
-        print("reached")
-        with open(os.path.join(self.models_file_path, "CAR_73.pkl"), 'wb') as f:
-            pickle.dump(racecar, f)
 
         # Create LapData files and put into user's documents folder.
         # Acceleration track
@@ -83,6 +77,22 @@ class FileMaker:
         if not self.files_written_successfully():
             print("Failed to write files, running again...")
             self.create_LAPSIM_folder_in_documents()
+
+    def make_car_file(self, controller):
+        def save():
+            with open(os.path.join(self.models_file_path, "CAR_73.pkl"), 'wb') as f:
+                pickle.dump(racecar, f)
+            self.show_main_window()
+
+        if not self.car_file_exists():
+            # Create car model and put into user's documents folder.
+            racecar = Car(False, tire_path=os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), drivetrain_path=os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"))
+            racecar.compute_acceleration(250, func=save, controller=controller, run_from="file_maker")
+
+    def car_file_exists(self):
+        if Path(os.path.join(self.models_file_path, "CAR_73.pkl")).exists():
+            return True
+        return False
 
     # Checks if the files were written correctly by checking each individual file.
     def files_written_successfully(self):

@@ -1,3 +1,4 @@
+from curses.ascii import controlnames
 from enum import Enum
 
 import numpy as np
@@ -158,6 +159,7 @@ class LapSimUI:
         # Set the car settings window lap data to the most current lap data.
         self.car_settings_window.lap_data = self.lap_data
         # Open car settings window
+        self.car_settings_window.controller = display_track.controller
         self.car_settings_window.open_window()
 
     def open_max_values_window(self):
@@ -277,15 +279,15 @@ class LapSimUI:
                                 header_array.extend(["Front outer force direction", "Front inner force direction", "Rear outer force direction", "Rear inner force direction"]) # Add header to first row
                             case 8: # Save all data points in D_2_dis, D_1_dis, D_4_dis, and D_3_dis arrays into array_2 then save array_2 into writing_data.
                                 array_2 = []
-                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis):
+                                for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.front_outer_displacement):
                                     array = []
-                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_2_dis[index]))
-                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_1_dis[index]))
-                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_4_dis[index]))
-                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.D_3_dis[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.front_outer_displacement[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.front_inner_displacement[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.rear_inner_displacement[index]))
+                                    array.append(str(self.lap_data.generated_track.sim.lapsim_data_storage.rear_outer_displacement[index]))
                                     array_2.append(array)
                                 writing_data[5] = array_2
-                                header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear outer vertical displacement", "Rear inner vertical displacement"]) # Add header to first row
+                                header_array.extend(["Front outer vertical displacement", "Front inner vertical displacement", "Rear inner vertical displacement", "Rear outer vertical displacement"]) # Add header to first row
                             case 9: # Save all data points in theta_accel into array_2 then save array_2 into writing_data.
                                 array_2 = []
                                 for index, i in enumerate(self.lap_data.generated_track.sim.lapsim_data_storage.theta_accel):

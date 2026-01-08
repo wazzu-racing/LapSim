@@ -16,6 +16,8 @@ class ImportTrackPage(tkinter.Frame):
         self.track_file = ""
         self.car_file = ""
 
+        self.controller = controller
+
         # Will be set later
         self.lap_data = None
 
@@ -155,11 +157,11 @@ class ImportTrackPage(tkinter.Frame):
     def run_track(self):
         # If there is not already a display_track instance, create one.
         if self.display_track is None and self.lap_data.generated_track is None:
-            self.display_track = DisplayTrack(ui_instance=self.ui,
+            self.display_track = DisplayTrack(ui_instance=self.ui, controller=self.controller,
                                               nodes=int(self.node_entry.get()) if self.node_entry.get() and int(
                                                   self.node_entry.get()) > 9 else 5000)
         elif self.display_track is None and self.lap_data.generated_track is not None:
-            self.display_track = DisplayTrack(ui_instance=self.ui, nodes=self.lap_data.generated_track.sim.n)
+            self.display_track = DisplayTrack(ui_instance=self.ui, controller=self.controller, nodes=self.lap_data.generated_track.sim.n)
         elif self.display_track is not None and self.lap_data.generated_track is None:
             self.display_track.nodes = int(self.node_entry.get()) if self.node_entry.get() and int(
                 self.node_entry.get()) > 9 else 5000

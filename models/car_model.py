@@ -1,18 +1,17 @@
 import math
 import os
 import pickle
+import threading
 import numpy as np
 from pathlib import Path
-import pickle as pkl
 import time
 import csv
-
 from dataclasses import dataclass
-from gen_lapsim.spline_track import track, node
 
 from models import drivetrain_model
 from models import tire_model
 from interface.file_management.file_manager import file_manager
+from interface.loading_window import run_car_model_loading_window
 
 
 class Car:
@@ -86,12 +85,12 @@ class Car:
     tires = None
     train = None
 
-    def __init__(self, compute_acceleration = True, precision: int = 50, tire_path = "", drivetrain_path = ""):
+    def __init__(self, compute_acceleration = True, resolution: int = 100, tire_path ="", drivetrain_path =""):
         """
         Class to initialize and set up configurations for a vehicle's aerodynamic, tire, and drivetrain models.
         :param compute_acceleration: A boolean flag to specify whether initial computations for acceleration should be
                                      performed during initialization.
-        :param precision: An integer specifying the accuracy of acceleration computation.
+        :param resolution: An integer specifying the accuracy of acceleration computation.
         """
         self.start = time.perf_counter() # keep track of runtime duration
         self.aero_csv_file_path = file_manager.get_temp_folder_path(
@@ -126,7 +125,7 @@ class Car:
 
         self.aero_arr.reverse()
 
-        self.computation_precision = precision
+        self.resolution = resolution
 
         self.reached_max_iterations = False
 
@@ -135,8 +134,7 @@ class Car:
         self.car_angle_array = []
         self.AX_AY_array = []
         if compute_acceleration:
-            self.compute_acceleration(precision)
-            self.max_corner = self.max_lateral_accel()
+            self.compute_acceleration(resolution)
 
         self.count = 0
 
@@ -144,15 +142,26 @@ class Car:
 
         print("[Generated Car Object]")
 
-    def compute_acceleration(self, n):
+    def compute_acceleration(self, n, func=None, prev_lap_data=None, controller=None, run_from=""):
         """
         Computes the acceleration array required for running the simulation.
         :param n: Number of intervals for acceleration data creation. The higher this number, the more accurate the simulation will be, but the longer it will take to run this function.
         :type n: int
         :return: None.
         """
-        self.AX_AY_array = self.create_accel_2D_array(n, print_info=False)
-        self.max_corner = self.max_lateral_accel()
+        def compute():
+            self.AX_AY_array = self.create_accel_2D_array(n, print_info=False)
+            self.max_corner = self.max_lateral_accel()
+
+        if controller is not None:
+            x = threading.Thread(target=compute)
+            x.daemon = True
+            x.start()
+
+            run_car_model_loading_window(self, n, func, prev_lap_data, x, controller, run_from)
+            self.resolution = n
+        else:
+            compute()
 
     # future code for accounting for tire orientation
         '''
@@ -501,11 +510,15 @@ class Car:
         :return: None
         """
 
+        self.AX_AY_array = []
+
         # Ensure n is not lower than 20. Prevents inaccurate calculations.
         if n < 20:
             n = 20
 
         # set up radius and car angle arrays
+        self.radius_array = []
+        self.car_angle_array = []
         self.radius_array = np.concatenate([self.radius_array, np.linspace(100, 1000, int(n/2))])
         self.radius_array = np.concatenate([self.radius_array, np.linspace(1050, 10000, int(n/4))])
         self.radius_array = np.concatenate([self.radius_array, np.linspace(11000, 100000, int(n/4))])
@@ -796,7 +809,7 @@ class Car:
         self.K_rollF *= ratio
         self.K_rollR *= ratio
         # Recalculate AX_AY_array since weight has changed
-        self.compute_acceleration(self.computation_precision)
+        self.compute_acceleration(self.resolution)
 
     def adjust_height(self, h):
         ratio = h / self.h
@@ -805,7 +818,7 @@ class Car:
         self.z_rf *= ratio
         self.z_rr *= ratio
         # Recalculate AX_AY_array since height has changed
-        self.compute_acceleration(self.computation_precision)
+        self.compute_acceleration(self.resolution)
 
 # racecar = Car()
 # print(racecar.max_lateral_accel())

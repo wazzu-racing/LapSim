@@ -1,5 +1,6 @@
 import tkinter
 import tkinter.ttk as ttk
+import tqdm as tq
 
 class LoadingWindow:
     def __init__(self):
@@ -19,6 +20,11 @@ class LoadingWindow:
         self.progress_bar["value"] = 0
         self.progress_bar.pack()
 
+        # initiate loading logic
+        self.instance = tq.tqdm(total=100) # Create instance of tqdm (library used to estimate time remaining)
+        self.curr_n = 0 # Current
+        self.last_n = 0 # Used to track how many n's have been added since last time loading was checked
+
         # Hide this window until ready to show
         self.root.withdraw()
 
@@ -28,15 +34,28 @@ class LoadingWindow:
     def reset(self):
         self.progress_bar["value"] = 0
         self.loading_label.config(text=f"0 seconds remaining")
+        self.instance.reset()
 
     # Update the loading window to display a new argument progress (0-100) and the amount of seconds remaining.
-    def update_loading(self, progress, seconds_left):
-        self.progress_bar.config(value=progress)
+    def update_loading(self, curr_n, total_n):
+        # Update progress bar and loading instance
+        self.instance.update((curr_n - self.last_n) / total_n * 100)
+        self.progress_bar.config(value=curr_n/total_n*100)
+
+        # Calculate the rate of loading in iterations per second. 1 if rate is None.
+        rate = 1
+        if self.instance.format_dict['rate']:
+            rate = self.instance.format_dict['rate']
+
+        # Calculate the amount of seconds left and display.
+        seconds_left = int((100 - (curr_n / total_n * 100)) / rate)
         self.loading_label.config(text=f"{seconds_left} seconds remaining")
         self.root.update_idletasks()
-        if progress >= 100:
+        if curr_n/total_n*100 >= 100:
             self.close_window()
             self.progress_bar["value"] = 0
+
+        self.last_n = curr_n
 
     def center_window_on_screen(self):
         # 1. Update idle tasks to ensure accurate dimension calculation
@@ -64,3 +83,33 @@ class LoadingWindow:
 
     def close_window(self):
         self.root.withdraw()
+
+loading_window = None
+def run_car_model_loading_window(car, n, func, prev_lap_data, thread, controller, run_from):
+    global loading_window
+
+    if loading_window is None:
+        loading_window = LoadingWindow()
+    else:
+        loading_window.reset()
+    loading_window.root.title("Generating car model...")
+    loading_window.open_window()
+
+    if n > 100:
+        loading_window.open_window()
+
+    def update_loading_window():
+        if thread is not None and thread.is_alive(): # If loading has not finished, update the loading window to display loading progress.
+            loading_window.update_loading(curr_n=len(car.AX_AY_array), total_n=n)
+            loading_window.root.after(1000, update_loading_window) # Call this same function again after 1 second.
+        else:
+            loading_window.update_loading(100,100)
+            # Once loading has finished, update the UI.
+            if run_from == "create_new_car_page":
+                func(controller)
+            elif run_from=="display_trk":
+                func(prev_lap_data)
+            else:
+                func()
+
+    update_loading_window() # Call function to start the loop.
