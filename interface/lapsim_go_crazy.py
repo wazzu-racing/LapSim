@@ -312,7 +312,7 @@ class LapSimGoCrazy:
                             'can_drag_image' : self.can_drag_image,
                             'textboxDisplayed' : self.textboxDisplayed,
                             'image_path_saved' : self.image_path_saved}
-                    with open(file_manager.get_file_from_user(file_types=[("Pickle files", "*.pkl")]), 'wb') as f:
+                    with open(file_manager.get_file_from_user(file_types=[("Pickle files", "*.pkl")], default_exension="*.pkl"), 'wb') as f:
                         new_track_data = LapData(data)
                         pickle.dump(obj=new_track_data, file=f)
                     print('[Track points saved]')

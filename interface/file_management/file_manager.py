@@ -3,12 +3,13 @@ import sys
 from tkinter import filedialog
 from pathlib import Path
 
+
 class FileManager:
 
     def __init__(self):
-        self.lapsim_data_file_path = Path.home()/"Documents"/"LAPSIM"/"Data"
-        self.models_file_path = self.lapsim_data_file_path/"Models"
-        self.tracks_file_path = self.lapsim_data_file_path/"Tracks"
+        self.lapsim_data_file_path = Path.home() / "Documents" / "LAPSIM" / "Data"
+        self.models_file_path = self.lapsim_data_file_path / "Models"
+        self.tracks_file_path = self.lapsim_data_file_path / "Tracks"
 
     # Returns the absolute directory of where the tracks folder is on the user's computer.
     def get_tracks_dir(self):
@@ -20,7 +21,9 @@ class FileManager:
 
     # Opens folder window to let the user pick where they want to save their file.
     def get_file_from_user(self, file_types=[("Any file", "*.*")], default_exension=None):
-        file_path = filedialog.asksaveasfilename(title="Select a place to save your file.", initialdir=self.get_tracks_dir(), filetypes=file_types, defaultextension=default_exension)
+        file_path = filedialog.asksaveasfilename(title="Select a place to save your file.",
+                                                 initialdir=self.get_tracks_dir(), filetypes=file_types,
+                                                 defaultextension=default_exension)
         if file_path:
             return file_path
         else:
@@ -35,5 +38,6 @@ class FileManager:
         except Exception:
             base_path = os.path.abspath("")
         return os.path.join(base_path, relative_path)
+
 
 file_manager = FileManager()

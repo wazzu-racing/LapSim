@@ -6,8 +6,8 @@ import numpy as np
 from gen_lapsim.spline_track import node
 from models import tire_model, drivetrain_model
 from interface.LapData import LapData
-from .file_manager import file_manager
 from models.car_model import Car
+from .file_manager import file_manager
 
 class FileMaker:
 
@@ -101,9 +101,6 @@ class FileMaker:
             return False
         elif not Path(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl")).exists():
             print("Failed to write DEFAULT_DRIVETRAIN(CBR_650).pkl")
-            return False
-        elif not Path(os.path.join(self.models_file_path, "CAR_73.pkl")).exists():
-            print("Failed to write CAR_73.pkl")
             return False
         elif not Path(os.path.join(self.tracks_file_path, "Acceleration_Track.pkl")).exists():
             print("Failed to write Acceleration_Track.pkl")

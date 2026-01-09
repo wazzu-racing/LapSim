@@ -1,4 +1,3 @@
-from curses.ascii import controlnames
 from enum import Enum
 
 import numpy as np
@@ -924,7 +923,7 @@ class track():
 
     # Convert all arcs on track into lengths and radii, then run the lapsim using those.
     def run_sim(self, car, nodes = 5000, start = 0, end = 0):
-        from gen_lapsim import lapsim
+        import gen_lapsim.lapsim as lapsim
 
         self.car = car
 
