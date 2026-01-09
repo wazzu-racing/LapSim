@@ -40,4 +40,5 @@ class FileManager:
         return os.path.join(base_path, relative_path)
 
 
+# FileManager object used throughout the program. (think of as a singleton.)
 file_manager = FileManager()

@@ -18,6 +18,7 @@ class FileMaker:
         self.models_file_path = self.lapsim_data_file_path/"Models"
         self.tracks_file_path = self.lapsim_data_file_path/"Tracks"
 
+        # Function to show the main window after the car object has been created and saved.
         self.show_main_window = None
 
     def create_LAPSIM_folder_in_documents(self):
@@ -26,8 +27,8 @@ class FileMaker:
             return
 
         # Create pickle files that store the nodes of the autocross and endurance tracks using .rtf files.
-        self.create_track_pickle(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Autocross.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
-        self.create_track_pickle(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Endurance.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "endurance_trk_points.pkl")), is_autocross=False)
+        self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Autocross.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
+        self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Endurance.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "endurance_trk_points.pkl")), is_autocross=False)
 
         # Create folder directories in user's Documents folder.
         os.makedirs(self.lapsim_data_file_path, exist_ok=True)
@@ -78,7 +79,9 @@ class FileMaker:
             print("Failed to write files, running again...")
             self.create_LAPSIM_folder_in_documents()
 
+    # Creates a car model and saves it to the user's documents folder.'
     def make_car_file(self, controller):
+        # Save the car object to a pickle file and show the main window.
         def save():
             with open(os.path.join(self.models_file_path, "CAR_73.pkl"), 'wb') as f:
                 pickle.dump(racecar, f)
@@ -121,7 +124,22 @@ class FileMaker:
         def __init__ (self):
             self.nds = []
 
-    def create_track_pickle(self, txt_path, pkl_path, is_autocross):
+    # Creates track pickle files from .rtf (text) files and saves them to the specified path.
+    def parse_text_to_track_pkl(self, txt_path, pkl_path, is_autocross):
+        """
+        Parses data from a .rtf text file to create a track object in pickle format.
+
+        :param txt_path: Path to the input text file containing track data.
+        :type txt_path: str
+        :param pkl_path: Path where the pickle file will be saved.
+        :type pkl_path: str
+        :param is_autocross: A flag indicating whether the track is for autocross. If True,
+                             a certain number of nodes will be processed. Otherwise, the function
+                             will assume that the track is for endurance and generate a certain
+                             number of nodes for that track.
+        :type is_autocross: bool
+        :return: None
+        """
         points_arr = [np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType())]
 
         arr_done_index = 0
@@ -160,6 +178,7 @@ class FileMaker:
             pickle.dump(track, f)
 
 
+# FileMaker object used throughout the program. (think of as a singleton.)
 file_maker = FileMaker()
 
 # racecar = Car()

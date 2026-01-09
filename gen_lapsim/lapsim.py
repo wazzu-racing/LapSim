@@ -8,6 +8,11 @@ from gen_lapsim.spline_track import curve
 
 class LapSimData:
     def __init__(self):
+        """
+        This class represents a set of arrays and attributes to store and manage data
+        related to the car's dynamics, such as accelerations, forces, wheel
+        displacements, and angles.
+        """
         # Array for time t
         self.time_array = [0]
         # Arrays for lateral and axial acceleration of car
@@ -57,6 +62,11 @@ class LapSimData:
 
     # Initialize all of the arrays in LapSimData
     def initialize(self, n):
+        """
+        This function initializes all of the arrays in LapSimData.
+        :param n: The length of each array.
+        :return: None.
+        """
         # array for time elapsed
         self.time_array = [0]
         # Collect lateral and axial acceleration
@@ -100,6 +110,12 @@ class LapSimData:
 
     # Append a data point to all arrays.
     def append_data_arrays(self, car_data_snippet, index):
+        """
+        Append the data inside of the car_data_snippet to the arrays in LapSimData at the specified index.
+        :param car_data_snippet: A CarDataSnippet object containing the data to be appended.
+        :param index: The index at which to append the data.
+        :return: None.
+        """
         # Collect lateral and axial acceleration of car
         self.AX[index] = car_data_snippet.AX
         self.AY[index] = car_data_snippet.AY
@@ -154,6 +170,10 @@ class LapSimData:
 
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
+        """
+        Finds the maximum values of all arrays in the instance of LapSimData.
+        :return: A dictionary containing the maximum values of each array.
+        """
         max_values_dict = {"max_time": self.time_array[-1], "max_AY": np.max(self.AY),
                            "max_AX": np.max(self.AX), "max_FO_load": np.max(self.FO_load_array),
                            "max_FI_load": np.max(self.FI_load_array), "max_RO_load": np.max(self.RO_load_array),
@@ -170,14 +190,21 @@ class LapSimData:
 
         return max_values_dict
 
+    # Rounds each array in LapSimData storage to the specified number of decimals.
     def round_all_arrays(self, decimals=3):
+        """
+        Round all of the data in all of the arrays in the LapSimData instance to the specified number of decimals.
+        :param decimals: The number of decimals to round every value in each array to.
+        :return: None.
+        """
+        # Array of accumulated time
         self.time_array = np.round(np.array(self.time_array), decimals=decimals)
 
         # Collect lateral and axial acceleration of car
         self.AX = np.round(np.array(self.AX), decimals=decimals)
         self.AY = np.round(np.array(self.AY), decimals=decimals)
 
-        # Collect car body angle
+        # Car body angle
         self.car_body_angle = np.round(np.array(self.car_body_angle), decimals=decimals)
 
         # lateral, axial, and vertical forces on tires
@@ -218,22 +245,29 @@ class LapSimData:
         self.theta_accel = np.round(np.array(self.theta_accel), decimals=decimals)
 
     # Fill the theta_accel array.
-    def make_force_thetas(self):
+    def infect_force_thetas(self):
+        """
+        Calculates theta of force on the car based on the axial and lateral accelerations. Negative values indicate
+        turning left, positive values indicate turning right.
+        :return: None.
+        """
         for index, AX in enumerate(self.AX):
-            self.theta_accel[index] = math.atan2(abs(self.AY[index]), AX) * 180/math.pi
-        self.infect_force_theta()
-
-    # Give force thetas a direction (+ = turning right, - = turning left)
-    def infect_force_theta(self):
-        for index, AY in enumerate(self.AY):
-            self.theta_accel[index] = math.atan2(AY, self.AX[index]) * 180 / math.pi
+            self.theta_accel[index] = math.atan2(self.AY[index], self.AX[index]) * 180 / math.pi
 
     # Return a unit vector using the vector argument provided.
     def get_unit_vector(self, vector):
+        """
+        :param vector: The 3-value vector (an array) to get the unit vector of.
+        :return: A unit vector (a 3-value array) of the vector provided.
+        """
         return np.divide(vector, np.sqrt(np.sum(np.power(vector, 2))))
 
     # Get the magnitude of the argument vector provided.
     def get_magnitude(self, vector):
+        """
+        :param vector: The 3-value vector (an array) to get the magnitude of.
+        :return: The magnitude of the vector provided.
+        """
         return np.sqrt(np.sum(np.power(vector, 2)))
 
 
@@ -393,7 +427,7 @@ class four_wheel:
             self.lapsim_data_storage.time_array.append(t)
         print(f"Time: {t} seconds")
 
-        self.lapsim_data_storage.make_force_thetas()
+        self.lapsim_data_storage.infect_force_thetas()
         self.lapsim_data_storage.round_all_arrays(decimals=3)
 
         self.dx = dx

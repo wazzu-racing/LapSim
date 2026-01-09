@@ -142,143 +142,11 @@ class Car:
 
         print("[Generated Car Object]")
 
-    def compute_acceleration(self, n, func=None, prev_lap_data=None, controller=None, run_from=""):
-        """
-        Computes the acceleration array required for running the simulation.
-        :param n: Number of intervals for acceleration data creation. The higher this number, the more accurate the simulation will be, but the longer it will take to run this function.
-        :type n: int
-        :return: None.
-        """
-        def compute():
-            self.AX_AY_array = self.create_accel_2D_array(n, print_info=False)
-            self.max_corner = self.max_lateral_accel()
-
-        if controller is not None:
-            x = threading.Thread(target=compute)
-            x.daemon = True
-            x.start()
-
-            run_car_model_loading_window(self, n, func, prev_lap_data, x, controller, run_from)
-            self.resolution = n
-        else:
-            compute()
-
-    # future code for accounting for tire orientation
-        '''
-        min_crv = 70 # minimum curve radius (in) (ideally less than the smallest possible curve given the vehicle's steering geometry)
-        max_crv = 1000 # maximum curve radius (in) (the radius at which error from large cruve approximations become negligable)
-        d_crv = 5
-        self.curves = np.linspace(min_crv, max_crv, int((max_crv-min_crv)/d_crv)+1)
-        V_arr = np.linspace(0, 100, 101) * 17.6
-        
-        start_time = time.time()
-        for r in self.curves:
-            C_r_in = 0
-            C_r_out = 0
-            S_c = 0
-            
-            break_loop = False
-            for V in V_arr:
-                AY = V**2/r / 12 * 32.17 # total lateral force on car body
-
-                while True:
-                    S_c += 0.1
-                    # slip angle of rear inner and outter tires respectively
-                    if r == 0:
-                        S_r_in = S_c
-                        S_r_out = S_c
-                    else:
-                        S_r_in  = np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_r/2)/(r + np.sin(S_c)*self.a - np.cos(S_c)*self.t_r/2)))
-                        S_r_out = np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_r/2)/(r + np.sin(S_c)*self.a + np.cos(S_c)*self.t_r/2)))
-
-                    low = 0
-                    high = 3
-                    
-                    for i in range(20):
-                        
-                        AX = (low + high) / 2
-
-                        W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
-                        W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
-                        roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
-                        W_shift_x = roll * self.H # lateral shift in center of mass (in)
-
-                        W_f_out = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # force on front outter wheel
-                        W_f_in = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h)  # force on front inner wheel
-                        W_r_out = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # force on rear outter wheel
-                        W_r_in = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h)  # force on rear inner wheel
-
-                        C_f_out = abs(self.CMB_STC_F + (W_f_out-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
-                        C_f_in = abs(self.CMB_STC_F + (W_f_in-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
-                        C_r_out = abs(self.CMB_STC_R + (W_r_out-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
-                        C_r_in = abs(self.CMB_STC_R + (W_r_in-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
-
-                        FY_r_in = abs(self.tires.FY_curves.eval(S_r_in, W_r_in, C_r_in))
-                        FY_r_out = abs(self.tires.FY_curves.eval(S_r_out, W_r_out, C_r_out))
-                        FX_r_in = (1 - (FY_r_in / abs(self.tires.FY_curves.get_max(W_r_in, C_r_in)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_r_in, C_r_in))
-                        FX_r_out = (1 - (FY_r_out / abs(self.tires.FY_curves.get_max(W_r_out, C_r_out)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_r_out, C_r_out))
-                        MZ_r_in = abs(self.tires.aligning_torque.eval(S_r_in, W_r_in, C_r_in))
-                        MZ_r_out = abs(self.tires.aligning_torque.eval(S_r_out, W_r_out, C_r_out))
-
-                        if FY_r_in + FY_r_out < 0.7 * AY * self.W_car * (1-self.W_bias):
-                            high = AX
-                            continue
-
-                        MZ_last =  0   
-                        steeeeeeeeeer = 0      
-                        for steer in range(20):
-                            if r == 0:
-                                S_f_in = S_c + steer
-                                S_f_out = S_c + steer
-                            else:
-                                S_f_in  = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a - np.cos(S_c)*self.t_f/2)))
-                                S_f_out = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a + np.cos(S_c)*self.t_f/2)))
-
-                            FY_f_in = abs(self.tires.FY_curves.eval(S_f_in, W_f_in, C_f_in))
-                            FY_f_out = abs(self.tires.FY_curves.eval(S_f_out, W_f_out, C_f_out))
-                            MZ_f_in = abs(self.tires.aligning_torque.eval(S_f_in, W_f_in, C_f_in))
-                            MZ_f_out = abs(self.tires.aligning_torque.eval(S_f_out, W_f_out, C_f_out))
-
-                            MZ_tot = MZ_f_in + MZ_f_out + MZ_r_in + MZ_r_out + (FY_r_in + FY_r_out)*self.a - (FY_f_in + FY_f_out)*self.b
-                            if MZ_tot < 0:
-                                MZ_last = MZ_tot
-
-                            else:
-                                steeeeeeeeeer = ((steer-1) * MZ_tot - steer * MZ_last) / (MZ_tot + MZ_last)
-                                break
-                        
-                        steer = steeeeeeeeeer
-                        if r == 0:
-                            S_f_in = S_c + steer
-                            S_f_out = S_c + steer
-                        else:
-                            S_f_in  = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a - np.cos(S_c)*self.t_f/2)))
-                            S_f_out = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a + np.cos(S_c)*self.t_f/2)))
-
-                        FX_f_in = (1 - (FY_f_in / abs(self.tires.FY_curves.get_max(W_f_in, C_f_in)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_f_in, C_f_in))
-                        FX_f_out = (1 - (FY_f_out / abs(self.tires.FY_curves.get_max(W_f_out, C_f_out)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_f_out, C_f_out))
-                        
-                        if FX_f_in + FX_f_out + FX_r_in + FX_r_out < AX * self.W_car:
-                            high = AX
-                        else:
-                            low = AX
-
-
-                    if S_c > 20:
-                        break_loop = True
-                        break
-
-                # lateral forces of rear inner and outter tires respectively
-                FY_r_in = self.tires.FY_curves.eval
-                if break_loop:
-                    break
-
-            break
-        print(time.time() - start_time)
-        '''
-
     @dataclass
     class Car_Data_Snippet:
+        """
+        Represents the data that the car model experiences at an instance along the track.
+        """
         AX: float
         AY: float
         torque: float
@@ -304,6 +172,28 @@ class Car:
         FI_FX: float
         RO_FX: float
         RI_FX: float
+
+    def compute_acceleration(self, n, func=None, prev_lap_data=None, controller=None, run_from=""):
+        """
+        Computes the acceleration array required for running the simulation.
+        :param n: Number of intervals for acceleration data creation. The higher this number, the more accurate the simulation will be, but the longer it will take to run this function.
+        :type n: int
+        :return: None.
+        """
+        def compute():
+            self.AX_AY_array = self.create_accel_2D_array(n, print_info=False)
+            self.max_corner = self.max_lateral_accel()
+
+        # If the controller is not None, then compute the acceleration array in a separate thread and make a loading Window.
+        if controller is not None:
+            x = threading.Thread(target=compute)
+            x.daemon = True
+            x.start()
+
+            run_car_model_loading_window(self, n, func, prev_lap_data, x, controller, run_from)
+            self.resolution = n
+        else:
+            compute()
 
     def accel_updated(self, r, car_angle, AY, AX, braking = False, changing_gears = False, print_info = False, print_every_iteration = False):
         """
@@ -474,7 +364,7 @@ class Car:
 
         accel = None
 
-        while (abs(input_AY - output_AY) > 0.0001 or abs(input_AX - output_AX) > 0.0001) or (input_AX == 0):
+        while (abs(input_AY - output_AY) > 0.000001 or abs(input_AX - output_AX) > 0.000001) or (input_AX == 0):
             # Change outputs to inputs
             input_AX, input_AY = output_AX, output_AY
 
@@ -617,7 +507,7 @@ class Car:
                 prev_AX = output_AX
 
             car_data_snippet = self.AX_AY_array[r_index][car_angle_array_index]["brake"]
-            # accel = self.find_accurate_accel(r, self.car_angle_array[car_angle_array_index] * math.pi/180, braking=True)
+            # car_data_snippet = self.find_accurate_accel(r, self.car_angle_array[car_angle_array_index] * math.pi/180, braking=True)
 
             output_AY = car_data_snippet.AY
             output_AX = car_data_snippet.AX
@@ -690,7 +580,7 @@ class Car:
                 prev_AX = output_AX
 
             car_data_snippet = self.AX_AY_array[r_index][car_angle_array_index]["launch"]
-            # accel = self.find_accurate_accel(r, self.car_angle_array[car_angle_array_index] * math.pi/180)
+            # car_data_snippet = self.find_accurate_accel(r, self.car_angle_array[car_angle_array_index] * math.pi/180)
 
             output_AY = car_data_snippet.AY
             output_AX = car_data_snippet.AX
@@ -871,3 +761,117 @@ class points:
 # create_track_pickle("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/Points for Autocross.rtf",
 #                     "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/autocross_trk_points.pkl",
 #                     True)
+
+        # future code for accounting for tire orientation
+        '''
+        min_crv = 70 # minimum curve radius (in) (ideally less than the smallest possible curve given the vehicle's steering geometry)
+        max_crv = 1000 # maximum curve radius (in) (the radius at which error from large cruve approximations become negligable)
+        d_crv = 5
+        self.curves = np.linspace(min_crv, max_crv, int((max_crv-min_crv)/d_crv)+1)
+        V_arr = np.linspace(0, 100, 101) * 17.6
+        
+        start_time = time.time()
+        for r in self.curves:
+            C_r_in = 0
+            C_r_out = 0
+            S_c = 0
+            
+            break_loop = False
+            for V in V_arr:
+                AY = V**2/r / 12 * 32.17 # total lateral force on car body
+
+                while True:
+                    S_c += 0.1
+                    # slip angle of rear inner and outter tires respectively
+                    if r == 0:
+                        S_r_in = S_c
+                        S_r_out = S_c
+                    else:
+                        S_r_in  = np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_r/2)/(r + np.sin(S_c)*self.a - np.cos(S_c)*self.t_r/2)))
+                        S_r_out = np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_r/2)/(r + np.sin(S_c)*self.a + np.cos(S_c)*self.t_r/2)))
+
+                    low = 0
+                    high = 3
+                    
+                    for i in range(20):
+                        
+                        AX = (low + high) / 2
+
+                        W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
+                        W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
+                        roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
+                        W_shift_x = roll * self.H # lateral shift in center of mass (in)
+
+                        W_f_out = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # force on front outter wheel
+                        W_f_in = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h)  # force on front inner wheel
+                        W_r_out = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # force on rear outter wheel
+                        W_r_in = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h)  # force on rear inner wheel
+
+                        C_f_out = abs(self.CMB_STC_F + (W_f_out-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
+                        C_f_in = abs(self.CMB_STC_F + (W_f_in-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
+                        C_r_out = abs(self.CMB_STC_R + (W_r_out-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
+                        C_r_in = abs(self.CMB_STC_R + (W_r_in-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
+
+                        FY_r_in = abs(self.tires.FY_curves.eval(S_r_in, W_r_in, C_r_in))
+                        FY_r_out = abs(self.tires.FY_curves.eval(S_r_out, W_r_out, C_r_out))
+                        FX_r_in = (1 - (FY_r_in / abs(self.tires.FY_curves.get_max(W_r_in, C_r_in)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_r_in, C_r_in))
+                        FX_r_out = (1 - (FY_r_out / abs(self.tires.FY_curves.get_max(W_r_out, C_r_out)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_r_out, C_r_out))
+                        MZ_r_in = abs(self.tires.aligning_torque.eval(S_r_in, W_r_in, C_r_in))
+                        MZ_r_out = abs(self.tires.aligning_torque.eval(S_r_out, W_r_out, C_r_out))
+
+                        if FY_r_in + FY_r_out < 0.7 * AY * self.W_car * (1-self.W_bias):
+                            high = AX
+                            continue
+
+                        MZ_last =  0   
+                        steeeeeeeeeer = 0      
+                        for steer in range(20):
+                            if r == 0:
+                                S_f_in = S_c + steer
+                                S_f_out = S_c + steer
+                            else:
+                                S_f_in  = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a - np.cos(S_c)*self.t_f/2)))
+                                S_f_out = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a + np.cos(S_c)*self.t_f/2)))
+
+                            FY_f_in = abs(self.tires.FY_curves.eval(S_f_in, W_f_in, C_f_in))
+                            FY_f_out = abs(self.tires.FY_curves.eval(S_f_out, W_f_out, C_f_out))
+                            MZ_f_in = abs(self.tires.aligning_torque.eval(S_f_in, W_f_in, C_f_in))
+                            MZ_f_out = abs(self.tires.aligning_torque.eval(S_f_out, W_f_out, C_f_out))
+
+                            MZ_tot = MZ_f_in + MZ_f_out + MZ_r_in + MZ_r_out + (FY_r_in + FY_r_out)*self.a - (FY_f_in + FY_f_out)*self.b
+                            if MZ_tot < 0:
+                                MZ_last = MZ_tot
+
+                            else:
+                                steeeeeeeeeer = ((steer-1) * MZ_tot - steer * MZ_last) / (MZ_tot + MZ_last)
+                                break
+                        
+                        steer = steeeeeeeeeer
+                        if r == 0:
+                            S_f_in = S_c + steer
+                            S_f_out = S_c + steer
+                        else:
+                            S_f_in  = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a - np.cos(S_c)*self.t_f/2)))
+                            S_f_out = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a + np.cos(S_c)*self.t_f/2)))
+
+                        FX_f_in = (1 - (FY_f_in / abs(self.tires.FY_curves.get_max(W_f_in, C_f_in)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_f_in, C_f_in))
+                        FX_f_out = (1 - (FY_f_out / abs(self.tires.FY_curves.get_max(W_f_out, C_f_out)))**2)**0.5 * abs(self.tires.FX_curves.get_max(W_f_out, C_f_out))
+                        
+                        if FX_f_in + FX_f_out + FX_r_in + FX_r_out < AX * self.W_car:
+                            high = AX
+                        else:
+                            low = AX
+
+
+                    if S_c > 20:
+                        break_loop = True
+                        break
+
+                # lateral forces of rear inner and outter tires respectively
+                FY_r_in = self.tires.FY_curves.eval
+                if break_loop:
+                    break
+
+            break
+        print(time.time() - start_time)
+        '''
