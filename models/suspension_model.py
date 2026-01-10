@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy import sin, cos, arccos
 from numpy import linalg as la
-import car_model
+from models.car_model import Car
 import copy
 import csv
 
@@ -210,7 +210,7 @@ def node_forces(FX, FY, FZ):
 
 
 
-car = car_model.car()
+car = Car()
 
 tc_x = np.concatenate((car.A_accel, np.flip(car.A_brake[1:-1])))
 tc_y = np.concatenate((car.AY, np.flip(car.AY[1:-1])))

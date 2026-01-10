@@ -95,8 +95,7 @@ def run_car_model_loading_window(car, n, func, prev_lap_data, thread, controller
     loading_window.root.title("Generating car model...")
     loading_window.open_window()
 
-    if n > 100:
-        loading_window.open_window()
+    loading_window.open_window()
 
     def update_loading_window():
         if thread is not None and thread.is_alive(): # If loading has not finished, update the loading window to display loading progress.

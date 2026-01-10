@@ -173,7 +173,7 @@ class Car:
         RO_FX: float
         RI_FX: float
 
-    def compute_acceleration(self, n, func=None, prev_lap_data=None, controller=None, run_from=""):
+    def compute_acceleration(self, n, func=None, open_main_window = False, prev_lap_data=None, controller=None, run_from=""):
         """
         Computes the acceleration array required for running the simulation.
         :param n: Number of intervals for acceleration data creation. The higher this number, the more accurate the simulation will be, but the longer it will take to run this function.
@@ -184,8 +184,10 @@ class Car:
             self.AX_AY_array = self.create_accel_2D_array(n, print_info=False)
             self.max_corner = self.max_lateral_accel()
 
+        n_threshold = 100
+
         # If the controller is not None, then compute the acceleration array in a separate thread and make a loading Window.
-        if controller is not None:
+        if controller is not None and n > n_threshold:
             x = threading.Thread(target=compute)
             x.daemon = True
             x.start()
@@ -194,6 +196,8 @@ class Car:
             self.resolution = n
         else:
             compute()
+            if open_main_window:
+                func()
 
     def accel_updated(self, r, car_angle, AY, AX, braking = False, changing_gears = False, print_info = False, print_every_iteration = False):
         """
@@ -230,7 +234,7 @@ class Car:
         RO_height = - self.b * np.cos(car_angle) + (self.t_r/2) * np.sin(car_angle)
         RO_dir_motion = car_angle + np.atan2(RO_height, RO_length)
 
-        # Calculate slip angles (added negative sign because a negative slip angle is the standard convention for positive FY)
+        # Calculate slip angles (signed negative because a negative slip angle is the standard convention for positive FY)
         FI_slip_angle = -(FI_dir_motion + steering)
         RI_slip_angle = -RI_dir_motion
         FO_slip_angle = -(FO_dir_motion + steering)
@@ -322,7 +326,7 @@ class Car:
         total_aligning_torque *= 12 # Convert to inch pounds
 
         # Print out info depending on certain vars
-        if print_every_iteration or (abs(AY - self.net_lat_accel) <= 0.0001 and abs(AX - self.net_axial_accel) <= 0.0001 and print_info):
+        if print_every_iteration or (abs(AY - self.net_lat_accel) <= 0.0001 and abs(AX - self.net_axial_accel) <= 0.0001 and print_info and r < 10000):
             print(f"\n------------------- radius: {r} inches, car angle: {car_angle * 180/math.pi} degrees -------------------")
             print(f"steering angle: {steering * 180/math.pi} degrees")
             print(f"FI_slip_angle: {FI_slip_angle * 180/math.pi} degrees\nRI_slip_angle: {RI_slip_angle * 180/math.pi} degrees\nFO_slip_angle: {FO_slip_angle * 180/math.pi} degrees\nRO_slip_angle: {RO_slip_angle * 180/math.pi} degrees",)
@@ -364,7 +368,7 @@ class Car:
 
         accel = None
 
-        while (abs(input_AY - output_AY) > 0.000001 or abs(input_AX - output_AX) > 0.000001) or (input_AX == 0):
+        while (abs(input_AY - output_AY) > 0.0001 or abs(input_AX - output_AX) > 0.0001) or (input_AX == 0):
             # Change outputs to inputs
             input_AX, input_AY = output_AX, output_AY
 
