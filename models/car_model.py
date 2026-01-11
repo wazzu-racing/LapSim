@@ -199,7 +199,7 @@ class Car:
             if open_main_window:
                 func()
 
-    def accel_updated(self, r, car_angle, AY, AX, braking = False, changing_gears = False, print_info = False, print_every_iteration = False):
+    def accel(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False):
         """
         :param r: The radius of the turning curve. (inches)
         :param car_angle: The angle of the car, used to rotate the car (and therefore, the tires) however many radians entered about its z-axis. (radians)
@@ -284,13 +284,7 @@ class Car:
         max_FO_FY = self.tires.FY_curves.get_max(self.FO_load, self.FO_camber)
 
         # Calculating max axial acceleration by using a friction ellipse to put the remaining force into axial acceleration.
-        if changing_gears:
-            self.RI_FX = self.C_rr * self.W_3
-            self.RO_FX = self.C_rr * self.W_4
-            self.FI_FX = self.C_rr * self.W_1
-            self.FO_FX = self.C_rr * self.W_2
-            FX_car = -(self.RO_FX + self.RI_FX + self.FI_FX + self.FO_FX)
-        elif not braking:
+        if not braking:
             self.RI_FX = self.tires.FX_curves.get_max(self.RI_load, self.RI_camber) * ((1 - (self.RI_FY**2)/(max_RI_FY**2)) if max_RI_FY > self.RI_FY else 0)**0.5 * FX_scale_factor
             self.RO_FX = self.tires.FX_curves.get_max(self.RO_load, self.RO_camber) * ((1 - (self.RO_FY**2)/(max_RO_FY**2)) if max_RO_FY > self.RO_FY else 0)**0.5 * FX_scale_factor
             self.FI_FX = 0
@@ -373,7 +367,7 @@ class Car:
             input_AX, input_AY = output_AX, output_AY
 
             # Run accel function
-            accel = self.accel_updated(radius, car_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration)
+            accel = self.accel(radius, car_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration)
             output_AX, output_AY, torque = accel.AX, accel.AY, accel.torque
 
             iterations+=1
@@ -639,6 +633,67 @@ class Car:
                 FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
                 FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX)
 
+    def curve_gear_change(self, r, v):
+        if r > 0:
+            AY = v**2/r / 12 / 32.17 # g's
+        else:
+            AY = 0
+
+        r_index = self.find_closest_radius_index(r)
+
+        output_AY = 1.0
+        prev_AY = 0.0
+        output_AX = 0.0
+        prev_AX = 0.0
+        car_angle_array_index = 0
+        count = 0
+        # Find car body angle by increasing car body angle until the car can produce the appropriate AY.
+        while output_AY < AY or count == 0:
+            if count != 0:
+                prev_AY = output_AY
+                prev_AX = output_AX
+
+            car_data_snippet = self.AX_AY_array[r_index][car_angle_array_index]["launch"]
+
+            output_AY = car_data_snippet.AY
+            output_AX = car_data_snippet.AX
+
+            # If output AY is starting to decrease with increased iterations of car_angle_array_index, maximum AY has been reached.
+            if output_AY < prev_AY and count != 0:
+                # Check to make sure that the car_angle_array_index is not too small for the radius.
+                # This model tends to start behaving weirdly around the 300-inch radius for launching (due to realistic slip angles)
+                # and gives smaller car body angles than is reasonable.
+                if r < 350 and car_angle_array_index < int(len(self.car_angle_array)/6):
+                    car_angle_array_index += 1
+                    count += 1
+                    continue
+
+                break
+
+            car_angle_array_index += 1
+            count += 1
+
+        # Calculate AX for gear change
+        self.RI_FX = self.C_rr * self.W_3
+        self.RO_FX = self.C_rr * self.W_4
+        self.FI_FX = self.C_rr * self.W_1
+        self.FO_FX = self.C_rr * self.W_2
+        FX_car = -(self.RO_FX + self.RI_FX + self.FI_FX + self.FO_FX)
+        AX = FX_car / self.W_car
+
+        accel = self.accel(self.radius_array[r_index], self.car_angle_array[car_angle_array_index - 1], AY, AX, braking=False)
+
+        print(f"Gear change AX: {AX}")
+
+        # apply drag
+        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
+
+        print(f"Gear change AX after drag: {AX - drag}\n\n")
+
+        accel.AX = AX - drag
+
+        return accel
+
     def max_axial_accel(self):
         """
         Finds the maximum axial acceleration of the car along the x/longitudinal axis.
@@ -673,12 +728,11 @@ class Car:
 
         return max
 
-
-    # returns drag acceleration (in/s^2) given vehicle speed
-    # v = speed (in/s)
-    def curve_idle(self, v):
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
-        return -drag # returns negative because drag slows the car
+    def generate_traction_curve(self):
+        pass
+        #TODO: First, fix force theta to be 0-360.
+        #TODO: Go through force theta 0-360 and find the AX's and AY's in AX_AY_array that most closely match those
+        #TODO: and fill A_brake, A_launch, and AY arrays with those values.
 
     # returns drag force in G's (index = speed of car (mph))
     def get_drag(self, mph):

@@ -247,12 +247,14 @@ class LapSimData:
     # Fill the theta_accel array.
     def infect_force_thetas(self):
         """
-        Calculates theta of force on the car based on the axial and lateral accelerations. Negative values indicate
-        turning left, positive values indicate turning right.
+        Calculates theta of force on the car based on the axial and lateral accelerations. Values that are below 180
+        indicate that the car is accelerating to the right, and values above 180 indicate that the car is accelerating to the left.
         :return: None.
         """
         for index, AX in enumerate(self.AX):
             self.theta_accel[index] = math.atan2(self.AY[index], self.AX[index]) * 180 / math.pi
+            if self.theta_accel[index] < 0:
+                self.theta_accel[index] += 360
 
     # Return a unit vector using the vector argument provided.
     def get_unit_vector(self, vector):
@@ -388,13 +390,10 @@ class four_wheel:
                     # if car_data_snippet.AX == 0:
                     #     print("Equals 0")
                 else:
-                    # Store data when the car is changing gears
-                    car_data_snippet = self.car.accel_updated(
-                        self.car.find_closest_radius_index(self.nd_rad[int(i)]), self.lapsim_data_storage.car_body_angle[int(i)-1],
-                        v1[int(i)]**2 / self.nd_rad[int(i)] / 32.17 / 12, self.car.a_rr + self.car.curve_idle(v1[int(i)]), changing_gears=True)
+                    car_data_snippet = self.car.curve_gear_change(self.nd_rad[int(i)], v1[int(i)])
                     # Handle shifting logic
                     shifting = True
-                    a_tan = car_data_snippet.AX * 32.17 * 12 + self.car.curve_idle(v1[int(i)])  # While shifting, the car has negative acceleration because of rolling resistance
+                    a_tan = car_data_snippet.AX * 32.17 * 12
                     shift_time -= dx / v1[int(i)]
                     if shift_time <= 0:
                         gear += 1
