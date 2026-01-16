@@ -429,8 +429,8 @@ class four_wheel:
                 AY = v1[int(i)]**2 / self.nd_rad[int(i)] / 32.17 / 12
                 car_data_snippet.AY = -AY if self.nturn_dirs[int(i)] == curve.Turn.LEFT else AY
                 self.lapsim_data_storage.append_data_arrays(car_data_snippet, int(i))
-                print(f"rad {self.nd_rad[int(i)]} vel {v1[int(i)]}")
-                print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)]}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
+                # print(f"{int(i)} rad {self.nd_rad[int(i)]}")
+                # print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)] * 180/math.pi}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n + 1))
