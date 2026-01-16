@@ -87,10 +87,10 @@ class FileMaker:
                 pickle.dump(racecar, f)
             self.show_main_window()
 
-        if not self.car_file_exists():
+        if not self.car_file_exists(): # Make sure that the car file does not already exist.
             # Create car model and put into user's documents folder.
             racecar = Car(False, tire_path=os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), drivetrain_path=os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"))
-            racecar.compute_acceleration(250, func=save, open_main_window=True, controller=controller, run_from="file_maker")
+            racecar.compute_acceleration(101, func=save, open_main_window=True, controller=controller, run_from="file_maker")
 
     def car_file_exists(self):
         if Path(os.path.join(self.models_file_path, "CAR_73.pkl")).exists():

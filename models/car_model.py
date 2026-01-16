@@ -8,11 +8,12 @@ import time
 import csv
 from dataclasses import dataclass
 
+from matplotlib import pyplot as plt
+
 from models import drivetrain_model
 from models import tire_model
 from interface.file_management.file_manager import file_manager
 from interface.loading_window import run_car_model_loading_window
-
 
 class Car:
 
@@ -93,6 +94,7 @@ class Car:
         :param resolution: An integer specifying the accuracy of acceleration computation.
         """
         self.start = time.perf_counter() # keep track of runtime duration
+
         self.aero_csv_file_path = file_manager.get_temp_folder_path(
             os.path.join(Path(__file__).resolve().parent.parent, "config_data", "DEFAULT_AERO_ARRAY.csv"))
         self.tire_file_path = tire_path
@@ -129,49 +131,56 @@ class Car:
 
         self.reached_max_iterations = False
 
-        # Initialize arrays
+        self.count = 0
+
+        # Arrays for traction curve. (fill arrays using compute_traction_curve() function)
+        self.traction_curve_snippets = []
+        self.launch_AX = []
+        self.brake_AX = []
+        self.launch_AY = []
+        self.brake_AY = []
+
+        # Initialize main arrays
         self.radius_array = []
         self.car_angle_array = []
         self.AX_AY_array = []
         if compute_acceleration:
             self.compute_acceleration(resolution)
 
-        self.count = 0
-
-        self.end = time.perf_counter()
-
-        print("[Generated Car Object]")
-
     @dataclass
     class Car_Data_Snippet:
         """
         Represents the data that the car model experiences at an instance along the track.
         """
-        AX: float
-        AY: float
-        torque: float
-        car_body_angle: float
-        theta_accel: float
-        FO_load: float
-        FI_load: float
-        RO_load: float
-        RI_load: float
-        front_outer_displacement: float
-        front_inner_displacement: float
-        rear_outer_displacement: float
-        rear_inner_displacement: float
-        FO_camber: float
-        FI_camber: float
-        RO_camber: float
-        RI_camber: float
-        FO_FY: float
-        FI_FY: float
-        RO_FY: float
-        RI_FY: float
-        FO_FX: float
-        FI_FX: float
-        RO_FX: float
-        RI_FX: float
+        AX: float = 0.0
+        AY: float = 0.0
+        torque: float = 0.0
+        car_body_angle: float = 0.0
+        theta_accel: float = 0.0
+        FO_load: float = 0.0
+        FI_load: float = 0.0
+        RO_load: float = 0.0
+        RI_load: float = 0.0
+        front_outer_displacement: float = 0.0
+        front_inner_displacement: float = 0.0
+        rear_outer_displacement: float = 0.0
+        rear_inner_displacement: float = 0.0
+        FO_camber: float = 0.0
+        FI_camber: float = 0.0
+        RO_camber: float = 0.0
+        RI_camber: float = 0.0
+        FO_slip: float = 0.0
+        FI_slip: float = 0.0
+        RO_slip: float = 0.0
+        RI_slip: float = 0.0
+        FO_FY: float = 0.0
+        FI_FY: float = 0.0
+        RO_FY: float = 0.0
+        RI_FY: float = 0.0
+        FO_FX: float = 0.0
+        FI_FX: float = 0.0
+        RO_FX: float = 0.0
+        RI_FX: float = 0.0
 
     def compute_acceleration(self, n, func=None, open_main_window = False, prev_lap_data=None, controller=None, run_from=""):
         """
@@ -191,13 +200,18 @@ class Car:
             x = threading.Thread(target=compute)
             x.daemon = True
             x.start()
-
-            run_car_model_loading_window(self, n, func, prev_lap_data, x, controller, run_from)
             self.resolution = n
+            run_car_model_loading_window(self, n, func, prev_lap_data, x, controller, run_from)
+            self.end = time.perf_counter()
+            print("[Generated Car Object]. Time taken: ", self.end - self.start, " seconds")
         else:
             compute()
+            self.end = time.perf_counter()
+            print("[Generated Car Object]. Time taken: ", self.end - self.start, " seconds")
             if open_main_window:
                 func()
+
+        self.compute_traction_curve()
 
     def accel(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False):
         """
@@ -231,14 +245,14 @@ class Car:
 
         # Rear outer tire direction motion calcs
         RO_length = r + self.b * np.sin(car_angle) + (self.t_r/2) * np.cos(car_angle)
-        RO_height = - self.b * np.cos(car_angle) + (self.t_r/2) * np.sin(car_angle)
+        RO_height = -self.b * np.cos(car_angle) + (self.t_r/2) * np.sin(car_angle)
         RO_dir_motion = car_angle + np.atan2(RO_height, RO_length)
 
         # Calculate slip angles (signed negative because a negative slip angle is the standard convention for positive FY)
-        FI_slip_angle = -(FI_dir_motion + steering)
-        RI_slip_angle = -RI_dir_motion
-        FO_slip_angle = -(FO_dir_motion + steering)
-        RO_slip_angle = -RO_dir_motion
+        FI_slip_angle = -(FI_dir_motion + steering) # (car_angle + steering) - FI_dir_motion # -(FI_dir_motion + steering)
+        FO_slip_angle = -(FO_dir_motion + steering) # (car_angle + steering) - FO_dir_motion # -(FO_dir_motion + steering)
+        RI_slip_angle = -RI_dir_motion # car_angle - RI_dir_motion # -RI_dir_motion
+        RO_slip_angle = -RO_dir_motion # car_angle - RO_dir_motion # -RO_dir_motion
 
         W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
         W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
@@ -274,7 +288,7 @@ class Car:
         FY_car = self.FI_FY + self.RI_FY + self.FO_FY + self.RO_FY
         self.net_lat_accel = FY_car / self.W_car
 
-        # Multiple that is used to make FX closer what the real-world number would look like.
+        # Multiple that is used to make FX closer to what the real-world number would look like.
         FX_scale_factor = 1.2
 
         # Determine max FY for each tire.
@@ -341,7 +355,8 @@ class Car:
                                      rear_outer_displacement=self.rear_outer_displacement, rear_inner_displacement=self.rear_inner_displacement,
                                      FO_camber=self.FO_camber, RI_camber=self.RI_camber, FI_camber=self.FI_camber, RO_camber=self.RO_camber,
                                      FO_FY=self.FO_FY, RI_FY=self.RI_FY, FI_FY=self.FI_FY, RO_FY=self.RO_FY,
-                                     FO_FX=self.FO_FX, RI_FX=self.RI_FX, FI_FX=self.FI_FX, RO_FX=self.RO_FX)
+                                     FO_FX=self.FO_FX, RI_FX=self.RI_FX, FI_FX=self.FI_FX, RO_FX=self.RO_FX,
+                                     FI_slip=FI_slip_angle, RI_slip=RI_slip_angle, FO_slip=FO_slip_angle, RO_slip=RO_slip_angle)
 
     def find_accurate_accel(self, radius, car_angle = 0.0, braking=False, print_info = False, print_every_iteration = False):
         """
@@ -388,7 +403,8 @@ class Car:
                                      rear_outer_displacement=accel.rear_outer_displacement, rear_inner_displacement=accel.rear_inner_displacement,
                                      FO_camber=accel.FO_camber, RI_camber=accel.RI_camber, FI_camber=accel.FI_camber, RO_camber=accel.RO_camber,
                                      FO_FY=accel.FO_FY, RI_FY=accel.RI_FY, FI_FY=accel.FI_FY, RO_FY=accel.RO_FY,
-                                     FO_FX=accel.FO_FX, RI_FX=accel.RI_FX, FI_FX=accel.FI_FX, RO_FX=accel.RO_FX)
+                                     FO_FX=accel.FO_FX, RI_FX=accel.RI_FX, FI_FX=accel.FI_FX, RO_FX=accel.RO_FX,
+                                     FI_slip=accel.FI_slip, RI_slip=accel.RI_slip, FO_slip=accel.FO_slip, RO_slip=accel.RO_slip)
 
     def create_accel_2D_array(self, n:int=20, print_info = False):
         """
@@ -436,10 +452,10 @@ class Car:
         # print(car_angle_array)
 
         # Print out values of r_carangle_2d_array in readable format.
-        # for index, radius_values in enumerate(self.AX_AY_array):
-        #     print(f"Radius: {self.radius_array[index]} ----- ", end="")
+        # for r_index, radius_values in enumerate(self.AX_AY_array):
+        #     print(f"Radius: {self.radius_array[r_index]} ----- ", end="")
         #     for index, data in enumerate(radius_values):
-        #         print(f"{self.car_angle_array[index]} - AX: {data["brake"].AX}, AY: {data["brake"].AY}, Torque: {data["brake"].torque} | ", end="")
+        #         print(f"{self.car_angle_array[index]} - AX: {data["launch"].AX}, AY: {data["launch"].AY}, Torque: {data["launch"].torque} \n FI: {data["launch"].FI_slip}, FO: {data["brake"].FO_slip}, RI: {data["launch"].RI_slip}, RO: {data["launch"].RO_slip}\n\n", end="")
         #     print("")
 
         print(f"[Generated 2D array]")
@@ -540,7 +556,8 @@ class Car:
             rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
             FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
             FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
-            FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX)
+            FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
+            FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip)
 
     # Calculates the positive axial acceleration of the car at a given radius and velocity.
     def curve_accel(self, r, v, transmission_gear ='optimal'):
@@ -631,7 +648,8 @@ class Car:
                 rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
                 FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
                 FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
-                FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX)
+                FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
+                FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip)
 
     def curve_gear_change(self, r, v):
         if r > 0:
@@ -683,12 +701,8 @@ class Car:
 
         accel = self.accel(self.radius_array[r_index], self.car_angle_array[car_angle_array_index - 1], AY, AX, braking=False)
 
-        print(f"Gear change AX: {AX}")
-
         # apply drag
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
-
-        print(f"Gear change AX after drag: {AX - drag}\n\n")
+        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)n
 
         accel.AX = AX - drag
 
@@ -706,33 +720,264 @@ class Car:
         Finds the maximum lateral acceleration of the car along the y/lateral axis.
         :return: The maximum lateral acceleration of the car. (g's)
         """
-        radius_array = np.linspace(100, 10000, 50)
+        car_body_angle = 10 * math.pi / 180
+        output_AY = 1.0
+        prev_AY = 0.0
+        while output_AY > prev_AY:
+            if car_body_angle > 10 * math.pi / 180:
+                prev_AY = output_AY
 
-        max = 0
-        for radius in radius_array:
-            car_angle_index = 0
-            output_AY = 1.0
-            prev_AY = 0.0
+            snippet = self.find_accurate_accel(100000, car_body_angle)
+            output_AY = snippet.AY
+
+            car_body_angle+=0.001
+
+        return prev_AY
+
+    # DO NOT USE FOR MOST CASES. Read carefully.
+    def max_lateral_accel_car_angle(self):
+        """
+        THIS IS NOT THE MAXIMUM CAR BODY ANGLE OF THE CAR.
+
+        Finds the car body angle when the car reaches its maximum lateral acceleration.
+        :return: The car body angle at the maximum lateral acceleration of the car. (radians)
+        """
+        car_body_angle = 10 * math.pi / 180
+        output_AY = 1.0
+        prev_AY = 0.0
+        iteration_value = 0.001
+        while output_AY > prev_AY:
+            if car_body_angle > 10 * math.pi / 180:
+                prev_AY = output_AY
+
+            snippet = self.find_accurate_accel(100000, car_body_angle)
+            output_AY = snippet.AY
+
+            car_body_angle+=iteration_value
+
+        return car_body_angle-iteration_value
+
+    def compute_traction_curve(self):
+
+        def lerp(x, x1, x2, y1, y2):
+            return y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+
+        start_traction_curve = time.perf_counter() # Keep track of how long it takes to compute the traction curve.
+
+        launch_theta_force_array = np.linspace(0, 180, 181)
+        theta_data_array = [self.Car_Data_Snippet for _ in range(len(launch_theta_force_array))]
+
+        theta_data_array[0] = self.find_accurate_accel(1000000, 0)
+        theta_data_array[0].AY = 0 # AY is 0 to 3 decimals, so AY is essentially just 0.
+        theta_data_array[180] = self.find_accurate_accel(100000, 0, braking=True)
+
+        car_body_angle = 0
+        output_AY = 0
+        output_AX = 0
+        output_theta = 0
+        theta_completed = 0
+        brek = False
+        for theta in range(1, int(len(launch_theta_force_array)/2)):
+            # print(theta)
+
+            snippet = None
+            iterations = 0
+            while output_theta < theta:
+                car_body_angle += 0.00001
+
+                if iterations < 5000:
+                    snippet = self.find_accurate_accel(100000, car_body_angle, braking=False)
+                else:
+                    brek = True
+                    break
+                output_AY = snippet.AY
+                output_AX = snippet.AX
+
+                output_theta = math.atan2(output_AY, output_AX) * 180 / math.pi
+
+                iterations+=1
+
+            if brek:
+                break
+
+            theta_completed += 1
+
+            # print(f'iterations {iterations}')
+            # print(f"{output_theta} - AX: {snippet.AX}, AY: {snippet.AY}")
+            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+
+            # Set vars that are inaccurate to 0
+            snippet.theta_accel = theta
+            snippet.FO_slip = 0
+            snippet.RO_slip = 0
+            snippet.FI_slip = 0
+            snippet.RI_slip = 0
+
+            theta_data_array[theta] = snippet
+
+        # Interpolate the traction curve for the last few degrees of launching (roughly 85-90 degrees).
+        x1, x2 = theta_data_array[theta_completed].AY, self.max_lateral_accel()
+        y1, y2 = theta_data_array[theta_completed].AX, 0
+        AY = theta_data_array[theta_completed].AY
+        AX = theta_data_array[theta_completed].AX
+        for theta in range(theta_completed+1, 90):
+            # print(theta)
+
+            theta_force = 0
             count = 0
-            while output_AY > prev_AY:
-                if count != 0:
-                    prev_AY = output_AY
+            # Find the AX and AY that are needed to conform to the traction curve.
+            while theta_force < theta:
+                AX = lerp(AY, x1, x2, y1, y2)
+                AY += 0.00001
 
-                accel = self.AX_AY_array[self.find_closest_radius_index(radius)][car_angle_index]["brake"]
-                output_AY = accel.AY
-
+                theta_force = math.atan2(AY, AX) * 180 / math.pi
                 count+=1
-                car_angle_index+=1
-            if prev_AY > max:
-                max = prev_AY
 
-        return max
+            snippet = self.accel(100000, lerp(AY, x1, x2, theta_data_array[theta_completed].car_body_angle, self.max_lateral_accel_car_angle()), AY, AX)
+            snippet.AY = AY
+            snippet.AX = AX
+            snippet.RI_FX = lerp(AX, y1, y2, theta_data_array[theta_completed].RI_FX, 0)
+            snippet.RO_FX = lerp(AX, y1, y2, theta_data_array[theta_completed].RO_FX, 0)
 
-    def generate_traction_curve(self):
-        pass
-        #TODO: First, fix force theta to be 0-360.
-        #TODO: Go through force theta 0-360 and find the AX's and AY's in AX_AY_array that most closely match those
-        #TODO: and fill A_brake, A_launch, and AY arrays with those values.
+            # Set vars that are inaccurate to 0
+            snippet.theta_accel = theta
+            snippet.FO_slip = 0
+            snippet.RO_slip = 0
+            snippet.FI_slip = 0
+            snippet.RI_slip = 0
+
+            # print(f"{theta_force} - AX: {snippet.AX}, AY: {snippet.AY}")
+            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+
+            theta_data_array[theta] = snippet
+
+        # Calculate traction curve at max lateral acceleration. (This is a little special, so it's done separately)
+        snippet = self.accel(100000, self.max_lateral_accel_car_angle(), self.max_lateral_accel(), 0)
+        snippet.AY = self.max_lateral_accel()
+        snippet.AX = 0
+        snippet.RI_FX = 0
+        snippet.RO_FX = 0
+        theta_data_array[90] = snippet
+
+        output_AY = 0
+        output_AX = 0
+        output_theta = 1000
+        car_body_angle = 0
+        brek = False
+        theta_completed = 180 # not actually, just need to set this to 181 for logic's sake in this next for loop
+        for theta in range(int(len(launch_theta_force_array))-2, int(len(launch_theta_force_array)/2)+1, -1):
+            # print(theta)
+
+            snippet = None
+            iterations = 0
+            while output_theta > theta:
+                car_body_angle += 0.00001
+
+                if iterations < 5000:
+                    snippet = self.find_accurate_accel(100000, car_body_angle, braking=True)
+                else:
+                    brek = True
+                    break
+                output_AY = snippet.AY
+                output_AX = snippet.AX
+
+                output_theta = math.atan2(output_AY, output_AX) * 180 / math.pi
+
+                iterations += 1
+
+            if brek:
+                break
+
+            theta_completed -= 1
+
+            # Set vars that are inaccurate to 0
+            snippet.theta_accel = theta
+            snippet.FO_slip = 0
+            snippet.RO_slip = 0
+            snippet.FI_slip = 0
+            snippet.RI_slip = 0
+
+            # print(f"{output_theta} - AX: {snippet.AX}, AY: {snippet.AY}")
+            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+
+            theta_data_array[theta] = snippet
+
+        # Interpolate the traction curve for the last few degrees of braking (roughly 95-91 degrees).
+        x1, x2 = theta_data_array[theta_completed].AY, self.max_lateral_accel()
+        y1, y2 = theta_data_array[theta_completed].AX, 0
+        AY = theta_data_array[theta_completed].AY
+        AX = theta_data_array[theta_completed].AX
+        for theta in range(theta_completed-1, 90, -1):
+            # print(theta)
+
+            theta_force = 1000
+            count = 0
+            # Find the AX and AY that are needed to conform to the traction curve.
+            while theta_force > theta:
+                AX = lerp(AY, x1, x2, y1, y2)
+                AY += 0.00001
+
+                theta_force = math.atan2(AY, AX) * 180 / math.pi
+                count+=1
+
+            snippet = self.accel(100000, lerp(AY, x1, x2, theta_data_array[theta_completed].car_body_angle, self.max_lateral_accel_car_angle()), AY, AX, braking=True)
+            snippet.AY = AY
+            snippet.AX = AX
+
+            # Set vars that are inaccurate to 0
+            snippet.theta_accel = theta
+            snippet.FO_slip = 0
+            snippet.RO_slip = 0
+            snippet.FI_slip = 0
+            snippet.RI_slip = 0
+
+            theta_data_array[theta] = snippet
+
+            # print(f"{theta_force} - AX: {snippet.AX}, AY: {snippet.AY}")
+            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+
+        # Append all data to arrays
+        for snippet in theta_data_array:
+            self.traction_curve_snippets.append(snippet)
+
+        for index in range(int(len(theta_data_array)/2)+1):
+            self.launch_AY.append(theta_data_array[index].AY)
+            self.launch_AX.append(theta_data_array[index].AX)
+
+        for index in range(int(len(theta_data_array)/2), len(theta_data_array)):
+            self.brake_AY.append(theta_data_array[index].AY)
+            self.brake_AX.append(theta_data_array[index].AX)
+
+        # print(f"launch")
+        # print(f"AY: {self.launch_AY}\nAX: {self.launch_AX}")
+        #
+        # print(f"brake")
+        # print(f"AY: {self.brake_AY}\nAX: {self.brake_AX}")
+
+        end_traction_curve = time.perf_counter()
+        print(f"[Computed traction curve]. Time taken: {end_traction_curve - start_traction_curve} seconds.")
+
+    def plot_traction_curve(self):
+        plt.plot(self.launch_AY, self.launch_AX, label="Launch")
+        plt.plot(self.brake_AY, self.brake_AX, label="Brake")
+        plt.xlabel("Lateral Acceleration (g's)")
+        plt.ylabel("Axial Acceleration (g's)")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+    def plot_RI_FY(self):
+        for index, radius in enumerate(self.radius_array):
+            if index % 1 == 0:
+                RI_FY = []
+                for data in self.AX_AY_array[index]:
+                    RI_FY.append(data["launch"].RI_FY)
+                plt.plot(self.car_angle_array, RI_FY, label=f"{round(radius)} in")
+        plt.xlabel("Car body angle (degrees)")
+        plt.ylabel("RI_FY (pounds)")
+        plt.grid(True)
+        plt.legend()
+        plt.show()
 
     # returns drag force in G's (index = speed of car (mph))
     def get_drag(self, mph):
@@ -767,9 +1012,6 @@ class Car:
         self.z_rr *= ratio
         # Recalculate AX_AY_array since height has changed
         self.compute_acceleration(self.resolution)
-
-# racecar = Car()
-# print(racecar.max_lateral_accel())
 
 # Purpose of this class is to create pickles for autocross and endurance
 class points:
@@ -933,3 +1175,214 @@ class points:
             break
         print(time.time() - start_time)
         '''
+
+# def generate_lerped_snippet(AX, AY, x1, x2):
+#     snippet = self.Car_Data_Snippet
+#     snippet.AX = AX
+#     snippet.AY = AY
+#
+#     snippet.torque = lerp(AY, x1, x2, theta_data_array[theta_completed-1].torque, theta_data_array[theta_completed].torque)
+#     snippet.car_body_angle = lerp(AY, x1, x2, theta_data_array[theta_completed-1].car_body_angle, theta_data_array[theta_completed].car_body_angle)
+#
+#     snippet.FO_load = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_load, theta_data_array[theta_completed].FO_load)
+#     snippet.FI_load = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_load, theta_data_array[theta_completed].FI_load)
+#     snippet.RO_load = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_load, theta_data_array[theta_completed].RO_load)
+#     snippet.RI_load = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_load, theta_data_array[theta_completed].RI_load)
+#
+#     snippet.front_outer_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].front_outer_displacement,
+#         theta_data_array[theta_completed].front_outer_displacement
+#     )
+#     snippet.front_inner_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].front_inner_displacement,
+#         theta_data_array[theta_completed].front_inner_displacement
+#     )
+#     snippet.rear_outer_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].rear_outer_displacement,
+#         theta_data_array[theta_completed].rear_outer_displacement
+#     )
+#     snippet.rear_inner_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].rear_inner_displacement,
+#         theta_data_array[theta_completed].rear_inner_displacement
+#     )
+#
+#     snippet.FO_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_camber, theta_data_array[theta_completed].FO_camber)
+#     snippet.FI_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_camber, theta_data_array[theta_completed].FI_camber)
+#     snippet.RO_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_camber, theta_data_array[theta_completed].RO_camber)
+#     snippet.RI_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_camber, theta_data_array[theta_completed].RI_camber)
+#
+#     snippet.FO_slip = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_slip, theta_data_array[theta_completed].FO_slip)
+#     snippet.FI_slip = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_slip, theta_data_array[theta_completed].FI_slip)
+#     snippet.RO_slip = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_slip, theta_data_array[theta_completed].RO_slip)
+#     snippet.RI_slip = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_slip, theta_data_array[theta_completed].RI_slip)
+#
+#     snippet.FO_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_FY, theta_data_array[theta_completed].FO_FY)
+#     snippet.FI_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_FY, theta_data_array[theta_completed].FI_FY)
+#     snippet.RO_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_FY, theta_data_array[theta_completed].RO_FY)
+#     snippet.RI_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_FY, theta_data_array[theta_completed].RI_FY)
+#
+#     snippet.FO_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_FX, theta_data_array[theta_completed].FO_FX)
+#     snippet.FI_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_FX, theta_data_array[theta_completed].FI_FX)
+#     snippet.RO_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_FX, theta_data_array[theta_completed].RO_FX)
+#     snippet.RI_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_load, theta_data_array[theta_completed].RO_load)
+#     snippet.RI_load = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_load, theta_data_array[theta_completed].RI_load)
+#
+#     snippet.front_outer_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].front_outer_displacement,
+#         theta_data_array[theta_completed].front_outer_displacement
+#     )
+#     snippet.front_inner_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].front_inner_displacement,
+#         theta_data_array[theta_completed].front_inner_displacement
+#     )
+#     snippet.rear_outer_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].rear_outer_displacement,
+#         theta_data_array[theta_completed].rear_outer_displacement
+#     )
+#     snippet.rear_inner_displacement = lerp(
+#         AY, x1, x2,
+#         theta_data_array[theta_completed-1].rear_inner_displacement,
+#         theta_data_array[theta_completed].rear_inner_displacement
+#     )
+#
+#     snippet.FO_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_camber, theta_data_array[theta_completed].FO_camber)
+#     snippet.FI_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_camber, theta_data_array[theta_completed].FI_camber)
+#     snippet.RO_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_camber, theta_data_array[theta_completed].RO_camber)
+#     snippet.RI_camber = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_camber, theta_data_array[theta_completed].RI_camber)
+#
+#     snippet.FO_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_FY, theta_data_array[theta_completed].FO_FY)
+#     snippet.FI_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_FY, theta_data_array[theta_completed].FI_FY)
+#     snippet.RO_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_FY, theta_data_array[theta_completed].RO_FY)
+#     snippet.RI_FY = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_FY, theta_data_array[theta_completed].RI_FY)
+#
+#     snippet.FO_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FO_FX, theta_data_array[theta_completed].FO_FX)
+#     snippet.FI_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].FI_FX, theta_data_array[theta_completed].FI_FX)
+#     snippet.RO_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RO_FX, theta_data_array[theta_completed].RO_FX)
+#     snippet.RI_FX = lerp(AY, x1, x2, theta_data_array[theta_completed-1].RI_FX, theta_data_array[theta_completed].RI_FX)
+#
+#     return snippet
+
+# def interpolate_car_data_snippet(lower_car_data_snippet, upper_car_data_snippet, type):
+#     new_snippet = self.Car_Data_Snippet
+#
+#     theta = math.floor(upper_car_data_snippet[type].theta_accel)
+#
+#     if type=="brake":
+#         print(lower_car_data_snippet[type].AX)
+#         print(upper_car_data_snippet[type].AX)
+#
+#     new_snippet.AX = lower_car_data_snippet[type].AX + (theta - lower_car_data_snippet[type].theta_accel) * (upper_car_data_snippet[type].AX - lower_car_data_snippet[type].AX) / (upper_car_data_snippet[type].theta_accel - lower_car_data_snippet[type].theta_accel)
+#     new_snippet.AY = lower_car_data_snippet[type].AY + (theta - lower_car_data_snippet[type].theta_accel) * (upper_car_data_snippet[type].AY - lower_car_data_snippet[type].AY) / (upper_car_data_snippet[type].theta_accel - lower_car_data_snippet[type].theta_accel)
+#
+#     return new_snippet
+#
+# radius_array = np.linspace(100, 10000, 1000)
+# velocity_array = np.linspace(0, 1230, 200)
+#
+# launch_theta_force_array = np.linspace(0, 180, 181)
+# theta_data_array = [self.Car_Data_Snippet for _ in range(len(launch_theta_force_array))]
+#
+# max_lat = self.max_lateral_accel()
+#
+# car_data_snippet_array = [[{} for _ in range(len(velocity_array))] for _ in range(len(radius_array))] # len(radius_array) by len(velocity_array) array of Car_Data_Snippet objects
+#
+# for r_index, r in enumerate(radius_array):
+#     for v_index, v in enumerate(velocity_array):
+#
+#         if r_index < 200:
+#             # If the AY is more than the car can produce, then skip the rest of the iterations for this velocity.
+#             AY = v**2/r / 12 / 32.17
+#             if AY > max_lat:
+#                 break
+#
+#             car_data_snippet_array[r_index][v_index] = {"launch": self.curve_accel(r, v), "brake":self.curve_brake(r, v)}
+#
+# # Set theta forces in car_data_snippets
+# for data_row in car_data_snippet_array:
+#     for data in data_row:
+#         try:
+#             data["launch"].AY == 0
+#
+#             data["launch"].theta_accel = math.atan2(data["launch"].AY, data["launch"].AX) * 180 / math.pi
+#             data["brake"].theta_accel = math.atan2(data["brake"].AY, data["brake"].AX) * 180 / math.pi
+#             print(f"theta: {data["launch"].theta_accel}, {data['brake'].theta_accel}")
+#         except Exception:
+#             break
+#
+# for theta in launch_theta_force_array:
+#     highest_lower_theta_data = {"launch": self.Car_Data_Snippet, "brake": self.Car_Data_Snippet}
+#     highest_upper_theta_data = {"launch": self.Car_Data_Snippet, "brake": self.Car_Data_Snippet}
+#     highest_lower_theta_data["launch"].RO_FY = -100
+#     highest_lower_theta_data["brake"].RO_FY = -100
+#     highest_upper_theta_data["launch"].RO_FY = -100
+#     highest_upper_theta_data["brake"].RO_FY = -100
+#
+#     print(f"{theta}")
+#
+#     if theta == 0:
+#         theta_data_array[int(theta)] = self.accel(100000, 0, 0, self.max_axial_accel())
+#         continue
+#     elif theta == 180:
+#         theta_data_array[int(theta)] = self.accel(100000, 0, 0, self.max_axial_accel(), braking=True)
+#         continue
+#     elif theta < 90:
+#         # Check launch values
+#         for data_row_index in np.arange(0, len(radius_array)):
+#             for data in car_data_snippet_array[data_row_index]:
+#                 # Check to make sure Car_Data_Snippet object was created.
+#                 try:
+#                     launch_data = data["launch"]
+#                     # print(launch_data.theta_accel)
+#
+#                     if launch_data.theta_accel < theta and launch_data.theta_accel > theta-1:
+#                         if launch_data.RO_FY > highest_lower_theta_data["launch"].RO_FY:
+#                             print(f"found lower: {launch_data.theta_accel}")
+#                             highest_lower_theta_data = data
+#                     elif launch_data.theta_accel > theta and launch_data.theta_accel < theta+1:
+#                         if launch_data.RO_FY > highest_upper_theta_data["launch"].RO_FY:
+#                             print(f"found upper: {launch_data.theta_accel}")
+#                             highest_upper_theta_data = data
+#                 except Exception:
+#                     pass
+#     else:
+#         # Check brake values
+#         for data_row_index in np.arange(len(radius_array), 0):
+#             for data in car_data_snippet_array[data_row_index]:
+#                 # Check to make sure Car_Data_Snippet object was created.
+#                 try:
+#                     brake_data = data["brake"]
+#
+#                     if brake_data.theta_accel < theta and brake_data.theta_accel > theta-1:
+#                         if brake_data.FO_FY > highest_lower_theta_data["brake"].FO_FY:
+#                             print(f"found lower: {brake_data.theta_accel}")
+#                             highest_lower_theta_data = data
+#                     elif brake_data.theta_accel > theta and brake_data.theta_accel < theta+1:
+#                         if brake_data.FO_FY > highest_upper_theta_data["brake"].FO_FY:
+#                             print(f"found upper: {brake_data.theta_accel}")
+#                             highest_upper_theta_data = data
+#                 except Exception:
+#                     pass
+#
+#     type = "launch" if theta < 90 else "brake"
+#     data = interpolate_car_data_snippet(highest_lower_theta_data, highest_upper_theta_data, type)
+#     theta_data_array[int(theta)] = data
+#
+#     # print(f"{theta}: AX: {data.AX}, AY: {data.AY}")
+
+car = Car()
+# car.plot_RI_FY()
+for snippet in car.traction_curve_snippets:
+    print(f"\n------------------- AY: {snippet.AY}, AX: {snippet.AX} -------------------")
+    print(f"Force theta: {snippet.theta_accel}")
+    print(f"FI_load: {snippet.FI_load} pounds\nRI_load: {snippet.RI_load} pounds\nFO_load: {snippet.FO_load} pounds\nRO_load: {snippet.RO_load} pounds")
+    print(f"FI_camber: {snippet.FI_camber} degrees\nRI_camber: {snippet.RI_camber} degrees\nFO_camber: {snippet.FO_camber} degrees\nRO_camber: {snippet.RO_camber} degrees")
+    print(f"FI_displacement: {snippet.front_inner_displacement} in\nRI_displacement: {snippet.rear_inner_displacement} in\nFO_displacement: {snippet.front_outer_displacement} in\nRO_displacement: {snippet.rear_outer_displacement} in")
+    print(f"FI_FY: {snippet.FI_FY} pounds\nRI_FY: {snippet.RI_FY} pounds\nFO_FY: {snippet.FO_FY} pounds\nRO_FY: {snippet.RO_FY} pounds")
+    print(f"FI_FX: {snippet.FI_FX} pounds\nRI_FX: {snippet.RI_FX} pounds\nFO_FX: {snippet.FO_FX} pounds\nRO_FX: {snippet.RO_FX} pounds")

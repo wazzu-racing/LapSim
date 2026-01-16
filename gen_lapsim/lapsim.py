@@ -20,6 +20,11 @@ class LapSimData:
         self.AX = []
         #Array for car body angle
         self.car_body_angle = []
+        # Arrays for slip angle for each tire
+        self.FI_slip = []
+        self.FO_slip = []
+        self.RI_slip = []
+        self.RO_slip = []
         # Arrays for vertical force, lateral force, and axial forces on wheels
         self.FI_load_array = []
         self.FO_load_array = []
@@ -74,6 +79,11 @@ class LapSimData:
         self.AY = np.zeros(int(n + 1))
         # Collect car body angle
         self.car_body_angle = np.zeros(int(n + 1))
+        # Arrays for slip angles for each tire
+        self.FI_slip = np.zeros(int(n+1))
+        self.FO_slip = np.zeros(int(n+1))
+        self.RI_slip = np.zeros(int(n+1))
+        self.RO_slip = np.zeros(int(n+1))
         # vertical forces on tires
         self.FO_load_array = np.zeros(int(n + 1))
         self.FI_load_array = np.zeros(int(n + 1))
@@ -122,6 +132,12 @@ class LapSimData:
 
         # Collect car body angle
         self.car_body_angle[index] = car_data_snippet.car_body_angle
+
+        # Arrays for slip angle for each tire
+        self.FI_slip[index] = car_data_snippet.FI_slip
+        self.FO_slip[index] = car_data_snippet.FO_slip
+        self.RI_slip[index] = car_data_snippet.RI_slip
+        self.RO_slip[index] = car_data_snippet.RO_slip
 
         # lateral, axial, and vertical forces on tires
         self.FO_load_array[index] = car_data_snippet.FO_load
@@ -206,6 +222,12 @@ class LapSimData:
 
         # Car body angle
         self.car_body_angle = np.round(np.array(self.car_body_angle), decimals=decimals)
+
+        # Arrays for slip angle for each tire
+        self.FI_slip = np.round(np.array(self.FI_slip), decimals=decimals)
+        self.FO_slip = np.round(np.array(self.FO_slip), decimals=decimals)
+        self.RI_slip = np.round(np.array(self.RI_slip), decimals=decimals)
+        self.RO_slip = np.round(np.array(self.RO_slip), decimals=decimals)
 
         # lateral, axial, and vertical forces on tires
         self.FO_load_array = np.round(np.array(self.FO_load_array), decimals=decimals)
@@ -387,8 +409,6 @@ class four_wheel:
                     car_data_snippet = self.car.curve_accel(self.nd_rad[int(i)], v1[int(i)], gear)
                     a_tan = car_data_snippet.AX
                     a_tan *= 32.17 * 12 # convert to in/s^2
-                    # if car_data_snippet.AX == 0:
-                    #     print("Equals 0")
                 else:
                     car_data_snippet = self.car.curve_gear_change(self.nd_rad[int(i)], v1[int(i)])
                     # Handle shifting logic
@@ -409,6 +429,8 @@ class four_wheel:
                 AY = v1[int(i)]**2 / self.nd_rad[int(i)] / 32.17 / 12
                 car_data_snippet.AY = -AY if self.nturn_dirs[int(i)] == curve.Turn.LEFT else AY
                 self.lapsim_data_storage.append_data_arrays(car_data_snippet, int(i))
+                print(f"rad {self.nd_rad[int(i)]} vel {v1[int(i)]}")
+                print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)]}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n + 1))
