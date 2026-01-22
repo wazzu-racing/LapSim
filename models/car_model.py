@@ -18,13 +18,13 @@ from interface.loading_window import run_car_model_loading_window
 class Car:
 
     # weight over front left wheel
-    W_3 = 185.7365
+    W_1 = 185.7365
     # weight over front right wheel
-    W_4 = 185.7365
+    W_2 = 185.7365
     # weight over rear left wheel
-    W_1 = 170.7635
+    W_3 = 170.7635
     # weight over rear right wheel
-    W_2 = 170.7635
+    W_4 = 170.7635
     # length of wheelbase (in)
     l = 60.04
     # vertical center of gravity (in)
@@ -40,7 +40,7 @@ class Car:
     # lb/in, ride rates, front and rear
     K_RF = 189.5 # front
     K_RR = 207.38 # rear
-    # lb*ft/deg, roll rates, front and rear (later converted to lb*ft/rad)
+    # lb*ft/rad, roll rates, front and rear
     K_rollF = 144439.94389901822
     K_rollR = 142041.8793828892
     #deg/in, camber rates for front and rear
@@ -54,10 +54,13 @@ class Car:
     max_jounce_r = 1
     # Rolling resistence coefficient, unitless
     C_rr = 0.01
+    # Coefficient of drag for the whole car, unitless
+    CD = 0.494040343
+    # Coefficient of lift for nosecone, undertray, front wing, and rear wing combined
+    CL = 0.2
+    # Distance from the CG to the COP (Center of pressure), (inches)
+    D_COP = 6
 
-    # Converting roll rates to ft*lb/rad
-    K_rollF *= 180/np.pi
-    K_rollR *= 180/np.pi
     # weight over front track
     W_f = W_1 + W_2
     # weight over rear track
@@ -79,6 +82,8 @@ class Car:
     RO_wheel_position = {"x": t_r / 2, "y": -b}
     # Rolling resistance force, in/s^2
     a_rr = -(C_rr * W_1 + C_rr * W_2 + C_rr * W_3 + C_rr * W_4)/W_car * 386.089
+    # Moment of inertia of car (lbf * ft * s^2)
+    I_car = W_car / 32.2 * (l / 2 / 12)**2
 
     # aero csv file delimiter
     aero_delimiter = ';'
@@ -154,15 +159,18 @@ class Car:
         """
         Represents the data that the car model experiences at an instance along the track.
         """
+        # Acceleration & movement
         AX: float = 0.0
         AY: float = 0.0
+        velocity :float = 0.0
         torque: float = 0.0
-        car_body_angle: float = 0.0
+        # Radius
+        radius: float = 0.0
+        # Angles
         theta_accel: float = 0.0
-        FO_load: float = 0.0
-        FI_load: float = 0.0
-        RO_load: float = 0.0
-        RI_load: float = 0.0
+        angular_accel : float = 0.0
+        car_body_angle: float = 0.0
+        # Tire measurements
         front_outer_displacement: float = 0.0
         front_inner_displacement: float = 0.0
         rear_outer_displacement: float = 0.0
@@ -175,6 +183,11 @@ class Car:
         FI_slip: float = 0.0
         RO_slip: float = 0.0
         RI_slip: float = 0.0
+        # Tire forces
+        FO_load: float = 0.0
+        FI_load: float = 0.0
+        RO_load: float = 0.0
+        RI_load: float = 0.0
         FO_FY: float = 0.0
         FI_FY: float = 0.0
         RO_FY: float = 0.0
@@ -183,6 +196,8 @@ class Car:
         FI_FX: float = 0.0
         RO_FX: float = 0.0
         RI_FX: float = 0.0
+        # Car body
+        roll : float = 0.0 # Radians
 
     def compute_acceleration(self, n, func=None, open_main_window = False, prev_lap_data=None, controller=None, run_from=""):
         """
@@ -213,7 +228,7 @@ class Car:
             if open_main_window:
                 func()
 
-    def accel(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False, steering = 0.0):
+    def accel(self, r, car_angle, steer_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False, aero = False):
         """
         :param r: The radius of the turning curve. (inches)
         :param car_angle: The angle of the car, used to rotate the car (and therefore, the tires) however many radians entered about its z-axis. (radians)
@@ -225,43 +240,54 @@ class Car:
         :return: A tuple of axial acceleration, lateral acceleration, and torque about the z-axis. (net_axial_accel, net_lateral_accel, total_torque_about_z)
         """
 
+        # TODO: TEST AERO CODE
+        if aero:
+            # Constants used for aero calculation
+            air_density = 0.00004426 # lb/in^3
+            reference_area = 0.865 # in^2
+
+            # The longitudinal velocity of the car
+            long_vel = math.sqrt(abs(AY * 32.17 * 12 * r)) * math.cos(car_angle)
+
+            # Calculate drag and downforce
+            drag = 1/2 * air_density * reference_area * self.CD * long_vel**2 / self.W_car # G's
+            downforce = 1/2 * air_density * reference_area * self.CL * long_vel**2 # lbs
+
+            # Calculate the downforce on each track
+            D_f = (self.b - self.D_COP) / self.l * downforce
+            D_r = (1 - (self.b - self.D_COP) / self.l) * downforce
+
         # Front inner tire direction motion calcs
         FI_length = r - self.a * np.sin(car_angle) - (self.t_f/2) * np.cos(car_angle)
         FI_height = self.a * np.cos(car_angle) - (self.t_f/2) * np.sin(car_angle)
-        FI_dir_motion = car_angle - np.atan2(FI_height, FI_length)
-
-        # Rear inner tire direction motion calcs
-        RI_length = r + self.b * np.sin(car_angle) - (self.t_r/2) * np.cos(car_angle)
-        RI_height = - self.b * np.cos(car_angle) - (self.t_r/2) * np.sin(car_angle)
-        RI_dir_motion = car_angle - np.atan2(RI_height, RI_length)
+        FI_slip_angle = -(car_angle + steer_angle - np.atan2(FI_height, FI_length))
 
         # Front outer tire direction motion calcs
         FO_length = r - self.a * np.sin(car_angle) + (self.t_f/2) * np.cos(car_angle)
         FO_height = self.a * np.cos(car_angle) + (self.t_f/2) * np.sin(car_angle)
-        FO_dir_motion = car_angle - np.atan2(FO_height, FO_length)
+        FO_slip_angle = -(car_angle + steer_angle - np.atan2(FO_height, FO_length))
+
+        # Rear inner tire direction motion calcs
+        RI_length = r + self.b * np.sin(car_angle) - (self.t_r/2) * np.cos(car_angle)
+        RI_height = - self.b * np.cos(car_angle) - (self.t_r/2) * np.sin(car_angle)
+        RI_slip_angle = -(car_angle - np.atan2(RI_height, RI_length))
 
         # Rear outer tire direction motion calcs
         RO_length = r + self.b * np.sin(car_angle) + (self.t_r/2) * np.cos(car_angle)
         RO_height = -self.b * np.cos(car_angle) + (self.t_r/2) * np.sin(car_angle)
-        RO_dir_motion = car_angle - np.atan2(RO_height, RO_length)
-
-        # Calculate slip angles (signed negative because a negative slip angle is the standard convention for positive FY)
-        FI_slip_angle = -(FI_dir_motion + steering) # (car_angle + steering) - FI_dir_motion # -(FI_dir_motion + steering)
-        FO_slip_angle = -(FO_dir_motion + steering) # (car_angle + steering) - FO_dir_motion # -(FO_dir_motion + steering)
-        RI_slip_angle = -RI_dir_motion # car_angle - RI_dir_motion # -RI_dir_motion
-        RO_slip_angle = -RO_dir_motion # car_angle - RO_dir_motion # -RO_dir_motion
+        RO_slip_angle = -(car_angle - np.atan2(RO_height, RO_length))
 
         W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
         W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
 
-        roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
+        roll = self.H/12*self.W_car*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
         W_shift_x = roll * self.H # lateral shift in center of mass (in)
 
         # Calculate front and rear load transfer
-        self.FO_load = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # vertical force on front outter wheel
-        self.FI_load = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h) # vertical force on front inner wheel
-        self.RO_load = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # vertical force on rear outter wheel
-        self.RI_load = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h) # vertical force on rear inner wheel
+        self.FO_load = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # + D_f # vertical force on front outter wheel
+        self.FI_load = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h) # + D_f # vertical force on front inner wheel
+        self.RO_load = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # + D_r # vertical force on rear outter wheel
+        self.RI_load = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h) # + D_r # vertical force on rear inner wheel
 
         # Calculate vertical displacement of each tire (negative means car is lifted relative to tire, positive means car is lowered relative to tire)
         self.front_inner_displacement = (self.FI_load - self.W_1) / self.K_RF # inches
@@ -305,13 +331,13 @@ class Car:
             FX_car = -(self.RO_FX + self.RI_FX + self.FI_FX + self.FO_FX)
 
         # Calculate total axial acceleration
-        self.net_axial_accel = (self.FI_FX + self.FO_FX) * np.cos(car_angle + steering) + (self.RI_FX + self.RO_FX) * np.cos(car_angle)
-        - (self.FI_FY + self.FO_FY) * np.sin(car_angle + steering) - (self.RI_FY + self.RO_FY) * np.sin(car_angle)
+        self.net_axial_accel = (self.FI_FX + self.FO_FX) * np.cos(car_angle + steer_angle) + (self.RI_FX + self.RO_FX) * np.cos(car_angle)
+        - (self.FI_FY + self.FO_FY) * np.sin(car_angle + steer_angle) - (self.RI_FY + self.RO_FY) * np.sin(car_angle)
         self.net_axial_accel /= self.W_car
 
         # Adding up lateral forces and calculating net lateral acceleration
-        FY_car = (self.FI_FY + self.FO_FY) * np.cos(car_angle + steering) + (self.RI_FY + self.RO_FY) * np.cos(car_angle) 
-        + (self.FI_FX + self.FO_FX) * np.sin(car_angle + steering) + (self.RI_FX + self.RO_FX) * np.sin(car_angle)
+        FY_car = (self.FI_FY + self.FO_FY) * np.cos(car_angle + steer_angle) + (self.RI_FY + self.RO_FY) * np.cos(car_angle)
+        + (self.FI_FX + self.FO_FX) * np.sin(car_angle + steer_angle) + (self.RI_FX + self.RO_FX) * np.sin(car_angle)
         self.net_lat_accel = FY_car / self.W_car
 
         # Calculate total torque about z axis for both axles, then calculate total torque about z-axis for the car
@@ -322,6 +348,7 @@ class Car:
 
         # calculate total torque about the z-axis
         total_torque_about_z = FI_torque + RI_torque + FO_torque + RO_torque
+
         # calculate aligning torque using magic curve
         FI_aligning_torque = self.tires.aligning_torque.eval(FI_slip_angle * 180/math.pi, self.FI_load, self.FI_camber)
         RI_aligning_torque = self.tires.aligning_torque.eval(RI_slip_angle * 180/math.pi, self.RI_load, self.RI_camber)
@@ -334,10 +361,17 @@ class Car:
 
         total_torque_about_z += total_aligning_torque
 
+        # Calculate angular acceleration (rad/s^2)
+        angular_acceleration = total_torque_about_z / 12 / self.I_car
+
+        # calculate velocity (in/s)
+        velocity = math.sqrt(abs(self.net_lat_accel * 32.17 * 12 * r))
+
         # Print out info depending on certain vars
         if print_every_iteration or (abs(AY - self.net_lat_accel) <= 0.0001 and abs(AX - self.net_axial_accel) <= 0.0001 and print_info):
             print(f"\n------------------- radius: {r} inches, car angle: {car_angle * 180/math.pi} degrees -------------------")
-            print(f"steering angle: {steering * 180/math.pi} degrees")
+            print(f"steering angle: {steer_angle * 180/math.pi} degrees")
+            print(f"velocity: {velocity} in/s")
             print(f"FI_slip_angle: {FI_slip_angle * 180/math.pi} degrees\nRI_slip_angle: {RI_slip_angle * 180/math.pi} degrees\nFO_slip_angle: {FO_slip_angle * 180/math.pi} degrees\nRO_slip_angle: {RO_slip_angle * 180/math.pi} degrees",)
             print(f"FI_load: {self.FI_load} pounds\nRI_load: {self.RI_load} pounds\nFO_load: {self.FO_load} pounds\nRO_load: {self.RO_load} pounds")
             print(f"FI_camber: {self.FI_camber} degrees\nRI_camber: {self.RI_camber} degrees\nFO_camber: {self.FO_camber} degrees\nRO_camber: {self.RO_camber} degrees")
@@ -349,23 +383,25 @@ class Car:
             print(f"total_torque: {total_torque_about_z} in pounds")
             print(f"total_aligning_torque: {total_aligning_torque} inch pounds")
 
-        return self.Car_Data_Snippet(AX=self.net_axial_accel, AY=self.net_lat_accel, torque=total_torque_about_z, car_body_angle=car_angle,
-                                     theta_accel=0,
+        return self.Car_Data_Snippet(AX=self.net_axial_accel, AY=self.net_lat_accel, velocity=velocity, torque=total_torque_about_z,
+                                     car_body_angle=car_angle, theta_accel=0, angular_accel=angular_acceleration, radius=r,
                                      FO_load=self.FO_load, RO_load=self.RO_load, FI_load=self.FI_load, RI_load=self.RI_load,
                                      front_inner_displacement=self.front_inner_displacement, front_outer_displacement=self.front_outer_displacement,
                                      rear_outer_displacement=self.rear_outer_displacement, rear_inner_displacement=self.rear_inner_displacement,
                                      FO_camber=self.FO_camber, RI_camber=self.RI_camber, FI_camber=self.FI_camber, RO_camber=self.RO_camber,
                                      FO_FY=self.FO_FY, RI_FY=self.RI_FY, FI_FY=self.FI_FY, RO_FY=self.RO_FY,
                                      FO_FX=self.FO_FX, RI_FX=self.RI_FX, FI_FX=self.FI_FX, RO_FX=self.RO_FX,
-                                     FI_slip=FI_slip_angle, RI_slip=RI_slip_angle, FO_slip=FO_slip_angle, RO_slip=RO_slip_angle)
-    
-    def find_accurate_accel(self, radius, car_angle = 0.0, braking=False, print_info = False, print_every_iteration = False, steer = 0.0):
+                                     FI_slip=FI_slip_angle, RI_slip=RI_slip_angle, FO_slip=FO_slip_angle, RO_slip=RO_slip_angle
+                                     ,roll=roll)
+
+    def find_accurate_accel(self, radius, steer_angle, car_angle = 0.0, braking=False, print_info = False, print_every_iteration = False):
         """
         Plugs in parameters into the accel function until the inputted AX and AY are approximately equal to the outputted AX and AY.
         The main idea of this is that when an initial AX and AY are plugged into the accel function, those accelerations are
         obviously wrong at first. However, the accel function will calculate a more accurate AX and AY and return those.
         Those outputted AX and AY are then plugged back into the accel function. This is repeated until extremely accurate
         AX and AY are returned.
+        :param steer_angle: The angle that the tires are pointing
         :param radius: The radius of the turning curve. (inches)
         :param car_angle: The angle of the car relative to the turning point. (radians)
         :return: A Car_Data_Snippet object that contains the converged AX and AY.
@@ -383,7 +419,7 @@ class Car:
             input_AX, input_AY = output_AX, output_AY
 
             # Run accel function
-            accel = self.accel(radius, car_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration, steering = steer)
+            accel = self.accel(radius, car_angle, steer_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration)
             output_AX, output_AY, torque = accel.AX, accel.AY, accel.torque
 
             iterations+=1
@@ -399,54 +435,15 @@ class Car:
             print(f"iterations: {iterations}")
 
         return self.Car_Data_Snippet(AX=output_AX, AY=output_AY, torque=torque, car_body_angle=car_angle, theta_accel=0,
+                                     velocity=accel.velocity, angular_accel=accel.angular_accel, radius=radius,
                                      FO_load=accel.FO_load, RO_load=accel.RO_load, FI_load=accel.FI_load, RI_load=accel.RI_load,
                                      front_inner_displacement=accel.front_inner_displacement, front_outer_displacement=accel.front_outer_displacement,
                                      rear_outer_displacement=accel.rear_outer_displacement, rear_inner_displacement=accel.rear_inner_displacement,
                                      FO_camber=accel.FO_camber, RI_camber=accel.RI_camber, FI_camber=accel.FI_camber, RO_camber=accel.RO_camber,
                                      FO_FY=accel.FO_FY, RI_FY=accel.RI_FY, FI_FY=accel.FI_FY, RO_FY=accel.RO_FY,
                                      FO_FX=accel.FO_FX, RI_FX=accel.RI_FX, FI_FX=accel.FI_FX, RO_FX=accel.RO_FX,
-                                     FI_slip=accel.FI_slip, RI_slip=accel.RI_slip, FO_slip=accel.FO_slip, RO_slip=accel.RO_slip)
-
-    def fuckyoubitch(self, brake=True):
-        radius = 1500
-        accel_increment = 0.02
-        angel_increment = 1 # degrees
-
-        max_angle = 20 # degrees
-        car_angles = np.linspace(0, max_angle, int(max_angle/angel_increment)+1)
-        long_accels = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
-        torques = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
-        lat_accels = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
-        for i in car_angles:
-            #steering_angles = np.linspace(0, max_angle - i, int((max_angle - i)/angel_increment)+1)
-            steering_angles = np.linspace(0, max_angle, int((max_angle)/angel_increment)+1)
-            car_angle = i * math.pi/180
-            for j in steering_angles:
-                steering = j * math.pi/180
-                snippet = self.find_accurate_accel(radius, car_angle, braking=brake, print_info=False, print_every_iteration=False, steer=steering)
-                long_accels[int(i//angel_increment), int(j//angel_increment)] = snippet.AX
-                torques[int(i//angel_increment), int(j//angel_increment)] = snippet.torque
-                lat_accels[int(i//angel_increment), int(j//angel_increment)] = snippet.AY
-        
-        print(lat_accels)
-
-        fig, axs = plt.subplots(2, 3)
-        axs[0, 0].imshow(long_accels, interpolation='nearest')
-        axs[1, 0].contour(long_accels)
-        axs[0, 0].set_title('Longitudinal Accelerations')
-        axs[0, 0].invert_yaxis()
-
-        axs[0, 1].imshow(torques, interpolation='nearest')
-        axs[1, 1].contour(torques)
-        axs[0, 1].set_title('Torques')
-        axs[0, 1].invert_yaxis()
-
-        axs[0, 2].imshow(lat_accels, interpolation='nearest')
-        axs[1, 2].contour(lat_accels)
-        axs[0, 2].set_title('Lateral Accelerations')
-        axs[0, 2].invert_yaxis()
-
-        plt.show()
+                                     FI_slip=accel.FI_slip, RI_slip=accel.RI_slip, FO_slip=accel.FO_slip, RO_slip=accel.RO_slip
+                                     ,roll=accel.roll)
 
     def create_accel_2D_array(self, n:int=20, print_info = False):
         """
@@ -502,36 +499,6 @@ class Car:
 
         print(f"[Generated 2D array]")
         return self.AX_AY_array
-
-    # Should be able to input a velocity, angular acceleration, and radius and get out data.
-    def generate_3D_array(self, rad_n=50, vel_n=50, car_angle_n=50, steer_n=50):
-        start = time.perf_counter()
-
-        radius_array = []
-        radius_array = np.concatenate([radius_array, np.linspace(100, 1000, int(rad_n/2))])
-        radius_array = np.concatenate([radius_array, np.linspace(1050, 10000, int(rad_n/4))])
-        radius_array = np.concatenate([radius_array, np.linspace(11000, 100000, int(rad_n/4))])
-        vel_array = np.linspace(0, 1200, vel_n)
-        car_angle_array = np.linspace(0, 45, car_angle_n)
-        steer_array = np.linspace(0, 30, steer_n)
-
-        print(f"rad: {len(radius_array)}, vel: {len(vel_array)}, car_angle: {len(car_angle_array)}, steer: {len(steer_array)}")
-
-        master_data_array = [[[[{} for _ in range(len(steer_array))] for _ in range(len(car_angle_array))] for _ in range(len(vel_array))] for _ in range(len(radius_array))]
-        angular_accel_array = np.zeros((len(radius_array), len(vel_array), len(car_angle_array), len(steer_array)))
-
-        for r_index, radius in enumerate(radius_array):
-            for v_index, vel in enumerate(vel_array):
-                for c_index, car_angle in enumerate(car_angle_array):
-                    for s_index, steer in enumerate(steer_array):
-                        # print(f"{s_index}: {master_data_array[r_index][v_index][c_index][s_index]}")
-                        # TODO: Fill in with angular acceleration func and get snippets through some method.
-                        master_data_array[r_index][v_index][c_index][s_index] = {"hello", "hi"}
-                        # TODO: Fill in with angular acceleration func.
-                        angular_accel_array[r_index][v_index][c_index][s_index] = 5
-
-        end = time.perf_counter()
-        print(f"Time taken for 4D array: {end - start}")
 
     def find_closest_radius_index(self, radius):
         """
@@ -622,14 +589,15 @@ class Car:
 
         return self.Car_Data_Snippet(
             AX=output_AX, AY=AY, torque=car_data_snippet.torque, theta_accel=0,
-            car_body_angle=self.car_angle_array[car_angle_array_index-1],
+            car_body_angle=self.car_angle_array[car_angle_array_index-1], radius=r, velocity=v, angular_accel=car_data_snippet.angular_accel,
             FO_load=car_data_snippet.FO_load, RO_load=car_data_snippet.RO_load, FI_load=car_data_snippet.FI_load, RI_load=car_data_snippet.RI_load,
             front_inner_displacement=car_data_snippet.front_inner_displacement, front_outer_displacement=car_data_snippet.front_outer_displacement,
             rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
             FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
             FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
             FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
-            FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip)
+            FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
+            ,roll=car_data_snippet.roll)
 
     # Calculates the positive axial acceleration of the car at a given radius and velocity.
     def curve_accel(self, r, v, transmission_gear ='optimal'):
@@ -714,14 +682,15 @@ class Car:
         # print(f"{self.count}: using car angle {self.car_angle_array[car_angle_array_index-1]}, radius {r} -- AX: {final_AX}, AY: {AY}")
 
         return self.Car_Data_Snippet(AX=final_AX, AY=AY, torque=car_data_snippet.torque, theta_accel=0,
-                car_body_angle=self.car_angle_array[car_angle_array_index-1],
+                car_body_angle=self.car_angle_array[car_angle_array_index-1], radius=r, velocity=v, angular_accel=car_data_snippet.angular_accel,
                 FO_load=car_data_snippet.FO_load, RO_load=car_data_snippet.RO_load, FI_load=car_data_snippet.FI_load, RI_load=car_data_snippet.RI_load,
                 front_inner_displacement=car_data_snippet.front_inner_displacement, front_outer_displacement=car_data_snippet.front_outer_displacement,
                 rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
                 FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
                 FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
                 FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
-                FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip)
+                FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
+                ,roll=car_data_snippet.roll)
 
     def curve_gear_change(self, r, v):
         if r > 0:
@@ -785,7 +754,7 @@ class Car:
         Finds the maximum axial acceleration of the car along the x/longitudinal axis.
         :return: The maximum axial acceleration of the car in g's.
         """
-        return self.find_accurate_accel(10000000, 0).AX
+        return self.find_accurate_accel(10000000, 0, 0).AX
 
     def max_lateral_accel(self):
         """
@@ -799,7 +768,7 @@ class Car:
             if car_body_angle > 10 * math.pi / 180:
                 prev_AY = output_AY
 
-            snippet = self.find_accurate_accel(100000, car_body_angle)
+            snippet = self.find_accurate_accel(100000, 0, car_body_angle)
             output_AY = snippet.AY
 
             car_body_angle+=0.001
@@ -822,7 +791,7 @@ class Car:
             if car_body_angle > 10 * math.pi / 180:
                 prev_AY = output_AY
 
-            snippet = self.find_accurate_accel(100000, car_body_angle)
+            snippet = self.find_accurate_accel(100000, 0, car_body_angle)
             output_AY = snippet.AY
 
             car_body_angle+=iteration_value
@@ -841,7 +810,7 @@ class Car:
 
         theta_data_array[0] = self.find_accurate_accel(1000000, 0)
         theta_data_array[0].AY = 0 # AY is 0 to 3 decimals, so AY is essentially just 0.
-        theta_data_array[180] = self.find_accurate_accel(100000, 0, braking=True)
+        theta_data_array[180] = self.find_accurate_accel(1000000, 0, braking=True)
 
         car_body_angle = 0
         output_AY = 0
@@ -858,7 +827,7 @@ class Car:
                 car_body_angle += 0.00001
 
                 if iterations < 5000:
-                    snippet = self.find_accurate_accel(100000, car_body_angle, braking=False)
+                    snippet = self.find_accurate_accel(100000, steer_angle=0, car_angle=car_body_angle, braking=False)
                 else:
                     brek = True
                     break
@@ -874,9 +843,9 @@ class Car:
 
             theta_completed += 1
 
-            # print(f'iterations {iterations}')
-            # print(f"{output_theta} - AX: {snippet.AX}, AY: {snippet.AY}")
-            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+            print(f'iterations {iterations}')
+            print(f"{output_theta} - AX: {snippet.AX}, AY: {snippet.AY}")
+            print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
 
             # Set vars that are inaccurate to 0
             snippet.theta_accel = theta
@@ -893,7 +862,7 @@ class Car:
         AY = theta_data_array[theta_completed].AY
         AX = theta_data_array[theta_completed].AX
         for theta in range(theta_completed+1, 90):
-            # print(theta)
+            print(theta)
 
             theta_force = 0
             count = 0
@@ -905,7 +874,7 @@ class Car:
                 theta_force = math.atan2(AY, AX) * 180 / math.pi
                 count+=1
 
-            snippet = self.accel(100000, lerp(AY, x1, x2, theta_data_array[theta_completed].car_body_angle, self.max_lateral_accel_car_angle()), AY, AX)
+            snippet = self.accel(100000, lerp(AY, x1, x2, theta_data_array[theta_completed].car_body_angle, self.max_lateral_accel_car_angle()), steer_angle=0, AY=AY, AX=AX)
             snippet.AY = AY
             snippet.AX = AX
             snippet.RI_FX = lerp(AX, y1, y2, theta_data_array[theta_completed].RI_FX, 0)
@@ -918,13 +887,13 @@ class Car:
             snippet.FI_slip = 0
             snippet.RI_slip = 0
 
-            # print(f"{theta_force} - AX: {snippet.AX}, AY: {snippet.AY}")
-            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+            print(f"{theta_force} - AX: {snippet.AX}, AY: {snippet.AY}")
+            print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
 
             theta_data_array[theta] = snippet
 
         # Calculate traction curve at max lateral acceleration. (This is a little special, so it's done separately)
-        snippet = self.accel(100000, self.max_lateral_accel_car_angle(), self.max_lateral_accel(), 0)
+        snippet = self.accel(100000, self.max_lateral_accel_car_angle(), steer_angle=0, AY=self.max_lateral_accel(), AX=0)
         snippet.AY = self.max_lateral_accel()
         snippet.AX = 0
         snippet.RI_FX = 0
@@ -938,7 +907,7 @@ class Car:
         brek = False
         theta_completed = 180 # not actually, just need to set this to 181 for logic's sake in this next for loop
         for theta in range(int(len(launch_theta_force_array))-2, int(len(launch_theta_force_array)/2)+1, -1):
-            # print(theta)
+            print(theta)
 
             snippet = None
             iterations = 0
@@ -946,7 +915,7 @@ class Car:
                 car_body_angle += 0.00001
 
                 if iterations < 5000:
-                    snippet = self.find_accurate_accel(100000, car_body_angle, braking=True)
+                    snippet = self.find_accurate_accel(100000, steer_angle=0, car_angle=car_body_angle, braking=True)
                 else:
                     brek = True
                     break
@@ -969,8 +938,9 @@ class Car:
             snippet.FI_slip = 0
             snippet.RI_slip = 0
 
-            # print(f"{output_theta} - AX: {snippet.AX}, AY: {snippet.AY}")
-            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+            print(f'iterations {iterations}')
+            print(f"{output_theta} - AX: {snippet.AX}, AY: {snippet.AY}")
+            print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
 
             theta_data_array[theta] = snippet
 
@@ -980,7 +950,7 @@ class Car:
         AY = theta_data_array[theta_completed].AY
         AX = theta_data_array[theta_completed].AX
         for theta in range(theta_completed-1, 90, -1):
-            # print(theta)
+            print(theta)
 
             theta_force = 1000
             count = 0
@@ -992,7 +962,7 @@ class Car:
                 theta_force = math.atan2(AY, AX) * 180 / math.pi
                 count+=1
 
-            snippet = self.accel(100000, lerp(AY, x1, x2, theta_data_array[theta_completed].car_body_angle, self.max_lateral_accel_car_angle()), AY, AX, braking=True)
+            snippet = self.accel(100000, lerp(AY, x1, x2, theta_data_array[theta_completed].car_body_angle, self.max_lateral_accel_car_angle()), steer_angle=0, AY=AY, AX=AX, braking=True)
             snippet.AY = AY
             snippet.AX = AX
 
@@ -1005,8 +975,8 @@ class Car:
 
             theta_data_array[theta] = snippet
 
-            # print(f"{theta_force} - AX: {snippet.AX}, AY: {snippet.AY}")
-            # print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
+            print(f"{theta_force} - AX: {snippet.AX}, AY: {snippet.AY}")
+            print(f"FI_FY: {snippet.FI_FY}, FO_FY: {snippet.FO_FY}, RI_FY: {snippet.RI_FY}, RO_FY: {snippet.RO_FY}\n")
 
         # Append all data to arrays
         for snippet in theta_data_array:
@@ -1028,15 +998,6 @@ class Car:
 
         end_traction_curve = time.perf_counter()
         print(f"[Computed traction curve]. Time taken: {end_traction_curve - start_traction_curve} seconds.")
-
-    # returns drag force in G's (index = speed of car (mph))
-    def get_drag(self, mph):
-        if mph >= len(self.aero_arr)-1: # check if car speed exceeds aero_arr size
-            return self.aero_arr[-1] # return drag accel value for highest speed if max speed is exceeded
-        else:
-            # finding drag by linearly interpolating the aero array
-            ratio = mph % 1
-            return self.aero_arr[int(mph)]*(1-ratio) + self.aero_arr[int(mph)+1]*ratio
 
     def adjust_weight(self, w):
         ratio = w / self.W_car
@@ -1065,6 +1026,47 @@ class Car:
 
 
     ''' ========== Graphs ========== '''
+
+    def fuckyoubitch(self, brake=True):
+        radius = 1500
+        accel_increment = 0.02
+        angel_increment = 1 # degrees
+
+        max_angle = 20 # degrees
+        car_angles = np.linspace(0, max_angle, int(max_angle/angel_increment)+1)
+        long_accels = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
+        torques = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
+        lat_accels = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
+        for i in car_angles:
+            #steering_angles = np.linspace(0, max_angle - i, int((max_angle - i)/angel_increment)+1)
+            steering_angles = np.linspace(0, max_angle, int((max_angle)/angel_increment)+1)
+            car_angle = i * math.pi/180
+            for j in steering_angles:
+                steering = j * math.pi/180
+                snippet = self.find_accurate_accel(radius, steer_angle=steering, car_angle=car_angle, braking=brake, print_info=False, print_every_iteration=False)
+                long_accels[int(i//angel_increment), int(j//angel_increment)] = snippet.AX
+                torques[int(i//angel_increment), int(j//angel_increment)] = snippet.torque
+                lat_accels[int(i//angel_increment), int(j//angel_increment)] = snippet.AY
+
+        print(lat_accels)
+
+        fig, axs = plt.subplots(2, 3)
+        axs[0, 0].imshow(long_accels, interpolation='nearest')
+        axs[1, 0].contour(long_accels)
+        axs[0, 0].set_title('Longitudinal Accelerations')
+        axs[0, 0].invert_yaxis()
+
+        axs[0, 1].imshow(torques, interpolation='nearest')
+        axs[1, 1].contour(torques)
+        axs[0, 1].set_title('Torques')
+        axs[0, 1].invert_yaxis()
+
+        axs[0, 2].imshow(lat_accels, interpolation='nearest')
+        axs[1, 2].contour(lat_accels)
+        axs[0, 2].set_title('Lateral Accelerations')
+        axs[0, 2].invert_yaxis()
+
+        plt.show()
 
     def plot_traction_curve(self):
         plt.plot(self.launch_AY, self.launch_AX, label="Launch")
@@ -1310,8 +1312,9 @@ class points:
         print(time.time() - start_time)
         '''
 
-#car = Car()
-#car.plot_tire_axial_force("RI")
+car = Car(compute_acceleration=False)
+car.fuckyoubitch()
+
 # car.generate_3D_array()
 # for snippet in car.traction_curve_snippets:
 #     print(f"\n------------------- AY: {snippet.AY}, AX: {snippet.AX} -------------------")
