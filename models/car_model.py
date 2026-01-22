@@ -18,13 +18,13 @@ from interface.loading_window import run_car_model_loading_window
 class Car:
 
     # weight over front left wheel
-    W_1 = 185.7365
+    W_3 = 185.7365
     # weight over front right wheel
-    W_2 = 185.7365
+    W_4 = 185.7365
     # weight over rear left wheel
-    W_3 = 170.7635
+    W_1 = 170.7635
     # weight over rear right wheel
-    W_4 = 170.7635
+    W_2 = 170.7635
     # length of wheelbase (in)
     l = 60.04
     # vertical center of gravity (in)
@@ -213,7 +213,7 @@ class Car:
             if open_main_window:
                 func()
 
-    def accel(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False):
+    def accel(self, r, car_angle, AY, AX, braking = False, print_info = False, print_every_iteration = False, steering = 0.0):
         """
         :param r: The radius of the turning curve. (inches)
         :param car_angle: The angle of the car, used to rotate the car (and therefore, the tires) however many radians entered about its z-axis. (radians)
@@ -225,28 +225,25 @@ class Car:
         :return: A tuple of axial acceleration, lateral acceleration, and torque about the z-axis. (net_axial_accel, net_lateral_accel, total_torque_about_z)
         """
 
-        # Calculate steering angle
-        steering = np.atan2(self.a, r)
-
         # Front inner tire direction motion calcs
         FI_length = r - self.a * np.sin(car_angle) - (self.t_f/2) * np.cos(car_angle)
         FI_height = self.a * np.cos(car_angle) - (self.t_f/2) * np.sin(car_angle)
-        FI_dir_motion = car_angle + np.atan2(FI_height, FI_length)
+        FI_dir_motion = car_angle - np.atan2(FI_height, FI_length)
 
         # Rear inner tire direction motion calcs
         RI_length = r + self.b * np.sin(car_angle) - (self.t_r/2) * np.cos(car_angle)
         RI_height = - self.b * np.cos(car_angle) - (self.t_r/2) * np.sin(car_angle)
-        RI_dir_motion = car_angle + np.atan2(RI_height, RI_length)
+        RI_dir_motion = car_angle - np.atan2(RI_height, RI_length)
 
         # Front outer tire direction motion calcs
         FO_length = r - self.a * np.sin(car_angle) + (self.t_f/2) * np.cos(car_angle)
         FO_height = self.a * np.cos(car_angle) + (self.t_f/2) * np.sin(car_angle)
-        FO_dir_motion = car_angle + np.atan2(FO_height, FO_length)
+        FO_dir_motion = car_angle - np.atan2(FO_height, FO_length)
 
         # Rear outer tire direction motion calcs
         RO_length = r + self.b * np.sin(car_angle) + (self.t_r/2) * np.cos(car_angle)
         RO_height = -self.b * np.cos(car_angle) + (self.t_r/2) * np.sin(car_angle)
-        RO_dir_motion = car_angle + np.atan2(RO_height, RO_length)
+        RO_dir_motion = car_angle - np.atan2(RO_height, RO_length)
 
         # Calculate slip angles (signed negative because a negative slip angle is the standard convention for positive FY)
         FI_slip_angle = -(FI_dir_motion + steering) # (car_angle + steering) - FI_dir_motion # -(FI_dir_motion + steering)
@@ -284,10 +281,6 @@ class Car:
         self.FO_FY = self.tires.FY_curves.eval(FO_slip_angle * 180/math.pi, self.FO_load, self.FO_camber) # pounds
         self.RO_FY = self.tires.FY_curves.eval(RO_slip_angle * 180/math.pi, self.RO_load, self.RO_camber) # pounds
 
-        # Adding up lateral forces and calculating net lateral acceleration
-        FY_car = self.FI_FY + self.RI_FY + self.FO_FY + self.RO_FY
-        self.net_lat_accel = FY_car / self.W_car
-
         # Multiple that is used to make FX closer to what the real-world number would look like.
         FX_scale_factor = 1.2
 
@@ -312,17 +305,23 @@ class Car:
             FX_car = -(self.RO_FX + self.RI_FX + self.FI_FX + self.FO_FX)
 
         # Calculate total axial acceleration
-        self.net_axial_accel = FX_car / self.W_car
+        self.net_axial_accel = (self.FI_FX + self.FO_FX) * np.cos(car_angle + steering) + (self.RI_FX + self.RO_FX) * np.cos(car_angle)
+        - (self.FI_FY + self.FO_FY) * np.sin(car_angle + steering) - (self.RI_FY + self.RO_FY) * np.sin(car_angle)
+        self.net_axial_accel /= self.W_car
+
+        # Adding up lateral forces and calculating net lateral acceleration
+        FY_car = (self.FI_FY + self.FO_FY) * np.cos(car_angle + steering) + (self.RI_FY + self.RO_FY) * np.cos(car_angle) 
+        + (self.FI_FX + self.FO_FX) * np.sin(car_angle + steering) + (self.RI_FX + self.RO_FX) * np.sin(car_angle)
+        self.net_lat_accel = FY_car / self.W_car
 
         # Calculate total torque about z axis for both axles, then calculate total torque about z-axis for the car
         FI_torque = self.FI_FY * self.a
         RI_torque = -self.RI_FY * self.b
         FO_torque = self.FO_FY * self.a
-        RO_torque = -self.RI_FY * self.b
+        RO_torque = -self.RO_FY * self.b
 
         # calculate total torque about the z-axis
         total_torque_about_z = FI_torque + RI_torque + FO_torque + RO_torque
-
         # calculate aligning torque using magic curve
         FI_aligning_torque = self.tires.aligning_torque.eval(FI_slip_angle * 180/math.pi, self.FI_load, self.FI_camber)
         RI_aligning_torque = self.tires.aligning_torque.eval(RI_slip_angle * 180/math.pi, self.RI_load, self.RI_camber)
@@ -332,6 +331,8 @@ class Car:
         # calculate total aligning torque
         total_aligning_torque = FI_aligning_torque + RI_aligning_torque + FO_aligning_torque + RO_aligning_torque
         total_aligning_torque *= 12 # Convert to inch pounds
+
+        total_torque_about_z += total_aligning_torque
 
         # Print out info depending on certain vars
         if print_every_iteration or (abs(AY - self.net_lat_accel) <= 0.0001 and abs(AX - self.net_axial_accel) <= 0.0001 and print_info):
@@ -357,8 +358,8 @@ class Car:
                                      FO_FY=self.FO_FY, RI_FY=self.RI_FY, FI_FY=self.FI_FY, RO_FY=self.RO_FY,
                                      FO_FX=self.FO_FX, RI_FX=self.RI_FX, FI_FX=self.FI_FX, RO_FX=self.RO_FX,
                                      FI_slip=FI_slip_angle, RI_slip=RI_slip_angle, FO_slip=FO_slip_angle, RO_slip=RO_slip_angle)
-
-    def find_accurate_accel(self, radius, car_angle = 0.0, braking=False, print_info = False, print_every_iteration = False):
+    
+    def find_accurate_accel(self, radius, car_angle = 0.0, braking=False, print_info = False, print_every_iteration = False, steer = 0.0):
         """
         Plugs in parameters into the accel function until the inputted AX and AY are approximately equal to the outputted AX and AY.
         The main idea of this is that when an initial AX and AY are plugged into the accel function, those accelerations are
@@ -382,7 +383,7 @@ class Car:
             input_AX, input_AY = output_AX, output_AY
 
             # Run accel function
-            accel = self.accel(radius, car_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration)
+            accel = self.accel(radius, car_angle, input_AY, input_AX, braking=braking, print_info=print_info, print_every_iteration=print_every_iteration, steering = steer)
             output_AX, output_AY, torque = accel.AX, accel.AY, accel.torque
 
             iterations+=1
@@ -405,6 +406,47 @@ class Car:
                                      FO_FY=accel.FO_FY, RI_FY=accel.RI_FY, FI_FY=accel.FI_FY, RO_FY=accel.RO_FY,
                                      FO_FX=accel.FO_FX, RI_FX=accel.RI_FX, FI_FX=accel.FI_FX, RO_FX=accel.RO_FX,
                                      FI_slip=accel.FI_slip, RI_slip=accel.RI_slip, FO_slip=accel.FO_slip, RO_slip=accel.RO_slip)
+
+    def fuckyoubitch(self, brake=True):
+        radius = 1500
+        accel_increment = 0.02
+        angel_increment = 1 # degrees
+
+        max_angle = 20 # degrees
+        car_angles = np.linspace(0, max_angle, int(max_angle/angel_increment)+1)
+        long_accels = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
+        torques = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
+        lat_accels = np.zeros((max_angle//angel_increment + 1, max_angle//angel_increment + 1))
+        for i in car_angles:
+            #steering_angles = np.linspace(0, max_angle - i, int((max_angle - i)/angel_increment)+1)
+            steering_angles = np.linspace(0, max_angle, int((max_angle)/angel_increment)+1)
+            car_angle = i * math.pi/180
+            for j in steering_angles:
+                steering = j * math.pi/180
+                snippet = self.find_accurate_accel(radius, car_angle, braking=brake, print_info=False, print_every_iteration=False, steer=steering)
+                long_accels[int(i//angel_increment), int(j//angel_increment)] = snippet.AX
+                torques[int(i//angel_increment), int(j//angel_increment)] = snippet.torque
+                lat_accels[int(i//angel_increment), int(j//angel_increment)] = snippet.AY
+        
+        print(lat_accels)
+
+        fig, axs = plt.subplots(2, 3)
+        axs[0, 0].imshow(long_accels, interpolation='nearest')
+        axs[1, 0].contour(long_accels)
+        axs[0, 0].set_title('Longitudinal Accelerations')
+        axs[0, 0].invert_yaxis()
+
+        axs[0, 1].imshow(torques, interpolation='nearest')
+        axs[1, 1].contour(torques)
+        axs[0, 1].set_title('Torques')
+        axs[0, 1].invert_yaxis()
+
+        axs[0, 2].imshow(lat_accels, interpolation='nearest')
+        axs[1, 2].contour(lat_accels)
+        axs[0, 2].set_title('Lateral Accelerations')
+        axs[0, 2].invert_yaxis()
+
+        plt.show()
 
     def create_accel_2D_array(self, n:int=20, print_info = False):
         """
@@ -1268,8 +1310,8 @@ class points:
         print(time.time() - start_time)
         '''
 
-car = Car()
-car.plot_tire_axial_force("RI")
+#car = Car()
+#car.plot_tire_axial_force("RI")
 # car.generate_3D_array()
 # for snippet in car.traction_curve_snippets:
 #     print(f"\n------------------- AY: {snippet.AY}, AX: {snippet.AX} -------------------")
