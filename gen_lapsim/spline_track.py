@@ -530,8 +530,12 @@ class curve():
         p3x, p3y = n2.x - n2.vx,   n2.y - n2.vy
         p4x, p4y = n2.x,           n2.y
 
+        # spline derivatives
         self.x, self.dx, self.ddx = [], [], []
         self.y, self.dy, self.ddy = [], [], []
+        
+        # these derivatives are constant for a 2d bezier
+        self.dddx, self.dddy = 0, 0
 
         self.ddy_n, self.ddx_n = [], []
 
@@ -550,6 +554,9 @@ class curve():
 
             self.ddx.append(p1x * self.dds_dA[0][i] + p2x * self.dds_dA[1][i] + p3x * self.dds_dA[2][i] + p4x * self.dds_dA[3][i])
             self.ddy.append(p1y * self.dds_dA[0][i] + p2y * self.dds_dA[1][i] + p3y * self.dds_dA[2][i] + p4y * self.dds_dA[3][i])
+
+            self.dddx = -6 * p1x + 18*p3x - 18*p2x + 6*p1x
+            self.dddy = -6 * p1y + 18*p3y - 18*p2y + 6*p1y
 
             # Calculate normal ddx and ddy along the curve (only incorporates centripetal acceleration, not tangential)
             speed = math.sqrt(self.dx[i]**2 + self.dy[i]**2)
@@ -621,6 +628,37 @@ class curve():
 
     def plot(self):
         track_subplot.plot(self.x, self.y)
+    
+    def interpolate2(self):
+        len = []  # length of segments
+        rad = []  # radius of segments
+        drds = [] # derivative curvature with respect to displacement length
+        for i in range(0, self.elem):
+            # curvatures is represented as a fraction: a/b
+            # a = |dx * ddy_n - dy * ddx_n|
+            # b = (dx^2 + dy^2)^1.5
+            # k = |dx * ddy_n - dy * ddx_n| / (dx^2 + dy^2)^1.5 = a/b
+            a = abs(self.dx[i] * self.ddy_n[i] - self.dy[i] * self.ddx_n[i])
+            b = (self.dx[i]**2 + self.dy[i]**2)**1.5
+
+            # m is the sign of a; used to find derivative of a
+            m = 1
+            if a < 0: m = -1
+
+            # derivatives of a and b with respect to t
+            da = (self.dx[i] * self.dddy - self.dy[i] * self.dddx) * m
+            db = 3 * (self.dx[i]**2 + self.dy[i]**2)**0.5 * (self.dx[i] * self.ddx[i] + self.dy[i] * self.ddy[i])
+
+            # derivative of curvature with respect to t and derivative of displacment length with respect to t
+            drdt = (da * b - db * a) / (b**2)
+            dsdt = (self.dx[i]**2 + self.dy[i]**2)**0.5
+
+            len.append(dsdt / self.elem)
+            rad.append(b / a)           
+            drds.append(drdt / dsdt)    
+        
+        return len, rad, drds
+            
 
 # Get all data points for one node depending on the index argument provided.
 def get_data_string(self, lapsim_data_storage, tkinter_data_bools, index):
