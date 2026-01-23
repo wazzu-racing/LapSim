@@ -558,6 +558,3 @@ class car():
         plt.ylabel('Axial Acceleration (g\'s)')
         plt.grid()
         plt.show()
-
-    def get_AX_AY_values(self):
-        pass

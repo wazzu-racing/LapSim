@@ -6,7 +6,7 @@ import numpy as np
 
 from gen_lapsim.spline_track import node
 from models import tire_model, drivetrain_model
-from LapData import LapData
+from interface.LapData import LapData
 from .file_manager import file_manager
 from models.car_model import car
 

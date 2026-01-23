@@ -251,7 +251,10 @@ class CarSettingsWindow:
 
     # Open the window and change the variables in the window to the car currently in use.
     def open_window(self):
-        self.change_vars_to_car(self.lap_data.car)
+        if self.display_track is not None:
+            self.change_vars_to_car(self.lap_data.car)
+        else:
+            self.change_vars_to_car(self.car)
         self.root.deiconify() # Show the window
 
     # Get rid of change_car_label and close window.
