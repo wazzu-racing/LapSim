@@ -3,6 +3,7 @@ import scipy
 import numpy as np
 import csv
 import copy
+import pickle
 
 # tire magic function
 def magic_func(x, B, C, D, E):
@@ -695,9 +696,13 @@ class tire():
 # wheel.SR_FX_plot(2)
 
 if False:
-    cornering_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/cornering_data.dat'
-    accel_data = '/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/acceleration_data.dat'
+    cornering_data = '/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/cornering_data.dat'
+    accel_data = '/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/acceleration_data.dat'
 
     wheel = tire(cornering_data, accel_data)
-    with(open("/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSim/18x6-10_R20.pkl", "wb")as f):
+    with(open("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/18x6-10_R20.pkl", "wb")as f):
         pickle.dump(wheel, f)
+
+# with open("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/18x6-10_R20.pkl", "rb") as f:
+#     wheel = pickle.load(f)
+# wheel.SA_MZ_plot(2)

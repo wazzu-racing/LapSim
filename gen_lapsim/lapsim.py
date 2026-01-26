@@ -14,50 +14,50 @@ class LapSimData:
         displacements, and angles.
         """
         # Array for time t
-        self.time_array = [0]
-        # Arrays for lateral and axial acceleration of car
-        self.AY = [] # Positive AY is turning right, negative AY is turning left.
-        self.AX = []
+        self.time_array = [0] # seconds
+        # Arrays for lateral and axial acceleration of car. Positive AY is turning right, negative AY is turning left.
+        self.AY = [] # g's
+        self.AX = [] # g's
         #Array for car body angle
-        self.car_body_angle = []
+        self.car_body_angle = [] # radians
         # Arrays for slip angle for each tire
-        self.FI_slip = []
-        self.FO_slip = []
-        self.RI_slip = []
-        self.RO_slip = []
+        self.FI_slip = [] # radians
+        self.FO_slip = [] # radians
+        self.RI_slip = [] # radians
+        self.RO_slip = [] # radians
         # Arrays for vertical force, lateral force, and axial forces on wheels
-        self.FI_load_array = []
-        self.FO_load_array = []
-        self.RI_load_array = []
-        self.RO_load_array = []
-        self.FI_FY_array = []
-        self.FO_FY_array = []
-        self.RI_FY_array = []
-        self.RO_FY_array = []
-        self.FI_FX_array = []
-        self.FO_FX_array = []
-        self.RI_FX_array = []
-        self.RO_FX_array = []
+        self.FI_load_array = [] # lbs
+        self.FO_load_array = [] # lbs
+        self.RI_load_array = [] # lbs
+        self.RO_load_array = [] # lbs
+        self.FI_FY_array = [] # lbs
+        self.FO_FY_array = [] # lbs
+        self.RI_FY_array = [] # lbs
+        self.RO_FY_array = [] # lbs
+        self.FI_FX_array = [] # lbs
+        self.FO_FX_array = [] # lbs
+        self.RI_FX_array = [] # lbs
+        self.RO_FX_array = [] # lbs
         # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
-        self.FI_vector = []
-        self.FO_vector = []
-        self.RI_vector = []
-        self.RO_vector = []
-        self.FI_vector_mag = []
-        self.FO_vector_mag = []
-        self.RI_vector_mag = []
-        self.RO_vector_mag = []
-        self.FI_vector_dir = []
-        self.RI_vector_dir = []
-        self.FO_vector_dir = []
-        self.RO_vector_dir = []
+        self.FI_vector = [] # lbs
+        self.FO_vector = [] # lbs
+        self.RI_vector = [] # lbs
+        self.RO_vector = [] # lbs
+        self.FI_vector_mag = [] # lbs
+        self.FO_vector_mag = [] # lbs
+        self.RI_vector_mag = [] # lbs
+        self.RO_vector_mag = [] # lbs
+        self.FI_vector_dir = [] # unitless
+        self.RI_vector_dir = [] # unitless
+        self.FO_vector_dir = [] # unitless
+        self.RO_vector_dir = [] # unitless
         # Arrays for vertical displacement of wheels
-        self.front_inner_displacement = []
-        self.rear_inner_displacement  = []
-        self.front_outer_displacement = []
-        self.rear_outer_displacement  = []
+        self.front_inner_displacement = [] # inches
+        self.rear_inner_displacement  = [] # inches
+        self.front_outer_displacement = [] # inches
+        self.rear_outer_displacement  = [] # inches
         # Angle of accel force of car
-        self.theta_accel = []
+        self.theta_accel = [] # degrees
 
         self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
                                 "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
@@ -350,8 +350,8 @@ class four_wheel:
 
         self.t_rad[-1] = self.t_rad[-2]
 
-        # Determine the speed if the car deaccelerated for the entire length of the traffic, ending at 0 mph at node n
-        v2 = np.zeros(int(n + 1))
+        # Determine the speed if the car deaccelerated for the entire length of the traffic, ending at 0 in/s at node n
+        v2 = np.zeros(int(n + 1)) # in/s
         for i in np.arange(len(self.t_len_tot)):
             v2[int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
                 self.t_vel[i]
@@ -373,8 +373,8 @@ class four_wheel:
             # Fill AX array with braking acceleration at first.
             self.lapsim_data_storage.append_data_arrays(car_data_snippet, int(i))
 
-        # Determine the speed if the car accelerated for the entire length of the traffic, starting from 0 mph at node 0
-        v1 = np.zeros(int(n + 1))
+        # Determine the speed if the car accelerated for the entire length of the traffic, starting from 0 in/s at node 0
+        v1 = np.zeros(int(n + 1)) # in/s
 
         for i in np.arange(len(self.t_len_tot)):
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
@@ -433,7 +433,7 @@ class four_wheel:
                 # print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)] * 180/math.pi}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
-        v3 = np.zeros(int(n + 1))
+        v3 = np.zeros(int(n + 1)) # in/s
         for i in np.arange(int(n + 1)):
             if v1[i] < v2[i]:
                 v3[i] = (v1[int(i)])
