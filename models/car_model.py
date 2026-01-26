@@ -82,7 +82,7 @@ class Car:
     RO_wheel_position = {"x": t_r / 2, "y": -b}
     # Rolling resistance force, in/s^2
     a_rr = -(C_rr * W_1 + C_rr * W_2 + C_rr * W_3 + C_rr * W_4)/W_car * 386.089
-    # Moment of inertia of car (lbf * ft * s^2)
+    # Moment of inertia of car (lb * ft * s^2)
     I_car = W_car / 32.2 * (l / 2 / 12)**2
 
     # aero csv file delimiter
@@ -209,13 +209,28 @@ class Car:
         # Car body
         roll : float = 0.0 # Radians
 
-        def incorporate_engine(self, A_engn, b, t_r, I_car):
+        def incorporate_engine(self, A_engn, b, t_r, I_car, W_car):
+            """
+            Calculates and incorporates the effects of the engine's forces and torques onto the system.
+
+            This method updates the forces, torques, and angular acceleration of the car based on the engine's
+            applied force.
+
+            :param A_engn: Engine force applied to the wheels (lbs)
+            :param b: Length from the rear track to the COG (in)
+            :param t_r: Rear track length (in)
+            :param I_car: Moment of inertia of the car (lb * ft * s^2)
+            :param W_car: Weight of the car (lbs)
+            :return: None
+            """
+            # Calculate the difference in engine force given between the left and right rear wheels.
             ratio_difference = t_r/self.radius
             RO_FX_eng = A_engn * (0.5 + ratio_difference/2)
             RI_FX_eng = A_engn * (0.5 - ratio_difference/2)
 
+            # Incorporate engine forces and torques
             self.RO_FX_eng, self.RI_FX_eng = RO_FX_eng, RI_FX_eng
-            self.AX = self.RO_FX_eng + self.RI_FX_eng
+            self.AX = (self.RO_FX_eng + self.RI_FX_eng) / W_car
             self.RI_torque = -self.RI_FY * b + self.RI_FX_eng * t_r/2
             self.RO_torque = -self.RO_FY * b + self.RO_FX_eng * t_r/2
             self.torque = self.FI_torque + self.RI_torque + self.FO_torque + self.RO_torque
@@ -701,9 +716,9 @@ class Car:
          ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque)
 
         # Calculate if the engine produces less force than the tire traction allows. If so, use engine acceleration instead.
-        A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration in G's
-        if A_engn < A_tire or A_engn == 0:
-            car_data_snippet.incorporate_engine(A_engn, self.b, self.t_r, self.I_car)
+        A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) # engine force in lbs
+        if A_engn < A_tire * self.W_car or A_engn == 0:
+            car_data_snippet.incorporate_engine(A_engn, self.b, self.t_r, self.I_car, self.W_car)
             car_data_snippet.AX -= drag
 
         return car_data_snippet
