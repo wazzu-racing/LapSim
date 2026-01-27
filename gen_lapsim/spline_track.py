@@ -968,7 +968,7 @@ class track():
         if end == 0:
             end = len(self.arcs)
 
-        self.determine_turn_dirs_on_track()
+        self.determine_turn_dirs_on_track() # Get and store the dirs of motion of each node
 
         self.len = []
         self.rad = []

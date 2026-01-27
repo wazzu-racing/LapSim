@@ -46,7 +46,7 @@ class drivetrain:
         for i in self.gear_ratios:
             self.full_ratios.append(i * self.primary_drive * self.final_drive)
         
-        self.speed = []
+        self.speed = [] # mph
         previous_gear = 0
         for i in range(0, 700):
             self.speed.append(i/10) # mph
