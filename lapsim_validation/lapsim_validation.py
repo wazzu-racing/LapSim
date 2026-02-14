@@ -49,7 +49,7 @@ class Validation_Track():
         # Finding total length of track
         track = np.sum(lens)
 
-        max_corner = self.car.max_corner * 32.2 * 12
+        max_corner = self.car.max_corner * 32.17 * 12 # to in/s^2
 
         n = len(segment.arcs)
 
@@ -133,7 +133,7 @@ class Validation_Track():
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
-            print(f"{v2[int(i)]} in/s")
+            print(f"{v3[int(i)]} in/s")
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
