@@ -91,7 +91,7 @@ class Car:
     tires = None
     train = None
 
-    def __init__(self, compute_acceleration = True, compute_traction_curve = False, resolution: int = 30, tire_path ="", drivetrain_path =""):
+    def __init__(self, compute_acceleration = True, compute_traction_curve = False, resolution: int = 100, tire_path ="", drivetrain_path =""):
         """
         Class to initialize and set up configurations for a vehicle's aerodynamic, tire, and drivetrain models.
         :param compute_acceleration: A boolean flag to specify whether initial computations for acceleration should be
@@ -208,6 +208,8 @@ class Car:
         RI_FX_eng: float = 0.0
         # Car body
         roll : float = 0.0 # Radians
+        # Distance
+        total_distance : float = 0.0 # inches
 
         def incorporate_engine(self, A_engn, b, t_r, I_car, W_car):
             """
@@ -532,11 +534,11 @@ class Car:
             self.AX_AY_array.append(row)
 
         # Print out values of r_carangle_2d_array in readable format.
-        for r_index, radius_values in enumerate(self.AX_AY_array):
-            print(f"Radius: {self.radius_array[r_index]} ----- ", end="")
-            for index, data in enumerate(radius_values):
-                print(f"{self.car_angle_array[index]} - AX: {data["launch"].AX}, AY: {data["launch"].AY}, Torque: {data["launch"].torque} Steer: {data["launch"].steer_angle * 180/math.pi}\n FI: {data["launch"].FI_slip * 180/math.pi}, FO: {data["brake"].FO_slip * 180/math.pi}, RI: {data["launch"].RI_slip * 180/math.pi}, RO: {data["launch"].RO_slip * 180/math.pi}\n\n", end="")
-            print("")
+        # for r_index, radius_values in enumerate(self.AX_AY_array):
+        #     print(f"Radius: {self.radius_array[r_index]} ----- ", end="")
+        #     for index, data in enumerate(radius_values):
+        #         print(f"{self.car_angle_array[index]} - AX: {data["launch"].AX}, AY: {data["launch"].AY}, Torque: {data["launch"].torque} Steer: {data["launch"].steer_angle * 180/math.pi}\n FI: {data["launch"].FI_slip * 180/math.pi}, FO: {data["brake"].FO_slip * 180/math.pi}, RI: {data["launch"].RI_slip * 180/math.pi}, RO: {data["launch"].RO_slip * 180/math.pi}\n\n", end="")
+        #     print("")
 
         print(f"[Generated 2D array]")
         return self.AX_AY_array
@@ -785,7 +787,7 @@ class Car:
         Finds the maximum axial acceleration of the car along the x/longitudinal axis.
         :return: The maximum axial acceleration of the car in g's.
         """
-        return self.find_accurate_accel(10000000, 0, 0).AX
+        return self.find_accurate_accel(10000000, 0, 1).AX
 
     def max_lateral_accel(self):
         """
@@ -1352,8 +1354,19 @@ class points:
         print(time.time() - start_time)
         '''
 
-car = Car(compute_acceleration=True)
-print(f"max: {car.max_lateral_accel()}")
+
+# car = Car(resolution=100)
+# print(car.max_axial_accel())
+
+# car = Car(resolution=100)
+# for i in range(800, 500, 25):
+#     with open("config_data/track_points/Points for Autocross.rtf", "rb") as f:
+#
+#         trac_points = pickle.load(f)
+#     t = track()
+
+# car = Car(compute_acceleration=True)
+# print(f"max: {car.max_lateral_accel()}")
 
 # car.generate_3D_array()
 # for snippet in car.traction_curve_snippets:

@@ -3,8 +3,6 @@ import math
 import numpy as np
 import copy
 
-from gen_lapsim.spline_track import curve
-
 
 class LapSimData:
     def __init__(self):
@@ -58,6 +56,8 @@ class LapSimData:
         self.rear_outer_displacement  = []
         # Angle of accel force of car
         self.theta_accel = []
+        # Distance
+        self.total_distance = []
 
         self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
                                 "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
@@ -117,6 +117,8 @@ class LapSimData:
         self.rear_outer_displacement  = np.zeros(int(n + 1))
         # theta of force on car
         self.theta_accel = np.zeros(int(n + 1))
+        # distance
+        self.total_distance = np.zeros(int(n + 1))
 
     # Append a data point to all arrays.
     def append_data_arrays(self, car_data_snippet, index):
@@ -183,6 +185,9 @@ class LapSimData:
 
         # Angle of accel force of car
         self.theta_accel[index] = car_data_snippet.theta_accel
+
+        # Distance
+        self.total_distance[index] = car_data_snippet.total_distance
 
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
@@ -266,6 +271,14 @@ class LapSimData:
         # Angle of accel force of car
         self.theta_accel = np.round(np.array(self.theta_accel), decimals=decimals)
 
+        # Distance
+        self.total_distance = np.round(np.array(self.total_distance), decimals=decimals)
+
+    def print_index_of_data(self, index):
+        if index > len(self.AX)-1 or index < 0:
+            return
+        print(f"time: {self.time_array[index]}\nAY: {self.AY[index]}, AX: {self.AX[index]}\nFO_dis: {self.front_outer_displacement}, RO_dis: {self.rear_outer_displacement}, FI_dis: {self.front_inner_displacement}, RI_dis: {self.rear_inner_displacement}\n")
+
     # Fill the theta_accel array.
     def infect_force_thetas(self):
         """
@@ -297,20 +310,24 @@ class LapSimData:
 
 class four_wheel:
 
-    def __init__(self, t_len_tot, t_rad, turn_dirs, car, n):
+    def __init__(self, t_len_tot, t_rad, turn_dirs, car, n, validating = False, initial_velocity = 0):
         # print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))
         y = np.linspace(len(x), 0, len(x))
         self.t_len_tot = np.array(t_len_tot)
-        self.t_rad = np.array(t_rad)
+        self.t_rad = np.array(t_rad) # inches
         self.turn_dirs = np.array(turn_dirs)
         self.car = car
         self.n = n
+        self.initial_velocity = initial_velocity # in/s
+        self.validating = validating
 
         # Make LapSimData instance to store LAPSIM data.
         self.lapsim_data_storage = LapSimData()
 
     def run(self):
+        from gen_lapsim.spline_track import curve
+
         # Finding total length of track
         track = np.sum(self.t_len_tot)
 
@@ -319,6 +336,8 @@ class four_wheel:
         # discretizing track
         n = self.n
         dx = track / n
+
+        print(f"dx: {dx}")
 
         print(f"nodes n: {n}")
 
@@ -379,7 +398,7 @@ class four_wheel:
         for i in np.arange(len(self.t_len_tot)):
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / dx))] = \
                 self.t_vel[i]
-        v1[0] = 0
+        v1[0] = self.initial_velocity
         v1[-1] = v1[-2]
 
         gear = 0  # transmission gear
@@ -432,6 +451,8 @@ class four_wheel:
                 # print(f"{int(i)} rad {self.nd_rad[int(i)]}")
                 # print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)] * 180/math.pi}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
 
+            self.lapsim_data_storage.total_distance[int(i)] = dx * i
+
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n + 1))
         for i in np.arange(int(n + 1)):
@@ -451,6 +472,10 @@ class four_wheel:
         self.lapsim_data_storage.infect_force_thetas()
         self.lapsim_data_storage.round_all_arrays(decimals=3)
 
+        if self.validating:
+            for i in range(len(self.nturn_dirs)):
+                self.lapsim_data_storage.AY[i] = abs(self.lapsim_data_storage.AY[i])
+
         self.dx = dx
         self.n = n
         self.nds = nds
@@ -459,7 +484,7 @@ class four_wheel:
         self.v1 = v1
         self.t = t
 
-        # for i in range(len(self.lapsim_data_storage.AX)):
+        # for i in range(len(sewlf.lapsim_data_storage.AX)):
         #     print(f"{i}: using car angle {self.lapsim_data_storage.car_body_angle[i]}, radius {self.nd_rad[i]} -- AX: {self.lapsim_data_storage.AX[i]}, AY: {self.lapsim_data_storage.AY[i]}")
 
         # print("AX:")
