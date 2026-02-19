@@ -1,19 +1,29 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use splines::{Interpolation, Key, Spline};
 use std::error::Error;
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::Path;
 
 /// Cartesian coordinates in meters, relative to a reference point
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct CartesianCoords {
-    pub x: f64, // East in meters
-    pub y: f64, // North in meters
-    pub z: f64, // Up in meters
+    pub x: f64,             // East in meters
+    pub y: f64,             // North in meters
+    pub z: f64,             // Up in meters
+    pub ax: f64,            // Acceleration X in Gs
+    pub ay: f64,            // Acceleration Y in Gs
+    pub az: f64,            // Acceleration Z in Gs
+    pub roll: f64,          // Roll angle (imu_x) in degrees
+    pub yaw: f64,           // Yaw angle (imu_z) in degrees
+    pub susp_pot_1_fl: f64, // Front Left suspension potentiometer
+    pub susp_pot_2_fr: f64, // Front Right suspension potentiometer
+    pub susp_pot_3_rr: f64, // Rear Right suspension potentiometer
+    pub susp_pot_4_rl: f64, // Rear Left suspension potentiometer
+    pub rpm: u32,           // Engine RPM
 }
 
 /// Represents a circular arc with constant radius
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Arc {
     pub center_x: f64,    // Center of the circle in meters (East)
     pub center_y: f64,    // Center of the circle in meters (North)
@@ -26,8 +36,18 @@ pub struct Arc {
     pub end_y: f64,       // Ending point y coordinate
 }
 
+/// Maps an arc to its corresponding original GPS points with telemetry data
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArcWithPoints {
+    pub segment_id: usize,
+    pub arc_id: usize,
+    pub arc: Arc,
+    pub points: Vec<CartesianCoords>,
+    pub global_indices: Vec<usize>, // Indices into the original records array
+}
+
 /// Represents a segment of "good" GPS data (no frozen/repeating coordinates)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TrackSegment {
     pub coords: Vec<CartesianCoords>,
     pub start_index: usize,
@@ -38,7 +58,7 @@ pub struct TrackSegment {
     pub initial_velocity: f64, // Ground speed at the start of the segment in m/s
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 pub struct Record {
@@ -104,14 +124,30 @@ impl Record {
     /// # Returns
     /// * `CartesianCoords` - Local Cartesian coordinates in meters
     pub fn to_cartesian(&self, ref_lat: f64, ref_lon: f64, ref_elev: f64) -> CartesianCoords {
-        gps_to_cartesian(
+        let (x, y, z) = gps_to_cartesian(
             self.lat,
             self.lon,
             self.elev as f64,
             ref_lat,
             ref_lon,
             ref_elev,
-        )
+        );
+
+        CartesianCoords {
+            x,
+            y,
+            z,
+            ax: self.ax,
+            ay: self.ay,
+            az: self.az,
+            roll: self.imu_x,
+            yaw: self.imu_z,
+            susp_pot_1_fl: self.susp_pot_1_FL,
+            susp_pot_2_fr: self.susp_pot_2_FR,
+            susp_pot_3_rr: self.susp_pot_3_RR,
+            susp_pot_4_rl: self.susp_pot_4_RL,
+            rpm: self.rpm,
+        }
     }
 }
 
@@ -123,14 +159,13 @@ impl Record {
 ///
 /// # Arguments
 /// * `lat` - Latitude in degrees
-/// * `lon` - Longitude in degrees
 /// * `elev` - Elevation in meters
 /// * `ref_lat` - Reference latitude in degrees (origin point)
 /// * `ref_lon` - Reference longitude in degrees (origin point)
 /// * `ref_elev` - Reference elevation in meters (origin point)
 ///
 /// # Returns
-/// * `CartesianCoords` - Local Cartesian coordinates where:
+/// * `(f64, f64, f64)` - Tuple of (x, y, z) where:
 ///   - x: East in meters
 ///   - y: North in meters
 ///   - z: Up in meters
@@ -141,7 +176,7 @@ pub fn gps_to_cartesian(
     ref_lat: f64,
     ref_lon: f64,
     ref_elev: f64,
-) -> CartesianCoords {
+) -> (f64, f64, f64) {
     // Earth radius in meters
     const EARTH_RADIUS: f64 = 6_371_000.0;
 
@@ -163,7 +198,7 @@ pub fn gps_to_cartesian(
     let y = EARTH_RADIUS * delta_lat;
     let z = elev - ref_elev;
 
-    CartesianCoords { x, y, z }
+    (x, y, z)
 }
 
 /// Converts a slice of Records to Cartesian coordinates using the first record
@@ -221,6 +256,25 @@ pub fn read_csv<P: AsRef<Path>>(path: P) -> Result<Vec<Record>, Box<dyn Error>> 
     }
 
     Ok(records)
+}
+
+/// Write data to a csv file.
+///
+/// # Arguments:
+/// * `path` - A path to the CSV file to write to
+/// * `data` - The data to write to the CSV file. Must implement `Serialize`
+///
+/// # Returns:
+/// Unit type or an error.
+pub fn write_csv<P: AsRef<Path>, T: Serialize>(path: P, data: &[T]) -> Result<(), Box<dyn Error>> {
+    fs::create_dir_all(&path.as_ref().parent().unwrap())?;
+    let mut writer = csv::Writer::from_path(path)?;
+
+    for item in data {
+        writer.serialize(item)?;
+    }
+
+    Ok(())
 }
 
 /// Detects if two GPS coordinates are essentially the same (frozen sensor).
@@ -961,6 +1015,103 @@ pub fn convert_spline_to_arcs(
 ///
 /// # Returns
 /// * `usize` - Number of segments that had arcs fitted
+/// Creates a mapping of arcs to their corresponding original GPS points
+///
+/// # Arguments
+/// * `segments` - The track segments containing arcs
+///
+/// # Returns
+/// * Vector of `ArcWithPoints` containing each arc with its associated GPS points
+pub fn map_arcs_to_points(segments: &[TrackSegment]) -> Vec<ArcWithPoints> {
+    let mut arc_mappings = Vec::new();
+
+    for (seg_idx, segment) in segments.iter().enumerate() {
+        if segment.arcs.is_empty() {
+            continue;
+        }
+
+        // For each arc, we need to find which original coords belong to it
+        // We'll use distance from arc to determine membership
+        for (arc_idx, arc) in segment.arcs.iter().enumerate() {
+            let mut arc_points = Vec::new();
+            let mut arc_indices = Vec::new();
+
+            // Calculate arc bounds (min/max x and y for quick filtering)
+            let arc_start_x = arc.start_x;
+            let arc_start_y = arc.start_y;
+            let arc_end_x = arc.end_x;
+            let arc_end_y = arc.end_y;
+
+            // Find points that are close to this arc
+            for (i, coord) in segment.coords.iter().enumerate() {
+                let global_index = segment.start_index + i;
+
+                // Calculate distance from point to arc center
+                let dx = coord.x - arc.center_x;
+                let dy = coord.y - arc.center_y;
+                let dist_to_center = (dx * dx + dy * dy).sqrt();
+
+                // Check if point is approximately on the arc (within tolerance)
+                let radius_tolerance = arc.radius * 0.15; // 15% tolerance
+                if (dist_to_center - arc.radius).abs() <= radius_tolerance {
+                    // Check if the point is within the angular range of the arc
+                    let point_angle = dy.atan2(dx);
+
+                    // Normalize angles to [0, 2π]
+                    let normalize_angle = |angle: f64| {
+                        let mut a = angle;
+                        while a < 0.0 {
+                            a += 2.0 * std::f64::consts::PI;
+                        }
+                        while a >= 2.0 * std::f64::consts::PI {
+                            a -= 2.0 * std::f64::consts::PI;
+                        }
+                        a
+                    };
+
+                    let norm_start = normalize_angle(arc.start_angle);
+                    let norm_end = normalize_angle(arc.end_angle);
+                    let norm_point = normalize_angle(point_angle);
+
+                    // Check if point angle is between start and end angles
+                    let in_range = if norm_end > norm_start {
+                        norm_point >= norm_start && norm_point <= norm_end
+                    } else {
+                        // Arc crosses the 0/2π boundary
+                        norm_point >= norm_start || norm_point <= norm_end
+                    };
+
+                    // Also check spatial proximity to arc endpoints for better accuracy
+                    let dist_to_start =
+                        ((coord.x - arc_start_x).powi(2) + (coord.y - arc_start_y).powi(2)).sqrt();
+                    let dist_to_end =
+                        ((coord.x - arc_end_x).powi(2) + (coord.y - arc_end_y).powi(2)).sqrt();
+                    let arc_length = arc.radius * (norm_end - norm_start).abs();
+                    let near_arc_path = dist_to_start <= arc_length && dist_to_end <= arc_length;
+
+                    if in_range || near_arc_path {
+                        arc_points.push(*coord);
+                        arc_indices.push(global_index);
+                    }
+                }
+            }
+
+            // Only add the mapping if we found points for this arc
+            if !arc_points.is_empty() {
+                arc_mappings.push(ArcWithPoints {
+                    segment_id: seg_idx + 1,
+                    arc_id: arc_idx + 1,
+                    arc: *arc,
+                    points: arc_points,
+                    global_indices: arc_indices,
+                });
+            }
+        }
+    }
+
+    arc_mappings
+}
+
 pub fn convert_splines_to_arcs(segments: &mut [TrackSegment]) -> usize {
     convert_splines_to_arcs_custom(segments, 0.5, 1.5, 6.0)
 }
@@ -1013,16 +1164,16 @@ mod tests {
         let ref_lon = 0.0;
         let ref_elev = 0.0;
 
-        let coords = gps_to_cartesian(lat, lon, elev, ref_lat, ref_lon, ref_elev);
-        assert!((coords.x - 0.0).abs() < 1e-6);
-        assert!((coords.y - 0.0).abs() < 1e-6);
-        assert!((coords.z - 0.0).abs() < 1e-6);
+        let (x, y, z) = gps_to_cartesian(lat, lon, elev, ref_lat, ref_lon, ref_elev);
+        assert!((x - 0.0).abs() < 1e-6);
+        assert!((y - 0.0).abs() < 1e-6);
+        assert!((z - 0.0).abs() < 1e-6);
 
         // Test with small displacement (1 degree north)
         let lat = 1.0;
-        let coords = gps_to_cartesian(lat, lon, elev, ref_lat, ref_lon, ref_elev);
+        let (_x, y, _z) = gps_to_cartesian(lat, lon, elev, ref_lat, ref_lon, ref_elev);
         let expected_y = 6_371_000.0 * (1.0_f64.to_radians());
-        assert!((coords.y - expected_y).abs() < 1.0); // Allow some tolerance for floating point
+        assert!((y - expected_y).abs() < 1.0); // Allow some tolerance for floating point
     }
 
     #[test]
@@ -1118,16 +1269,46 @@ mod tests {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
+                ax: 0.0,
+                ay: 0.0,
+                az: 0.0,
+                roll: 0.0,
+                yaw: 0.0,
+                susp_pot_1_fl: 0.0,
+                susp_pot_2_fr: 0.0,
+                susp_pot_3_rr: 0.0,
+                susp_pot_4_rl: 0.0,
+                rpm: 0,
             },
             CartesianCoords {
                 x: 3.0,
                 y: 4.0,
                 z: 0.0,
+                ax: 0.0,
+                ay: 0.0,
+                az: 0.0,
+                roll: 0.0,
+                yaw: 0.0,
+                susp_pot_1_fl: 0.0,
+                susp_pot_2_fr: 0.0,
+                susp_pot_3_rr: 0.0,
+                susp_pot_4_rl: 0.0,
+                rpm: 0,
             }, // Distance 5
             CartesianCoords {
                 x: 6.0,
                 y: 8.0,
                 z: 0.0,
+                ax: 0.0,
+                ay: 0.0,
+                az: 0.0,
+                roll: 0.0,
+                yaw: 0.0,
+                susp_pot_1_fl: 0.0,
+                susp_pot_2_fr: 0.0,
+                susp_pot_3_rr: 0.0,
+                susp_pot_4_rl: 0.0,
+                rpm: 0,
             }, // Distance 5 more
         ];
 
@@ -1144,6 +1325,16 @@ mod tests {
             x: 1.0,
             y: 2.0,
             z: 3.0,
+            ax: 0.0,
+            ay: 0.0,
+            az: 0.0,
+            roll: 0.0,
+            yaw: 0.0,
+            susp_pot_1_fl: 0.0,
+            susp_pot_2_fr: 0.0,
+            susp_pot_3_rr: 0.0,
+            susp_pot_4_rl: 0.0,
+            rpm: 0,
         }];
         let distances = calculate_cumulative_distances(&coords);
         assert_eq!(distances, vec![0.0]);
@@ -1218,14 +1409,24 @@ mod tests {
 
     #[test]
     fn test_cartesian_coords_struct() {
-        let coords = CartesianCoords {
+        let coord = CartesianCoords {
             x: 1.0,
             y: 2.0,
             z: 3.0,
+            ax: 0.0,
+            ay: 0.0,
+            az: 0.0,
+            roll: 0.0,
+            yaw: 0.0,
+            susp_pot_1_fl: 0.0,
+            susp_pot_2_fr: 0.0,
+            susp_pot_3_rr: 0.0,
+            susp_pot_4_rl: 0.0,
+            rpm: 0,
         };
-        assert_eq!(coords.x, 1.0);
-        assert_eq!(coords.y, 2.0);
-        assert_eq!(coords.z, 3.0);
+        assert_eq!(coord.x, 1.0);
+        assert_eq!(coord.y, 2.0);
+        assert_eq!(coord.z, 3.0);
     }
 
     #[test]
@@ -1253,6 +1454,16 @@ mod tests {
             x: 0.0,
             y: 0.0,
             z: 0.0,
+            ax: 0.0,
+            ay: 0.0,
+            az: 0.0,
+            roll: 0.0,
+            yaw: 0.0,
+            susp_pot_1_fl: 0.0,
+            susp_pot_2_fr: 0.0,
+            susp_pot_3_rr: 0.0,
+            susp_pot_4_rl: 0.0,
+            rpm: 0,
         }];
         let segment = TrackSegment {
             coords,
@@ -1279,7 +1490,17 @@ mod tests {
                 CartesianCoords {
                     x: 0.0,
                     y: 0.0,
-                    z: 0.0
+                    z: 0.0,
+                    ax: 0.0,
+                    ay: 0.0,
+                    az: 0.0,
+                    roll: 0.0,
+                    yaw: 0.0,
+                    susp_pot_1_fl: 0.0,
+                    susp_pot_2_fr: 0.0,
+                    susp_pot_3_rr: 0.0,
+                    susp_pot_4_rl: 0.0,
+                    rpm: 0,
                 };
                 3
             ],
@@ -1301,30 +1522,65 @@ mod tests {
                     x: 0.0,
                     y: 0.0,
                     z: 0.0,
+                    ax: 0.0,
+                    ay: 0.0,
+                    az: 0.0,
+                    roll: 0.0,
+                    yaw: 0.0,
+                    susp_pot_1_fl: 0.0,
+                    susp_pot_2_fr: 0.0,
+                    susp_pot_3_rr: 0.0,
+                    susp_pot_4_rl: 0.0,
+                    rpm: 0,
                 },
                 CartesianCoords {
-                    x: 1.0,
-                    y: 0.0,
+                    x: 10.0,
+                    y: 20.0,
                     z: 0.0,
+                    ax: 0.0,
+                    ay: 0.0,
+                    az: 0.0,
+                    roll: 0.0,
+                    yaw: 0.0,
+                    susp_pot_1_fl: 0.0,
+                    susp_pot_2_fr: 0.0,
+                    susp_pot_3_rr: 0.0,
+                    susp_pot_4_rl: 0.0,
+                    rpm: 0,
                 },
                 CartesianCoords {
-                    x: 2.0,
-                    y: 1.0,
+                    x: 20.0,
+                    y: 30.0,
                     z: 0.0,
+                    ax: 0.0,
+                    ay: 0.0,
+                    az: 0.0,
+                    roll: 0.0,
+                    yaw: 0.0,
+                    susp_pot_1_fl: 0.0,
+                    susp_pot_2_fr: 0.0,
+                    susp_pot_3_rr: 0.0,
+                    susp_pot_4_rl: 0.0,
+                    rpm: 0,
                 },
                 CartesianCoords {
-                    x: 3.0,
-                    y: 1.0,
+                    x: 30.0,
+                    y: 40.0,
                     z: 0.0,
-                },
-                CartesianCoords {
-                    x: 4.0,
-                    y: 0.0,
-                    z: 0.0,
+                    ax: 0.0,
+                    ay: 0.0,
+                    az: 0.0,
+                    roll: 0.0,
+                    yaw: 0.0,
+                    susp_pot_1_fl: 0.0,
+                    susp_pot_2_fr: 0.0,
+                    susp_pot_3_rr: 0.0,
+                    susp_pot_4_rl: 0.0,
+                    rpm: 0,
                 },
             ],
             start_index: 0,
-            end_index: 4,
+            end_index: 3,
             spline_x: None,
             spline_y: None,
             arcs: Vec::new(),
@@ -1344,6 +1600,16 @@ mod tests {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
+                ax: 0.0,
+                ay: 0.0,
+                az: 0.0,
+                roll: 0.0,
+                yaw: 0.0,
+                susp_pot_1_fl: 0.0,
+                susp_pot_2_fr: 0.0,
+                susp_pot_3_rr: 0.0,
+                susp_pot_4_rl: 0.0,
+                rpm: 0,
             }],
             start_index: 0,
             end_index: 0,

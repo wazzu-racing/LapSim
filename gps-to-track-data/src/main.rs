@@ -2,10 +2,12 @@ mod plotting;
 mod records;
 
 use colored::Colorize;
-use plotting::{plot_2d_track, plot_arcs, plot_segmented_track, plot_splines};
+use plotting::{
+    plot_2d_track, plot_arc_points_detailed, plot_arcs, plot_segmented_track, plot_splines,
+};
 use records::{
-    CartesianCoords, TrackSegment, convert_splines_to_arcs, fit_splines_to_segments, read_csv,
-    records_to_cartesian, split_records_into_segments,
+    CartesianCoords, TrackSegment, convert_splines_to_arcs, fit_splines_to_segments,
+    map_arcs_to_points, read_csv, records_to_cartesian, split_records_into_segments,
 };
 use std::fs::File;
 use std::io::Write;
@@ -206,14 +208,41 @@ fn main() {
                 }
             }
 
+            // Export arc-to-point mapping (detailed with arc metadata)
+            if let Err(e) =
+                export_arc_points_detailed(&segments, "./output/06_arc_points_detailed.csv")
+            {
+                print_error(&format!("Failed to export detailed arc points: {}", e));
+            } else {
+                println!(
+                    "  {} ./output/06_arc_points_detailed.csv",
+                    "Exported:".bright_black()
+                );
+            }
+
+            // Export arc-to-point mapping (simple format)
+            if let Err(e) = export_arc_points(&segments, "./output/06_arc_points.csv") {
+                print_error(&format!("Failed to export arc points: {}", e));
+            } else {
+                println!(
+                    "  {} ./output/06_arc_points.csv",
+                    "Exported:".bright_black()
+                );
+            }
+
             if let Err(e) = plot_arcs(&segments, "./track_arcs.html") {
                 print_error(&format!("Arc plot failed: {}", e));
+            }
+
+            if let Err(e) = plot_arc_points_detailed(&segments, "./track_arc_points_detailed.html")
+            {
+                print_error(&format!("Arc points detailed plot failed: {}", e));
             }
 
             // Final Summary
             println!("\n{}", "=== Pipeline Complete ===".bright_cyan().bold());
             println!(
-                "  {} track_2d.html, track_segmented.html, track_splines.html, track_arcs.html",
+                "  {} track_2d.html, track_segmented.html, track_splines.html, track_arcs.html, track_arc_points_detailed.html",
                 "Plots:".bright_white()
             );
             println!("  {} ./output/", "Data:".bright_white());
@@ -363,5 +392,94 @@ fn export_velocities(segments: &[TrackSegment], path: &str) -> std::io::Result<(
             )?;
         }
     }
+    Ok(())
+}
+
+fn export_arc_points(segments: &[TrackSegment], path: &str) -> std::io::Result<()> {
+    std::fs::create_dir_all("./output")?;
+    let mut file = File::create(path)?;
+
+    // Write header
+    writeln!(
+        file,
+        "segment_id,arc_id,global_index,x_m,y_m,z_m,ax_g,ay_g,az_g,roll_deg,yaw_deg,susp_fl,susp_fr,susp_rr,susp_rl,rpm"
+    )?;
+
+    // Get arc-to-point mappings
+    let arc_mappings = map_arcs_to_points(segments);
+
+    // Write each point with its arc association
+    for mapping in arc_mappings.iter() {
+        for (i, point) in mapping.points.iter().enumerate() {
+            writeln!(
+                file,
+                "{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{}",
+                mapping.segment_id,
+                mapping.arc_id,
+                mapping.global_indices[i],
+                point.x,
+                point.y,
+                point.z,
+                point.ax,
+                point.ay,
+                point.az,
+                point.roll,
+                point.yaw,
+                point.susp_pot_1_fl,
+                point.susp_pot_2_fr,
+                point.susp_pot_3_rr,
+                point.susp_pot_4_rl,
+                point.rpm
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+fn export_arc_points_detailed(segments: &[TrackSegment], path: &str) -> std::io::Result<()> {
+    std::fs::create_dir_all("./output")?;
+    let mut file = File::create(path)?;
+
+    // Write header with arc metadata included
+    writeln!(
+        file,
+        "segment_id,arc_id,global_index,arc_center_x_m,arc_center_y_m,arc_radius_m,arc_start_angle_rad,arc_end_angle_rad,point_x_m,point_y_m,point_z_m,ax_g,ay_g,az_g,roll_deg,yaw_deg,susp_fl,susp_fr,susp_rr,susp_rl,rpm"
+    )?;
+
+    // Get arc-to-point mappings
+    let arc_mappings = map_arcs_to_points(segments);
+
+    // Write each point with its arc association and arc metadata
+    for mapping in arc_mappings.iter() {
+        for (i, point) in mapping.points.iter().enumerate() {
+            writeln!(
+                file,
+                "{},{},{},{:.6},{:.6},{:.3},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{}",
+                mapping.segment_id,
+                mapping.arc_id,
+                mapping.global_indices[i],
+                mapping.arc.center_x,
+                mapping.arc.center_y,
+                mapping.arc.radius,
+                mapping.arc.start_angle,
+                mapping.arc.end_angle,
+                point.x,
+                point.y,
+                point.z,
+                point.ax,
+                point.ay,
+                point.az,
+                point.roll,
+                point.yaw,
+                point.susp_pot_1_fl,
+                point.susp_pot_2_fr,
+                point.susp_pot_3_rr,
+                point.susp_pot_4_rl,
+                point.rpm
+            )?;
+        }
+    }
+
     Ok(())
 }
