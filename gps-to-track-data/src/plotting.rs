@@ -1,5 +1,5 @@
 use crate::records::{
-    CartesianCoords, TrackSegment, calculate_cumulative_distances, map_arcs_to_points,
+    CartesianCoords, Record, TrackSegment, calculate_cumulative_distances, map_arcs_to_points,
 };
 use plotly::{
     Plot, Scatter,
@@ -412,6 +412,7 @@ pub fn plot_arcs(
 /// * `Result<(), Box<dyn std::error::Error>>` - Ok if successful
 pub fn plot_arc_points_detailed(
     segments: &[TrackSegment],
+    records: &[Record],
     filename: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut plot = Plot::new();
@@ -484,15 +485,24 @@ pub fn plot_arc_points_detailed(
         let x: Vec<f64> = mapping.points.iter().map(|p| p.x).collect();
         let y: Vec<f64> = mapping.points.iter().map(|p| p.y).collect();
 
+        // Get the segment's start index to use as the time reference (t=0)
+        let segment = &segments[mapping.segment_id - 1];
+        let first_gps_millis = records[segment.start_index].gps_millis;
+
         // Create hover text with telemetry data
         let hover_text: Vec<String> = mapping
             .points
             .iter()
             .enumerate()
             .map(|(i, p)| {
+                let global_idx = mapping.global_indices[i];
+                let gps_millis = records[global_idx].gps_millis;
+                let time_s = (gps_millis - first_gps_millis) as f64 / 1000.0;
+
                 format!(
                     "Arc: S{}-A{}<br>\
                 Global Index: {}<br>\
+                Time: {:.3}s<br>\
                 Position: ({:.2}, {:.2})<br>\
                 Elevation: {:.2}m<br>\
                 Accel: ax={:.3}g, ay={:.3}g, az={:.3}g<br>\
@@ -503,7 +513,8 @@ pub fn plot_arc_points_detailed(
                 Arc Radius: {:.2}m",
                     mapping.segment_id + 1,
                     mapping.arc_id + 1,
-                    mapping.global_indices[i],
+                    global_idx,
+                    time_s,
                     p.x,
                     p.y,
                     p.z,
