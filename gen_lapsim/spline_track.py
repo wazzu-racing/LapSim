@@ -413,6 +413,7 @@ class node():
         # If the magnitude of vx and vy is lower than v_min, set vx and vy equal to the required amount in order for
         # the magnitude of vx and vy to equal v_min. (vx, vy) is the vector that controls the curvature of the Bézier curve at this node. i.e. the  "control handle".
         if self.vx**2 + self.vy**2 < self.v_min **2:
+            print('aweiufwaife')
             v = self.v_min /(self.vx**2 + self.vy**2)**0.5
             self.vx *= v
             self.vy *= v
@@ -623,6 +624,7 @@ class curve():
         for i in range(0, self.elem):
             rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy_n[i] - self.dy[i] * self.ddx_n[i]))
             len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
+            print((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
 
         return(len, rad)
 
@@ -703,10 +705,12 @@ class track():
         self.loading_window = None
 
         # Get the minimum distance the CG of the car needs from the apex of the turn
-        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
+        if self.car:
+            self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
+        else:
+            self.car_rad = 29
 
         self.len = []
-
         self.nds = []
         for i in range(len(p1x)):
             self.nds.append(node(p1x[i], p1y[i], p2x[i], p2y[i], self.car_rad))
