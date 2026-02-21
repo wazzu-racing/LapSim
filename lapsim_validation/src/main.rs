@@ -42,7 +42,7 @@ impl Args {
     fn get_input_path(&self) -> String {
         self.input
             .clone()
-            .unwrap_or_else(|| "drive_days/10-4-2025/Eric/5.csv".to_string())
+            .unwrap_or_else(|| "data/5.csv".to_string())
     }
 }
 

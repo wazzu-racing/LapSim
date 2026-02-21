@@ -58,6 +58,8 @@ class LapSimData:
         self.theta_accel = []
         # Distance
         self.total_distance = []
+        # Engine/drivetrain
+        self.rpm = []
 
         self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
                                 "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
@@ -119,6 +121,8 @@ class LapSimData:
         self.theta_accel = np.zeros(int(n + 1))
         # distance
         self.total_distance = np.zeros(int(n + 1))
+        # Engine/drivetrain
+        self.rpm = np.zeros(int(n + 1))
 
     # Append a data point to all arrays.
     def append_data_arrays(self, car_data_snippet, index):
@@ -188,6 +192,9 @@ class LapSimData:
 
         # Distance
         self.total_distance[index] = car_data_snippet.total_distance
+
+        # Engine/drivetrain
+        self.rpm[index] = car_data_snippet.rpm
 
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
@@ -274,6 +281,9 @@ class LapSimData:
         # Distance
         self.total_distance = np.round(np.array(self.total_distance), decimals=decimals)
 
+        #Engine/drivetrain
+        self.rpm = np.round(np.array(self.rpm), decimals=decimals)
+
     def print_index_of_data(self, index):
         if index > len(self.AX)-1 or index < 0:
             return
@@ -310,12 +320,13 @@ class LapSimData:
 
 class four_wheel:
 
-    def __init__(self, t_len_tot, t_rad, turn_dirs, car, n, validating = False, initial_velocity = 0):
+    def __init__(self, t_len_tot, t_rad, drds, turn_dirs, car, n, validating = False, initial_velocity = 0):
         # print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))
         y = np.linspace(len(x), 0, len(x))
         self.t_len_tot = np.array(t_len_tot)
         self.t_rad = np.array(t_rad) # inches
+        self.drds = np.array(drds)
         self.turn_dirs = np.array(turn_dirs)
         self.car = car
         self.n = n
@@ -454,12 +465,15 @@ class four_wheel:
             self.lapsim_data_storage.total_distance[int(i)] = dx * i
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
+        # print("\n\n\n\n\nV3")
         v3 = np.zeros(int(n + 1))
         for i in np.arange(int(n + 1)):
             if v1[i] < v2[i]:
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
+        # for v in v3:
+        #     print(v)
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0

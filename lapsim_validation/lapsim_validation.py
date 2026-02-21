@@ -102,8 +102,6 @@ class Validation_Track():
                 else:
                     v2[int(i + 1)] = v2[int(i)]
 
-                # print(f"a_tan: {a_tan}")
-
             else:
                 car_data_snippet = None # Initialize car_data_snippet to None. This is filled with data later.
                 car_data_snippet = self.car.curve_accel(rads[int(i)], v1[int(i)], 'optimal')
@@ -126,14 +124,14 @@ class Validation_Track():
         # print(v2)
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
-        print(f"\nV3:")
+        # print(f"\nV3:")
         v3 = np.zeros(int(n + 1))
         for i in np.arange(int(n + 1)):
             if v1[i] < v2[i]:
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
-            print(f"{v3[int(i)]} in/s")
+            # print(f"{v3[int(i)]} in/s")
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
@@ -145,6 +143,13 @@ class Validation_Track():
 
         lapsim_data_storage.infect_force_thetas()
         lapsim_data_storage.round_all_arrays(decimals=3)
+
+        print("v2")
+        for i in np.arange(0, len(v2) - 1):
+            print(v2[int(i)])
+        print("v1")
+        for i in np.arange(0, len(v1) - 1):
+            print(v1[int(i)])
 
         return lapsim_data_storage
 

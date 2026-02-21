@@ -634,7 +634,7 @@ class curve():
     def interpolate2(self):
         len = []  # length of segments
         rad = []  # radius of segments
-        drds = [] # derivative curvature with respect to displacement length
+        drds_arr = [] # derivative curvature with respect to displacement length
         for i in range(0, self.elem):
             # curvatures is represented as a fraction: a/b
             # a = |dx * ddy_n - dy * ddx_n|
@@ -656,10 +656,10 @@ class curve():
             dsdt = (self.dx[i]**2 + self.dy[i]**2)**0.5
 
             len.append(dsdt / self.elem)
-            rad.append(b / a)           
-            drds.append(drdt / dsdt)    
-        
-        return len, rad, drds
+            rad.append(b / a)
+            drds_arr.append(drdt / dsdt)
+
+        return len, rad, drds_arr
             
 
 # Get all data points for one node depending on the index argument provided.
@@ -976,13 +976,15 @@ class track():
 
         self.len = []
         self.rad = []
+        self.drds = []
         self.turn_dirs = []
         for i in self.arcs[start:end]:
-            new_len, new_rad = i.interpolate()
+            new_len, new_rad, drds = i.interpolate2()
             self.len += new_len
             self.rad += new_rad
+            self.drds += drds
             self.turn_dirs += i.turn_dirs
-        self.sim = lapsim.four_wheel(self.len, self.rad, self.turn_dirs, car, nodes)
+        self.sim = lapsim.four_wheel(self.len, self.rad, self.drds, self.turn_dirs, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
         # print(f'Total Travel Time: {self.t}')
 
