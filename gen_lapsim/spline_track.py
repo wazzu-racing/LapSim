@@ -972,13 +972,15 @@ class track():
 
         self.len = []
         self.rad = []
+        self.drds = []
         self.turn_dirs = []
         for i in self.arcs[start:end]:
-            new_len, new_rad = i.interpolate()
+            new_len, new_rad, drds = i.interpolate2()
             self.len += new_len
             self.rad += new_rad
+            self.drds += drds
             self.turn_dirs += i.turn_dirs
-        self.sim = lapsim.four_wheel(self.len, self.rad, self.turn_dirs, car, nodes)
+        self.sim = lapsim.four_wheel(self.len, self.rad, self.drds, self.turn_dirs, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
         # print(f'Total Travel Time: {self.t}')
 

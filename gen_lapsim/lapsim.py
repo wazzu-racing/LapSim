@@ -297,12 +297,13 @@ class LapSimData:
 
 class four_wheel:
 
-    def __init__(self, t_len_tot, t_rad, turn_dirs, car, n):
+    def __init__(self, t_len_tot, t_rad, drds, turn_dirs, car, n):
         # print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))
         y = np.linspace(len(x), 0, len(x))
         self.t_len_tot = np.array(t_len_tot)
         self.t_rad = np.array(t_rad)
+        self.drds = np.array(drds)
         self.turn_dirs = np.array(turn_dirs)
         self.car = car
         self.n = n
@@ -331,10 +332,13 @@ class four_wheel:
         # List showing radius at every node. Used to calculate maximum tangential acceleration
         self.nd_rad = np.zeros(int(n + 1))
 
+        self.n_drds = np.zeros(int(n + 1))
         self.nturn_dirs = np.empty(int(n + 1), dtype=curve.Turn)
 
         # Initialize data collection
         self.lapsim_data_storage.initialize(n)
+
+        self.n_drdt = np.zeros(int(n + 1))
 
         # Each line sets the maximum velocity for each 
         self.arc_beginning_node = []  # Stores the beginning node
@@ -344,6 +348,8 @@ class four_wheel:
 
             self.nd_rad[start_index:end_index] = self.t_rad[i]
             self.nturn_dirs[start_index:end_index] = self.turn_dirs[i]
+            self.n_drds[start_index:end_index] = self.drds[i]
+            print(f"drds: {self.n_drds[start_index:end_index]}")
 
             self.arc_beginning_node.append(int(np.ceil(np.sum(self.t_len_tot[0:i]) / dx)))
         self.arc_beginning_node.append(n + 1)
@@ -358,6 +364,7 @@ class four_wheel:
         v2[-1] = v2[-2]
 
         for i in np.arange(n, -1, -1):
+            self.n_drds[i] = self.drds[i] * v2[int(i)]
             car_data_snippet = self.car.curve_brake(self.nd_rad[int(i)], v2[int(i)])
             a_tan = car_data_snippet.AX
             a_tan *= 32.17 * 12 # Convert to in/s^2
@@ -390,6 +397,7 @@ class four_wheel:
             # checks if the car is braking by looking if v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i + 1)] <= v1[int(i)]:
                 v1[int(i + 1)] = v2[int(i + 1)]
+                self.n_drdt[int(i)] = self.n_drds[int(i)] * v2[int(i)]
                 gear = self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
                 shifting = False  # sets to False so the car doesn't shift when it stops braking
 
@@ -406,6 +414,7 @@ class four_wheel:
                 car_data_snippet = None # Initialize car_data_snippet to None. This is filled with data later.
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
+                    self.n_drdt[int(i)] = self.n_drds[int(i)] * v1[int(i)]
                     car_data_snippet = self.car.curve_accel(self.nd_rad[int(i)], v1[int(i)], gear)
                     a_tan = car_data_snippet.AX
                     a_tan *= 32.17 * 12 # convert to in/s^2
@@ -431,6 +440,10 @@ class four_wheel:
                 self.lapsim_data_storage.append_data_arrays(car_data_snippet, int(i))
                 # print(f"{int(i)} rad {self.nd_rad[int(i)]}")
                 # print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)] * 180/math.pi}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
+
+        print(f"DRDT")
+        for drdt in self.n_drdt:
+            print(drdt)
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n + 1)) # in/s
