@@ -9,12 +9,13 @@ from gen_lapsim.lapsim import LapSimData
 
 class Validation_Track():
 
-    def __init__(self, segments, car):
+    def __init__(self, segments, car, sim_per_arc=1):
 
         self.car = car
 
         self.segments = segments
         self.segment_data = []
+        self.sim_per_arc = sim_per_arc
 
         print(f"[Created validation track]")
 
@@ -31,8 +32,9 @@ class Validation_Track():
         lens = []
         rads = []
         for index, arc in enumerate(segment.arcs):
-            lens.append(arc.length)
-            rads.append(arc.radius)
+            for sim in range(self.sim_per_arc):
+                lens.append(arc.length/self.sim_per_arc)
+                rads.append(arc.radius)
             print(f"\n------ Arc {index} ------")
             print(f"length: {lens[index]}")
             print(f"radius: {rads[index]}")

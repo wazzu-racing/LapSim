@@ -16,7 +16,7 @@ from models.car_model import Car
 
 class Validation:
 
-    class Graph(Enum):
+    class DataType(Enum):
         AX = 0
         AY = 1
         AZ = 2
@@ -74,6 +74,26 @@ class Validation:
         distance_along_segment: float = 0
         data_nodes: list[Validation.Data_Node] = []
         turn: Turn = Turn.LEFT
+
+        def find_data_node_distance_ratio(self, distance_along_arc, sims_per_arc):
+            distance = 0
+            count = 0
+            while distance < distance_along_arc:
+                distance += self.length / sims_per_arc
+                count += 1
+
+            distance_before_len = distance - ((self.length / sims_per_arc) * (count-1))
+            distance_along_len = distance - distance_before_len
+            return distance_along_len / (self.length / sims_per_arc)
+
+        # Finds the simulation point that happens BEFORE the data node. Returns the index
+        def find_sim_node_index(self, distance_along_arc, sims_per_arc):
+            distance = 0
+            count = 0
+            while distance < distance_along_arc:
+                distance += self.length / sims_per_arc
+                count += 1
+            return count-1
 
     class Segment:
         def __init__(self, id, start_x, start_y, end_x, end_y, arcs):
@@ -238,7 +258,7 @@ class Validation:
 
     def convert_arcs_to_segments(self):
         if not self.arcs:
-            self.parse_arc_data("lapsim_validation/output/04_arcs.csv")
+            self.parse_arc_data("validator/output/04_arcs.csv")
 
         curr_id, prev_id = self.arcs[0].segment_id, self.arcs[0].segment_id
         start_x, end_x = -1, -1
@@ -301,7 +321,113 @@ class Validation:
                     break
         print("Filtered {} segments. {} segments remaining.".format(count, len(self.segments)))
 
-    def graph(self, graph_type:Graph):
+    def calculate_correlation_coefficient(self, data:DataType):
+        mean_sim, mean_real = 0, 0
+
+        # Calculate the mean of both sim and real data
+        sum_real, sum_sim = 0, 0
+
+        numerator = []
+        denominator = []
+        den_sim_comp, den_real_comp = [], []
+
+        match data:
+            case self.DataType.FO:
+                # Calculate real mean
+                for dis in self.FO_dis_real:
+                    sum_real += dis
+                mean_real = sum_real / len(self.FO_dis_real)
+                # Calculate sim mean
+                for dis in self.FO_dis_sim:
+                    sum_sim += dis
+                mean_sim = sum_sim / len(self.FO_dis_sim)
+
+                # Calculate Pearson Correlation Coefficient (x = sim, y = real)
+                for index, dis in enumerate(self.FO_dis_sim):
+                    numerator.append((dis - mean_sim) * (self.FO_dis_real[index] - mean_real))
+                    den_sim_comp.append((dis - mean_sim)**2)
+                    den_real_comp.append((self.FO_dis_real[index] - mean_real)**2)
+
+                return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
+
+            case self.DataType.FI:
+                # Calculate real mean
+                for dis in self.FI_dis_real:
+                    sum_real += dis
+                mean_real = sum_real / len(self.FI_dis_real)
+                # Calculate sim mean
+                for dis in self.FI_dis_sim:
+                    sum_sim += dis
+                mean_sim = sum_sim / len(self.FI_dis_sim)
+
+                # Calculate Pearson Correlation Coefficient (x = sim, y = real)
+                for index, dis in enumerate(self.FI_dis_sim):
+                    numerator.append((dis - mean_sim) * (self.FI_dis_real[index] - mean_real))
+                    den_sim_comp.append((dis - mean_sim)**2)
+                    den_real_comp.append((self.FI_dis_real[index] - mean_real)**2)
+                    denominator.append(den_sim_comp[-1] * den_real_comp[-1])
+
+                return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
+
+            case self.DataType.RO:
+                # Calculate real mean
+                for dis in self.RO_dis_real:
+                    sum_real += dis
+                mean_real = sum_real / len(self.RO_dis_real)
+                # Calculate sim mean
+                for dis in self.RO_dis_sim:
+                    sum_sim += dis
+                mean_sim = sum_sim / len(self.RO_dis_sim)
+
+                # Calculate Pearson Correlation Coefficient (x = sim, y = real)
+                for index, dis in enumerate(self.RO_dis_sim):
+                    numerator.append((dis - mean_sim) * (self.RO_dis_real[index] - mean_real))
+                    den_sim_comp.append((dis - mean_sim)**2)
+                    den_real_comp.append((self.RO_dis_real[index] - mean_real)**2)
+                    denominator.append(den_sim_comp[-1] * den_real_comp[-1])
+
+                return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
+
+            case self.DataType.RI:
+                # Calculate real mean
+                for dis in self.RI_dis_real:
+                    sum_real += dis
+                mean_real = sum_real / len(self.RI_dis_real)
+                # Calculate sim mean
+                for dis in self.RI_dis_sim:
+                    sum_sim += dis
+                mean_sim = sum_sim / len(self.RI_dis_sim)
+
+                # Calculate Pearson Correlation Coefficient (x = sim, y = real)
+                for index, dis in enumerate(self.RI_dis_sim):
+                    numerator.append((dis - mean_sim) * (self.RI_dis_real[index] - mean_real))
+                    den_sim_comp.append((dis - mean_sim)**2)
+                    den_real_comp.append((self.RI_dis_real[index] - mean_real)**2)
+                    denominator.append(den_sim_comp[-1] * den_real_comp[-1])
+
+                return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
+
+            case self.DataType.RPM:
+                # Calculate real mean
+                for dis in self.rpm_real:
+                    sum_real += dis
+                mean_real = sum_real / len(self.rpm_real)
+                # Calculate sim mean
+                for dis in self.rpm_sim:
+                    sum_sim += dis
+                mean_sim = sum_sim / len(self.rpm_sim)
+
+                # Calculate Pearson Correlation Coefficient (x = sim, y = real)
+                for index, dis in enumerate(self.rpm_sim):
+                    numerator.append((dis - mean_sim) * (self.rpm_real[index] - mean_real))
+                    den_sim_comp.append((dis - mean_sim)**2)
+                    den_real_comp.append((self.rpm_real[index] - mean_real)**2)
+                    denominator.append(den_sim_comp[-1] * den_real_comp[-1])
+
+                return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
+
+
+    def graph(self, graph_type:DataType):
 
         tk = tkinter.Tk()
         fig = Figure(figsize=(10, 10), dpi=100)
@@ -313,31 +439,31 @@ class Validation:
         toolbar.update()
 
         match graph_type:
-            case self.Graph.FO:
+            case self.DataType.FO:
                 # Plot both sim and real FO dis
                 len_FO = np.linspace(0, len(self.FO_dis_sim), len(self.FO_dis_sim))
                 len_FO_r = np.linspace(0, len(self.FO_dis_real), len(self.FO_dis_real))
                 ax.plot(len_FO, self.FO_dis_sim, label='sim_FO')
                 ax.plot(len_FO_r, self.FO_dis_real, label='real_FO')
-            case self.Graph.FI:
+            case self.DataType.FI:
                 # Plot both sim and real FI dis
                 len_FI = np.linspace(0, len(self.FI_dis_sim), len(self.FI_dis_sim))
                 len_FI_r = np.linspace(0, len(self.FI_dis_real), len(self.FI_dis_real))
                 ax.plot(len_FI, self.FI_dis_sim, label='sim_FI')
                 ax.plot(len_FI_r, self.FI_dis_real, label='real_FI')
-            case self.Graph.RO:
+            case self.DataType.RO:
                 # Plot both sim and real RO dis
                 len_RO = np.linspace(0, len(self.RO_dis_sim), len(self.RO_dis_sim))
                 len_RO_r = np.linspace(0, len(self.RO_dis_real), len(self.RO_dis_real))
                 ax.plot(len_RO, self.RO_dis_sim, label='sim_RO')
                 ax.plot(len_RO_r, self.RO_dis_real, label='real_RO')
-            case self.Graph.RI:
+            case self.DataType.RI:
                 # Plot both sim and real RI dis
                 len_RI = np.linspace(0, len(self.RI_dis_sim), len(self.RI_dis_sim))
                 len_RI_r = np.linspace(0, len(self.RI_dis_real), len(self.RI_dis_real))
                 ax.plot(len_RI, self.RI_dis_sim, label='sim_RI')
                 ax.plot(len_RI_r, self.RI_dis_real, label='real_RI')
-            case self.Graph.RPM:
+            case self.DataType.RPM:
                 # Plot both sim and real RPM
                 len_rpm = np.linspace(0, len(self.rpm_sim), len(self.rpm_sim))
                 len_rpm_r = np.linspace(0, len(self.rpm_real), len(self.rpm_real))
@@ -374,12 +500,12 @@ class Validation:
                 data_node.yaw *= np.pi/180
 
     def parse_data(self):
-        validator.parse_arc_data("lapsim_validation/output/04_arcs.csv")
-        validator.parse_spline_data("lapsim_validation/output/03_spline_points.csv")
-        validator.parse_velocity_data("lapsim_validation/output/05_velocities.csv")
-        validator.parse_data_nodes("lapsim_validation/output/06_arc_points_detailed.csv")
+        validator.parse_arc_data("validator/output/04_arcs.csv")
+        validator.parse_spline_data("validator/output/03_spline_points.csv")
+        validator.parse_velocity_data("validator/output/05_velocities.csv")
+        validator.parse_data_nodes("validator/output/06_arc_points_detailed.csv")
 
-    def run_validation(self, car=None):
+    def run_validation(self, sims_per_arc=1):
 
         # Get the average error for one data point. Does not take -1's into account.
         def get_average_error(error_arr):
@@ -406,7 +532,7 @@ class Validation:
             segment.compute_arc_segment_distances()
             segment.calculate_distance_differences()
 
-        val_track = Validation_Track(self.segments, car)
+        val_track = Validation_Track(self.segments, car, sims_per_arc)
         self.lapsim_data = val_track.run()
 
         # Lerp sim data to match the position of real data
@@ -428,6 +554,19 @@ class Validation:
                     self.lerped_data[-1].rear_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_inner_displacement[arc_index], self.lapsim_data[seg_index].rear_inner_displacement[arc_index+1])
                     self.lerped_data[-1].rpm[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rpm[arc_index], self.lapsim_data[seg_index].rpm[arc_index+1])
                     count += 1
+
+                    # TODO: Test using multiple collection points along arc
+                    # print(f"data node distance along arc: {data_node.distance_since_arc_start}")
+                    # print(f"starting len distance along arc: {arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)*(arc.length/sims_per_arc)}")
+                    # print(f"ending len distance along arc: {(arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)+1)*(arc.length/sims_per_arc)}")
+                    # self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].front_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].rear_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].front_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].rear_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].rpm[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # count += 1
 
         # Store all data in a csv format
         # Indices are segments
@@ -519,27 +658,20 @@ class Validation:
 
         f.close()
 
-        # val_track.segment_data[0].AX
-
-        # val_track.run_sim(car, nodes=1000, initial_velocity=0)
-        # val_track.plt_track(self.arcs)
-
-        # for segment in self.segments:
-        #     print(f"ID: {segment.segment_id}")
-        #     print(f"velocity: {segment.starting_velocity}")
-        #     print(f"distance travelled: {segment.compute_distance_travelled()}")
-
     def run_rust_code(self):
-        working_dir = os.path.join(os.getcwd(), "lapsim_validation")
+        # Paths
+        working_dir = os.path.join(os.getcwd(), "validator")
         rust_exe = os.path.join(working_dir, "target", "release", "gps-data-smoothing-v2")
 
+        # Create an executable for the Rust code.
         subprocess.run(["cargo", "build", "--release"], cwd=working_dir, check=True)
-
+        # Run the executable that was just created
         subprocess.run([rust_exe], cwd=working_dir, check=True)
 
 # Acts as a singleton
 validator = Validation()
-validator.run_rust_code()
-# validator.run_validation()
+validator.run_validation(1)
 
-# validator.graph(validator.Graph.FO)
+data_type = validator.DataType.FO
+print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
+validator.graph(data_type)
