@@ -1,8 +1,12 @@
 import csv
 import os
+import tkinter
 from enum import Enum
 
 import numpy as np
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from gen_lapsim.lapsim import LapSimData
 from lapsim_validation import Validation_Track
@@ -10,6 +14,18 @@ from models.car_model import Car
 
 
 class Validation:
+
+    class Graph(Enum):
+        AX = 0
+        AY = 1
+        AZ = 2
+        ROLL = 3
+        YAW = 4
+        FO = 5
+        FI = 6
+        RO = 7
+        RI = 8
+        RPM = 9
 
     class Data_Node:
         def __init__(self, AX, AY, AZ, roll, yaw, front_left_dis, front_right_dis, rear_left_dis, rear_right_dis, rpm):
@@ -122,6 +138,7 @@ class Validation:
     arcs = [] # The curves between every single point
     segments = [] # Collections of arcs. This is "good" data. Only contains a segment where there is both velocity and spline data.
     lapsim_data = [] # Data collected by running the lapsim. Contains segments number of LapSimData objects.
+    lerped_data = [] # Data collected by interpolating data from the lapsim to match the position of data acq data.
 
     def parse_arc_data(self, csv_path):
 
@@ -283,6 +300,51 @@ class Validation:
                     break
         print("Filtered {} segments. {} segments remaining.".format(count, len(self.segments)))
 
+    def graph(self, graph_type:Graph):
+
+        tk = tkinter.Tk()
+        fig = Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, tk)
+        canvas.draw()
+        toolbar = NavigationToolbar2Tk(canvas, tk)
+        canvas.get_tk_widget().pack()
+        toolbar.update()
+
+        match graph_type:
+            case self.Graph.FO:
+                # Plot both sim and real FO dis
+                len_FO = np.linspace(0, len(self.FO_dis_sim), len(self.FO_dis_sim))
+                len_FO_r = np.linspace(0, len(self.FO_dis_real), len(self.FO_dis_real))
+                ax.plot(len_FO, self.FO_dis_sim, label='sim_FO')
+                ax.plot(len_FO_r, self.FO_dis_real, label='real_FO')
+            case self.Graph.FI:
+                # Plot both sim and real FI dis
+                len_FI = np.linspace(0, len(self.FI_dis_sim), len(self.FI_dis_sim))
+                len_FI_r = np.linspace(0, len(self.FI_dis_real), len(self.FI_dis_real))
+                ax.plot(len_FI, self.FI_dis_sim, label='sim_FI')
+                ax.plot(len_FI_r, self.FI_dis_real, label='real_FI')
+            case self.Graph.RO:
+                # Plot both sim and real RO dis
+                len_RO = np.linspace(0, len(self.RO_dis_sim), len(self.RO_dis_sim))
+                len_RO_r = np.linspace(0, len(self.RO_dis_real), len(self.RO_dis_real))
+                ax.plot(len_RO, self.RO_dis_sim, label='sim_RO')
+                ax.plot(len_RO_r, self.RO_dis_real, label='real_RO')
+            case self.Graph.RI:
+                # Plot both sim and real RI dis
+                len_RI = np.linspace(0, len(self.RI_dis_sim), len(self.RI_dis_sim))
+                len_RI_r = np.linspace(0, len(self.RI_dis_real), len(self.RI_dis_real))
+                ax.plot(len_RI, self.RI_dis_sim, label='sim_RI')
+                ax.plot(len_RI_r, self.RI_dis_real, label='real_RI')
+            case self.Graph.RPM:
+                # Plot both sim and real RPM
+                len_rpm = np.linspace(0, len(self.rpm_sim), len(self.rpm_sim))
+                len_rpm_r = np.linspace(0, len(self.rpm_real), len(self.rpm_real))
+                ax.plot(len_rpm, self.rpm_sim, label='rpm_sim')
+                ax.plot(len_rpm_r, self.rpm_real, label='rpm_real')
+        ax.legend()
+        tk.mainloop()
+
     def convert_units(self):
         for arc in self.arcs:
             # Convert from meters to inches
@@ -309,7 +371,6 @@ class Validation:
                 data_node.AZ *= 0.10197162129779283
                 data_node.roll *= np.pi/180
                 data_node.yaw *= np.pi/180
-
 
     def parse_data(self):
         validator.parse_arc_data("lapsim_validation/output/04_arcs.csv")
@@ -348,113 +409,112 @@ class Validation:
         self.lapsim_data = val_track.run()
 
         # Lerp sim data to match the position of real data
-        lerped_data = []
         for seg_index, segment in enumerate(self.segments):
             count = 0
-            lerped_data.append(LapSimData())
-            lerped_data[-1].initialize(len(segment.data_nodes))
-            lerped_data[-1].time_array[0] = self.lapsim_data[seg_index].time_array[-1] # Store time var
+            self.lerped_data.append(LapSimData())
+            self.lerped_data[-1].initialize(len(segment.data_nodes))
+            self.lerped_data[-1].time_array[0] = self.lapsim_data[seg_index].time_array[-1] # Store time var
             for arc_index, arc in enumerate(segment.arcs):
                 # print(f"data nodes in arc: {arc.data_nodes}")
                 for data_index, data_node in enumerate(arc.data_nodes):
                     # print(f"distance_since_arc_start: {data_node.distance_since_arc_start}")
                     # print(f"arc.length: {data_node.arc.length}")
-                    lerped_data[-1].AX[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AX[arc_index], self.lapsim_data[seg_index].AX[arc_index+1])
-                    lerped_data[-1].AY[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AY[arc_index], self.lapsim_data[seg_index].AY[arc_index+1])
-                    lerped_data[-1].front_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index], self.lapsim_data[seg_index].front_outer_displacement[arc_index+1])
-                    lerped_data[-1].rear_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index], self.lapsim_data[seg_index].rear_outer_displacement[arc_index+1])
-                    lerped_data[-1].front_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index], self.lapsim_data[seg_index].front_inner_displacement[arc_index+1])
-                    lerped_data[-1].rear_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_inner_displacement[arc_index], self.lapsim_data[seg_index].rear_inner_displacement[arc_index+1])
-                    lerped_data[-1].rpm[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rpm[arc_index], self.lapsim_data[seg_index].rpm[arc_index+1])
+                    self.lerped_data[-1].AX[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AX[arc_index], self.lapsim_data[seg_index].AX[arc_index+1])
+                    self.lerped_data[-1].AY[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AY[arc_index], self.lapsim_data[seg_index].AY[arc_index+1])
+                    self.lerped_data[-1].front_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index], self.lapsim_data[seg_index].front_outer_displacement[arc_index+1])
+                    self.lerped_data[-1].rear_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index], self.lapsim_data[seg_index].rear_outer_displacement[arc_index+1])
+                    self.lerped_data[-1].front_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index], self.lapsim_data[seg_index].front_inner_displacement[arc_index+1])
+                    self.lerped_data[-1].rear_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_inner_displacement[arc_index], self.lapsim_data[seg_index].rear_inner_displacement[arc_index+1])
+                    self.lerped_data[-1].rpm[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rpm[arc_index], self.lapsim_data[seg_index].rpm[arc_index+1])
                     count += 1
 
         # Store all data in a csv format
-        time_sim = [] # Indices are segments
-        time_real = [] # # Indices are segments
-        time_error = [] # percent # # Indices are segments
-        arc_id, segment_id = [], []
-        AX_sim, AY_sim = [], []
-        AX_real, AY_real = [], []
-        AX_error, AY_error = [], []
-        FO_dis_sim, RO_dis_sim, FI_dis_sim, RI_dis_sim = [], [], [], []
-        FO_dis_real, RO_dis_real, FI_dis_real, RI_dis_real = [], [], [], []
-        FO_dis_error, RO_dis_error, FI_dis_error, RI_dis_error = [], [], [], []
-        rpm_sim, rpm_real, rpm_error = [], [], []
+        # Indices are segments
+        self.time_sim, self.time_real, self.time_error = [], [], []
+        # Indices are data nodes
+        self.rpm_sim, self.rpm_real, self.rpm_error = [], [], []
+        self.arc_id, self.segment_id = [], []
+        self.AX_sim, self.AY_sim = [], []
+        self.AX_real, self.AY_real = [], []
+        self.AX_error, self.AY_error = [], []
+        self.FO_dis_sim, self.RO_dis_sim, self.FI_dis_sim, self.RI_dis_sim = [], [], [], []
+        self.FO_dis_real, self.RO_dis_real, self.FI_dis_real, self.RI_dis_real = [], [], [], []
+        self.FO_dis_error, self.RO_dis_error, self.FI_dis_error, self.RI_dis_error = [], [], [], []
         for seg_index, segment in enumerate(self.segments):
             # Store time only once per segment, since only the time from the beginning to the end of the segment is collected.
-            time_sim.append(lerped_data[seg_index].time_array[0])
-            time_real.append(segment.time)
-            time_error.append(((time_sim[-1] - time_real[-1])/time_real[-1])*100 if time_real[-1] != 0 else None)
+            self.time_sim.append(self.lerped_data[seg_index].time_array[0])
+            self.time_real.append(segment.time)
+            self.time_error.append(((self.time_sim[-1] - self.time_real[-1])/self.time_real[-1])*100 if self.time_real[-1] != 0 else None)
             for data_index, data_node in enumerate(segment.data_nodes):
                 # Segment ID
-                segment_id.append(data_node.arc.segment_id)
+                self.segment_id.append(data_node.arc.segment_id)
                 # Arc ID
-                arc_id.append(data_node.arc.arc_id)
+                self.arc_id.append(data_node.arc.arc_id)
                 # AX
-                AX_err = ((lerped_data[seg_index].AX[data_index] - data_node.AX)/data_node.AX)*100 if data_node.AX != 0 else None
-                AX_sim.append(lerped_data[seg_index].AX[data_index])
-                AX_real.append(data_node.AX)
-                AX_error.append(AX_err)
+                AX_err = ((self.lerped_data[seg_index].AX[data_index] - data_node.AX)/data_node.AX)*100 if data_node.AX != 0 else None
+                self.AX_sim.append(self.lerped_data[seg_index].AX[data_index])
+                self.AX_real.append(data_node.AX)
+                self.AX_error.append(AX_err)
                 # AY
-                AY_err = ((lerped_data[seg_index].AY[data_index] - data_node.AY)/data_node.AY)*100 if data_node.AY != 0 else None
-                AY_sim.append(lerped_data[seg_index].AY[data_index])
-                AY_real.append(data_node.AY)
-                AY_error.append(((lerped_data[seg_index].AY[data_index] - data_node.AY)/data_node.AY)*100)
+                AY_err = ((self.lerped_data[seg_index].AY[data_index] - data_node.AY)/data_node.AY)*100 if data_node.AY != 0 else None
+                self.AY_sim.append(self.lerped_data[seg_index].AY[data_index])
+                self.AY_real.append(data_node.AY)
+                self.AY_error.append(((self.lerped_data[seg_index].AY[data_index] - data_node.AY)/data_node.AY)*100)
                 # FO
                 front_outer_dis = data_node.front_right_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_left_dis
-                front_outer_error = ((lerped_data[seg_index].front_outer_displacement[data_index] - front_outer_dis)/front_outer_dis)*100 if front_outer_dis != 0 else None
-                FO_dis_sim.append(lerped_data[seg_index].front_outer_displacement[data_index])
-                FO_dis_real.append(front_outer_dis)
-                FO_dis_error.append(front_outer_error)
+                front_outer_error = ((self.lerped_data[seg_index].front_outer_displacement[data_index] - front_outer_dis)/front_outer_dis)*100 if front_outer_dis != 0 else None
+                self.FO_dis_sim.append(self.lerped_data[seg_index].front_outer_displacement[data_index])
+                self.FO_dis_real.append(front_outer_dis)
+                self.FO_dis_error.append(front_outer_error)
                 # RO
                 rear_outer_dis = data_node.rear_right_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_left_dis
-                rear_outer_error = ((lerped_data[seg_index].rear_outer_displacement[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != 0 else None
-                RO_dis_sim.append(lerped_data[seg_index].rear_outer_displacement[data_index])
-                RO_dis_real.append(rear_outer_dis)
-                RO_dis_error.append(rear_outer_error)
+                rear_outer_error = ((self.lerped_data[seg_index].rear_outer_displacement[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != 0 else None
+                self.RO_dis_sim.append(self.lerped_data[seg_index].rear_outer_displacement[data_index])
+                self.RO_dis_real.append(rear_outer_dis)
+                self.RO_dis_error.append(rear_outer_error)
                 # FI
                 front_inner_dis = data_node.front_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_right_dis
-                front_inner_error = ((lerped_data[seg_index].front_inner_displacement[data_index] - front_inner_dis)/front_inner_dis)*100 if front_inner_dis != 0 else None
-                FI_dis_sim.append(lerped_data[seg_index].front_inner_displacement[data_index])
-                FI_dis_real.append(front_inner_dis)
-                FI_dis_error.append(front_inner_error)
+                front_inner_error = ((self.lerped_data[seg_index].front_inner_displacement[data_index] - front_inner_dis)/front_inner_dis)*100 if front_inner_dis != 0 else None
+                self.FI_dis_sim.append(self.lerped_data[seg_index].front_inner_displacement[data_index])
+                self.FI_dis_real.append(front_inner_dis)
+                self.FI_dis_error.append(front_inner_error)
                 # RI
                 rear_inner_dis = data_node.rear_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_right_dis
-                rear_inner_error = ((lerped_data[seg_index].rear_inner_displacement[data_index] - rear_inner_dis)/rear_inner_dis)*100 if rear_inner_dis != 0 else None
-                RI_dis_sim.append(lerped_data[seg_index].rear_inner_displacement[data_index])
-                RI_dis_real.append(data_node.rear_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_right_dis)
-                RI_dis_error.append(rear_inner_error)
+                rear_inner_error = ((self.lerped_data[seg_index].rear_inner_displacement[data_index] - rear_inner_dis)/rear_inner_dis)*100 if rear_inner_dis != 0 else None
+                self.RI_dis_sim.append(self.lerped_data[seg_index].rear_inner_displacement[data_index])
+                self.RI_dis_real.append(data_node.rear_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_right_dis)
+                self.RI_dis_error.append(rear_inner_error)
                 # rpm
-                rpm_err = ((lerped_data[seg_index].rpm[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
-                rpm_sim.append(lerped_data[seg_index].rpm[data_index])
-                rpm_real.append(data_node.rpm)
-                rpm_error.append(rpm_err)
+                rpm_err = ((self.lerped_data[seg_index].rpm[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
+                self.rpm_sim.append(self.lerped_data[seg_index].rpm[data_index])
+                self.rpm_real.append(data_node.rpm)
+                self.rpm_error.append(rpm_err)
 
-        average_time_error = round(get_average_error(time_error), 1) if time_error else None
-        average_AX_error = round(get_average_error(AX_error), 1) if AX_error else None
-        average_AY_error = round(get_average_error(AY_error), 1) if AY_error else None
-        average_FO_dis_error = round(get_average_error(FO_dis_error), 1) if FO_dis_error else None
-        average_RO_dis_error = round(get_average_error(RO_dis_error), 1) if RO_dis_error else None
-        average_FI_dis_error = round(get_average_error(FI_dis_error), 1) if FI_dis_error else None
-        average_RI_dis_error = round(get_average_error(RI_dis_error), 1) if RI_dis_error else None
-        average_rpm_error = round(get_average_error(rpm_error), 1) if rpm_error else None
+        average_time_error = round(get_average_error(self.time_error), 1) if self.time_error else None
+        average_AX_error = round(get_average_error(self.AX_error), 1) if self.AX_error else None
+        average_AY_error = round(get_average_error(self.AY_error), 1) if self.AY_error else None
+        average_FO_dis_error = round(get_average_error(self.FO_dis_error), 1) if self.FO_dis_error else None
+        average_RO_dis_error = round(get_average_error(self.RO_dis_error), 1) if self.RO_dis_error else None
+        average_FI_dis_error = round(get_average_error(self.FI_dis_error), 1) if self.FI_dis_error else None
+        average_RI_dis_error = round(get_average_error(self.RI_dis_error), 1) if self.RI_dis_error else None
+        average_rpm_error = round(get_average_error(self.rpm_error), 1) if self.rpm_error else None
 
         print(f"\n---------------OVERALL REPORT---------------\nAverage Time error: {average_time_error}%\nAverage AX error: {average_AX_error}%\nAverage AY error: {average_AY_error}%\nAverage FO error: {average_FO_dis_error}%\nAverage RO error: {average_RO_dis_error}%\nAverage FI error: {average_FI_dis_error}%\nAverage RI error: {average_RI_dis_error}%\nAverage RPM error: {average_rpm_error}%")
 
         # Write data into csv
         f = open(os.path.join(os.getcwd(), "validation.csv"), "w")
         writer = csv.writer(f)
-        writer.writerow(["Segment #", "Arc #", "Time Sim", "Time Real", "Time Error", "AX Sim", "AX real", "AX Error", "AY Sim", "AY real", "AY Error", "FO Sim", "FO Real", "FO Error", "RO Sim", "RO Real", "RO Error", "FI Sim", "FI Real", "FI Error", "RI Sim", "RI Real", "RI Error"])
+        writer.writerow(["Segment #", "Arc #", "Time Sim", "Time Real", "Time Error", "FO Sim", "FO Real", "FO Error", "RO Sim", "RO Real", "RO Error", "FI Sim", "FI Real", "FI Error", "RI Sim", "RI Real", "RI Error", "RPM sim", "RPM real", "RPM error"])
         prev_segment_id = 0
         time_index = 0
-        for index, AX in enumerate(AX_sim):
-            if segment_id[index] != prev_segment_id:
-                writer.writerow([f"Segment {segment_id[index]}",f"",f"{time_sim[time_index]} secs", f"{time_real[time_index]} secs", f"{time_error[time_index]}%"])
+        for index, AX in enumerate(self.AX_sim):
+            if self.segment_id[index] != prev_segment_id:
+                writer.writerow([f"Segment {self.segment_id[index]}",f"",f"{self.time_sim[time_index]} secs", f"{self.time_real[time_index]} secs", f"{self.time_error[time_index]}%"])
 
                 time_index+=1
-                prev_segment_id = segment_id[index]
+                prev_segment_id = self.segment_id[index]
 
-            writer.writerow([f"Segment {segment_id[index]}", f"Arc {arc_id[index]}", None, None, None, f"{AX} g's", f"{AX_real[index]} g's", f"{AX_error[index]}%", f"{AY_sim[index]} g's", f"{AY_real[index]} g's", f"{AY_error[index]}%", f"{FO_dis_sim[index]} in", f"{FO_dis_real[index]} in", f"{FO_dis_error[index]}%", f"{RO_dis_sim[index]} in", f"{RO_dis_real[index]} in", f"{RO_dis_error[index]}%", f"{FI_dis_sim[index]} in", f"{FI_dis_real[index]} in", f"{FI_dis_error[index]}%", f"{RI_dis_sim[index]} in", f"{RI_dis_real[index]} in", f"{RI_dis_error[index]}%"])
+            writer.writerow([f"Segment {self.segment_id[index]}", f"Arc {self.arc_id[index]}", None, None, None,  f"{self.FO_dis_sim[index]} in", f"{self.FO_dis_real[index]} in", f"{self.FO_dis_error[index]}%", f"{self.RO_dis_sim[index]} in", f"{self.RO_dis_real[index]} in", f"{self.RO_dis_error[index]}%", f"{self.FI_dis_sim[index]} in", f"{self.FI_dis_real[index]} in", f"{self.FI_dis_error[index]}%", f"{self.RI_dis_sim[index]} in", f"{self.RI_dis_real[index]} in", f"{self.RI_dis_error[index]}%", f"{self.rpm_sim[index]}", f"{self.rpm_real[index]}", f"{self.rpm_error[index]}%"])
 
         f.close()
 
@@ -475,65 +535,4 @@ class Validation:
 validator = Validation()
 validator.run_validation()
 
-
-
-
-
-
-# if testing:
-#     self.segments[0].compute_arc_segment_distances()
-#     self.segments[0].calculate_distance_differences()
-#
-# if testing:
-#     data1 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data1.distance_along_segment = 0
-#     data2 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data2.distance_along_segment = 64
-#     data3 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data3.distance_along_segment = 130
-#     data4 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data4.distance_along_segment = 200
-#     data5 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data5.distance_along_segment = 250
-#     data6 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data6.distance_along_segment = 280
-#     data7 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     data7.distance_along_segment = 360
-#     data8 = Validation.Data_Node(AX = 1, AY = 0.3, AZ = 0, roll = 0, yaw = 0, front_left_dis = 0, front_right_dis = 0, rear_left_dis = 0, rear_right_dis = 0, rpm = 0)
-#     # data8.distance_along_segment = self.segments[0].distance_travelled
-#     data8.distance_along_segment = 450
-#     print(f"distance travelled: {self.segments[0].distance_travelled}")
-#
-#     data_nodes = [data1, data2, data3, data4, data5, data6, data7, data8]
-#
-#     segment = self.segments[0]
-#     segment.data_nodes = data_nodes
-#
-# if testing:
-#     for index, arc in enumerate(self.segments[0].arcs):
-#         match index:
-#             case 0:
-#                 arc.length = 60.2
-#             case 1:
-#                 arc.length = 62.4
-#             case 2:
-#                 arc.length = 70.8
-#             case 3:
-#                 arc.length = 40.9
-#             case 4:
-#                 arc.length = 31.1
-#             case 5:
-#                 arc.length = 90.4
-#             case 6:
-#                 arc.length = 83.2
-#             case 7:
-#                 arc.length = 91.1
-#
-# if testing:
-#     val_track = Validation_Track([self.segments[0]], car)
-#     self.lapsim_data = val_track.run()
-#
-#     for data in self.lapsim_data:
-#         for index, AX in enumerate(data.AX):
-#             print(f"AX: {AX} g's, AY: {data.AY[index]} g's\nFO_dis: {data.front_outer_displacement[index]} in, RO_dis: {data.rear_outer_displacement[index]} in, FI_dis: {data.front_inner_displacement[index]} in, RI_dis: {data.rear_inner_displacement[index]} in,")
-
+validator.graph(validator.Graph.FO)

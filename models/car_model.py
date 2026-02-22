@@ -641,7 +641,7 @@ class Car:
             FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
             FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
             FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
-            ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque)
+            ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.drivetrain.rpm[int(v*0.056818181818182*10)] if int(v*0.056818181818182*10) < 700 else -1)
 
     # Calculates the positive axial acceleration of the car at a given radius and velocity.
     def curve_accel(self, r, v, transmission_gear ='optimal'):
@@ -719,7 +719,7 @@ class Car:
          FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
          FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
          FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
-         ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.drivetrain.rpm[int(v*0.056818181818182*10)])
+         ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.drivetrain.rpm[int(v*0.056818181818182*10)] if int(v*0.056818181818182*10) < 700 else -1)
 
         # Calculate if the engine produces less force than the tire traction allows. If so, use engine acceleration instead.
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) # engine force in lbs

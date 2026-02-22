@@ -144,12 +144,12 @@ class Validation_Track():
         lapsim_data_storage.infect_force_thetas()
         lapsim_data_storage.round_all_arrays(decimals=3)
 
-        print("v2")
-        for i in np.arange(0, len(v2) - 1):
-            print(v2[int(i)])
-        print("v1")
-        for i in np.arange(0, len(v1) - 1):
-            print(v1[int(i)])
+        # print("v2")
+        # for i in np.arange(0, len(v2) - 1):
+        #     print(v2[int(i)])
+        # print("v1")
+        # for i in np.arange(0, len(v1) - 1):
+        #     print(v1[int(i)])
 
         return lapsim_data_storage
 
