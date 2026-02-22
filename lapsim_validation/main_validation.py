@@ -1,5 +1,6 @@
 import csv
 import os
+import subprocess
 import tkinter
 from enum import Enum
 
@@ -529,10 +530,16 @@ class Validation:
         #     print(f"distance travelled: {segment.compute_distance_travelled()}")
 
     def run_rust_code(self):
-        pass
+        working_dir = os.path.join(os.getcwd(), "lapsim_validation")
+        rust_exe = os.path.join(working_dir, "target", "release", "gps-data-smoothing-v2")
+
+        subprocess.run(["cargo", "build", "--release"], cwd=working_dir, check=True)
+
+        subprocess.run([rust_exe], cwd=working_dir, check=True)
 
 # Acts as a singleton
 validator = Validation()
-validator.run_validation()
+validator.run_rust_code()
+# validator.run_validation()
 
-validator.graph(validator.Graph.FO)
+# validator.graph(validator.Graph.FO)
