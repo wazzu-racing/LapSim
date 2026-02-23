@@ -413,14 +413,14 @@ class four_wheel:
         v1[-1] = v1[-2]
 
         gear = 0  # transmission gear
-        shift_time = self.car.drivetrain.shift_time  # shifting time (seconds)
+        shift_time = self.car.powertrain.shift_time  # shifting time (seconds)
         shifting = False  # Set to true while shifting
         for i in np.arange(n):
 
             # checks if the car is braking by looking if v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i + 1)] <= v1[int(i)]:
                 v1[int(i + 1)] = v2[int(i + 1)]
-                gear = self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
+                gear = self.car.powertrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
                 shifting = False  # sets to False so the car doesn't shift when it stops braking
 
                 a_tan = self.lapsim_data_storage.AX[int(i)]
@@ -435,7 +435,7 @@ class four_wheel:
             else:
                 car_data_snippet = None # Initialize car_data_snippet to None. This is filled with data later.
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
-                if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
+                if (gear >= self.car.powertrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
                     car_data_snippet = self.car.curve_accel(self.nd_rad[int(i)], v1[int(i)], gear)
                     a_tan = car_data_snippet.AX
                     a_tan *= 32.17 * 12 # convert to in/s^2
@@ -447,7 +447,7 @@ class four_wheel:
                     shift_time -= dx / v1[int(i)]
                     if shift_time <= 0:
                         gear += 1
-                        shift_time = self.car.drivetrain.shift_time
+                        shift_time = self.car.powertrain.shift_time
                         shifting = False
                 if (np.sqrt(v1[int(i)] ** 2 + 2 * a_tan * dx) < v1[int(i + 1)]) or (v1[int(i + 1)] == 0.):
                     v1[int(i + 1)] = np.sqrt(v1[int(i)] ** 2 + 2 * a_tan * dx)

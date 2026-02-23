@@ -65,7 +65,7 @@ class PlotDrivetrainDataPage(tkinter.Frame):
         else:
             print("No file selected")
 
-    # Function to plot drivetrain data with functions in drivetrain_model.py based on selected option.
+    # Function to plot drivetrain data with functions in powertrain_model.py based on selected option.
     def plot_drivetrain_data(self, option):
         # Load drivetrain object from file
         drivetrain = pkl.load(open(self.drivetrain_file_path, 'rb'))

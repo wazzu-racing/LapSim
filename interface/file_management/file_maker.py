@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 
 from gen_lapsim.spline_track import node
-from models import tire_model, drivetrain_model
+from models import tire_model, powertrain_model
 from interface.LapData import LapData
 from models.car_model import Car
 from .file_manager import file_manager
@@ -44,7 +44,7 @@ class FileMaker:
 
         # Create drivetrain model and put into user's documents folder.
         engine_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "engine_array.csv"))
-        drivetrain = drivetrain_model.drivetrain(engine_data=engine_data)
+        drivetrain = powertrain_model.Powertrain(engine_data=engine_data)
         with open(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"), 'wb') as f:
             pickle.dump(drivetrain, f)
 

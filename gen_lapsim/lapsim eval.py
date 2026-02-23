@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pickle as pkl
 import lapsim as lpsm
-from models.drivetrain_model import drivetrain
+from models.powertrain_model import Powertrain
 
 # with open('endurance_trk.pkl', 'rb') as f:
 #     endurance = pkl.load(f)ß
@@ -66,8 +66,8 @@ if False:
     times = []
     #track.car = car_model.car(final_drive = 3)
     for i in drives:
-        car.drivetrain = drivetrain(i)
-        car.drivetrain.shift_time = 0.5
+        car.Powertrain = Powertrain(i)
+        car.Powertrain.shift_time = 0.5
         track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 9999999999999999], car, 500)
         nds, v3, t = track.run()
         print(f'final drive = {i}\tacceleration time = {t}')
@@ -86,7 +86,7 @@ if False:
     times = []
     #track.car = car_model.car(final_drive = 3)
     for i in drives:
-        car.drivetrain = drivetrain(i)
+        car.Powertrain = Powertrain(i)
         endurance.run_sim(car)
         t = endurance.t
         print(f'final drive = {i}\tEndurance time = {t}')
@@ -105,7 +105,7 @@ if False:
     times = []
     #track.car = car_model.car(final_drive = 3)
     for i in drives:
-        car.drivetrain = drivetrain(i)
+        car.Powertrain = Powertrain(i)
         autocross.run_sim(car, end = 89)
         t = autocross.t
         print(f'final drive = {i}\tAutocross time = {t}')
@@ -119,8 +119,8 @@ if False:
     plt.show()
 
 if False:
-    car.drivetrain = drivetrain(3.1)
-    car.drivetrain.shift_time = 0.5
+    car.Powertrain = Powertrain(3.1)
+    car.Powertrain.shift_time = 0.5
     track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [0, 0, 0, 9999999999999999], car, 500)
     nds, v3, t = track.run()
     plt.plot(nds, v3)

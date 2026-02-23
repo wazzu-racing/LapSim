@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import csv
 
-class drivetrain:
+class Powertrain:
     
     def __init__(self, final_drive = 4.8, engine_data = ""):
         self.engn_rpm = [] # engine crankshaft rpm
