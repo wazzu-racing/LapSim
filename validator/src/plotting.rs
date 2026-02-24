@@ -489,6 +489,9 @@ pub fn plot_arc_points_detailed(
         let segment = &segments[mapping.segment_id - 1];
         let first_gps_millis = records[segment.start_index].gps_millis;
 
+        // Calculate cumulative distances for the entire segment
+        let segment_distances = calculate_cumulative_distances(&segment.coords);
+
         // Create hover text with telemetry data
         let hover_text: Vec<String> = mapping
             .points
@@ -499,10 +502,15 @@ pub fn plot_arc_points_detailed(
                 let gps_millis = records[global_idx].gps_millis;
                 let time_s = (gps_millis - first_gps_millis) as f64 / 1000.0;
 
+                // Get the distance from the segment start
+                let point_index_in_segment = global_idx - segment.start_index;
+                let distance_m = segment_distances[point_index_in_segment];
+
                 format!(
                     "Arc: S{}-A{}<br>\
                 Global Index: {}<br>\
                 Time: {:.3}s<br>\
+                Distance: {:.3}m<br>\
                 Position: ({:.2}, {:.2})<br>\
                 Elevation: {:.2}m<br>\
                 Accel: ax={:.3}g, ay={:.3}g, az={:.3}g<br>\
@@ -515,6 +523,7 @@ pub fn plot_arc_points_detailed(
                     mapping.arc_id + 1,
                     global_idx,
                     time_s,
+                    distance_m,
                     p.x,
                     p.y,
                     p.z,

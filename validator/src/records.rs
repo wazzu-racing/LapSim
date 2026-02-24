@@ -1112,6 +1112,32 @@ pub fn map_arcs_to_points(segments: &[TrackSegment]) -> Vec<ArcWithPoints> {
     arc_mappings
 }
 
+/// Calculates cumulative distances for points within an arc.
+///
+/// Given a set of points (arc coordinates), this function computes the cumulative
+/// distance traveled from the start of the arc using Euclidean distance in the x-y plane.
+/// The first point starts at distance 0.0.
+///
+/// # Arguments
+/// * `points` - Slice of CartesianCoords representing points in the arc
+///
+/// # Returns
+/// * `Vec<f64>` - Vector of cumulative distances in meters (first element is always 0.0)
+pub fn calculate_arc_cumulative_distances(points: &[CartesianCoords]) -> Vec<f64> {
+    if points.is_empty() {
+        return Vec::new();
+    }
+
+    let mut cumulative_distances = vec![0.0];
+    for i in 1..points.len() {
+        let dx = points[i].x - points[i - 1].x;
+        let dy = points[i].y - points[i - 1].y;
+        let distance = (dx * dx + dy * dy).sqrt();
+        cumulative_distances.push(cumulative_distances[i - 1] + distance);
+    }
+    cumulative_distances
+}
+
 pub fn convert_splines_to_arcs(segments: &mut [TrackSegment]) -> usize {
     convert_splines_to_arcs_custom(segments, 0.5, 1.5, 6.0)
 }

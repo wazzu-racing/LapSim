@@ -13,8 +13,9 @@ use plotting::{
     plot_2d_track, plot_arc_points_detailed, plot_arcs, plot_segmented_track, plot_splines,
 };
 use records::{
-    CartesianCoords, TrackSegment, convert_splines_to_arcs, fit_splines_to_segments,
-    map_arcs_to_points, read_csv, records_to_cartesian, split_records_into_segments,
+    CartesianCoords, TrackSegment, calculate_cumulative_distances, convert_splines_to_arcs,
+    fit_splines_to_segments, map_arcs_to_points, read_csv, records_to_cartesian,
+    split_records_into_segments,
 };
 use std::fs::File;
 use std::io::Write;
@@ -572,10 +573,10 @@ fn export_arc_points_detailed(
     std::fs::create_dir_all("./output")?;
     let mut file = File::create(path)?;
 
-    // Write header including arc geometry and point telemetry
+    // Write header including arc geometry, distance, and point telemetry
     writeln!(
         file,
-        "segment_id,arc_id,global_index,time_s,arc_center_x_m,arc_center_y_m,arc_radius_m,arc_start_angle_rad,arc_end_angle_rad,point_x_m,point_y_m,point_z_m,ax_g,ay_g,az_g,roll_deg,yaw_deg,susp_fl,susp_fr,susp_rr,susp_rl,rpm"
+        "segment_id,arc_id,global_index,time_s,distance_m,arc_center_x_m,arc_center_y_m,arc_radius_m,arc_start_angle_rad,arc_end_angle_rad,point_x_m,point_y_m,point_z_m,ax_g,ay_g,az_g,roll_deg,yaw_deg,susp_fl,susp_fr,susp_rr,susp_rl,rpm"
     )?;
 
     // Get arc-to-point mappings
@@ -587,18 +588,26 @@ fn export_arc_points_detailed(
         let segment = &segments[mapping.segment_id - 1];
         let first_gps_millis = records[segment.start_index].gps_millis;
 
+        // Calculate cumulative distances for the entire segment
+        let segment_distances = calculate_cumulative_distances(&segment.coords);
+
         for (i, point) in mapping.points.iter().enumerate() {
             let global_idx = mapping.global_indices[i];
             let gps_millis = records[global_idx].gps_millis;
             let time_s = (gps_millis - first_gps_millis) as f64 / 1000.0;
 
+            // Get the distance from the segment start
+            let point_index_in_segment = global_idx - segment.start_index;
+            let distance_m = segment_distances[point_index_in_segment];
+
             writeln!(
                 file,
-                "{},{},{},{:.3},{:.6},{:.6},{:.3},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{}",
+                "{},{},{},{:.3},{:.3},{:.6},{:.6},{:.3},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{}",
                 mapping.segment_id,
                 mapping.arc_id,
                 global_idx,
                 time_s,
+                distance_m,
                 mapping.arc.center_x,
                 mapping.arc.center_y,
                 mapping.arc.radius,
