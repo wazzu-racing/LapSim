@@ -32,7 +32,7 @@ class LapSimGoCrazy:
 
             self.p_num = 0 # Keeps track of which part of the track-making process the user is in.
             self.clicks = 0 # Keeps track of how many times the user has clicked.
-            self.scale_factor = 1/2 # scale factor for the image on the screen.
+            self.scale_factor = 2 # scale factor for the image on the screen.
 
             self.line_drawn = False # Keeps track of whether the line to measure pxl to in ratio has been drawn.
             self.can_drag_image = False # Allows user to drag the image across the screen.
@@ -359,7 +359,7 @@ class LapSimGoCrazy:
             self.can_drag_image = True
 
             # Zoom image in
-            self.scale_factor = 1
+            self.scale_factor = 2
             self.resize_img = ImageTk.PhotoImage(self.immage.resize((int(self.img_width*self.scale_factor), int(self.img_height*self.scale_factor))))
             self.panel.itemconfig(self.image_item, image=self.resize_img)
 

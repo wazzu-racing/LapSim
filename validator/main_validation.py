@@ -12,8 +12,6 @@ from matplotlib.figure import Figure
 from gen_lapsim.lapsim import LapSimData
 from lapsim_validation import Validation_Track
 from models.car_model import Car
-
-
 class Validation:
 
     class DataType(Enum):

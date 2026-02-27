@@ -177,7 +177,6 @@ class FileMaker:
         with open(pkl_path, "wb") as f:
             pickle.dump(track, f)
 
-
 # FileMaker object used throughout the program. (think of as a singleton.)
 file_maker = FileMaker()
 

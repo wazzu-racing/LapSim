@@ -911,7 +911,7 @@ class Car:
         AY = theta_data_array[theta_completed].AY
         AX = theta_data_array[theta_completed].AX
         for theta in range(theta_completed+1, 90):
-            print(theta)
+            # print(theta)
 
             theta_force = 0
             count = 0

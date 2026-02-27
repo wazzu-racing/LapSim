@@ -137,7 +137,7 @@ class Validation_Track():
             # calculate time between nodes by averaging the velocities of the nodes at the start and end of the selected time frame
             t += lens[int(i)] / np.average([v3[i], v3[i + 1]])
             lapsim_data_storage.time_array.append(t)
-        # print(f"Time: {t} seconds")
+        print(f"Time: {t} seconds")
 
         lapsim_data_storage.infect_force_thetas()
         lapsim_data_storage.round_all_arrays(decimals=3)
