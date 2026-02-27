@@ -9,7 +9,7 @@ class Powertrain:
         self.hp = [] # horsepower
         self.engn_T = [] # Torque supplied from engine (ft*lb)
 
-        self.axl_T = [] # Torque (ft-lb) supplied to axle (index = mph*10)
+        self.sprocket_T = [] # Torque (ft-lb) supplied to axle (index = mph*10)
         self.axl_pwr = [] # power (hp) supplied to axle (index = mph*10)
         self.rpm = [] # rpm, which is a parallel array with axl_pwr
         self.full_ratios = [] # full drivetrain ratio (index = gear)
@@ -70,7 +70,7 @@ class Powertrain:
                     best_rpm = rpm
             
             self.gear_vel.append(best_gear) # most effecient gear at index (index = mph*10)
-            self.axl_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
+            self.sprocket_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
             self.axl_pwr.append(self.get_engn_pwr(best_rpm)) # power delivered to axel with most effecient gear (index = mph*10)
             self.rpm.append(best_rpm)
 
@@ -107,7 +107,7 @@ class Powertrain:
         ratio = (mph*10) % 1
         
         if gear == 'optimal':
-            return (self.axl_T[indx]*(1-ratio) + self.axl_T[indx+1]*ratio) / self.wheel_radius
+            return (self.sprocket_T[indx] * (1 - ratio) + self.sprocket_T[indx + 1] * ratio) / self.wheel_radius
         else:
             return (self.gear_T[gear][indx]*(1-ratio) + self.gear_T[gear][indx+1]*ratio) / self.wheel_radius
 

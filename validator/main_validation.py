@@ -29,7 +29,7 @@ class Validation:
         RPM = 9
 
     class Data_Node:
-        def __init__(self, AX, AY, AZ, roll, yaw, front_left_dis, front_right_dis, rear_left_dis, rear_right_dis, rpm):
+        def __init__(self, AX, AY, AZ, roll, yaw, front_left_dis, front_right_dis, rear_left_dis, rear_right_dis, rpm, distance):
             self.AX = AX # g's
             self.AY = AY # g's
             self.AZ = AZ # g's
@@ -40,6 +40,7 @@ class Validation:
             self.rear_left_dis = rear_left_dis # inches
             self.rear_right_dis = rear_right_dis # inches
             self.rpm = rpm
+            self.distance_along_segment = distance
 
         AX: float = 0
         AY: float = 0
@@ -70,30 +71,42 @@ class Validation:
         radius:float = 0
         length: float = 0
         time: float = 0
+        segment: Validation.Segment
 
         distance_along_segment: float = 0
         data_nodes: list[Validation.Data_Node] = []
         turn: Turn = Turn.LEFT
 
         def find_data_node_distance_ratio(self, distance_along_arc, sims_per_arc):
+            if distance_along_arc == 118.3858907:
+                pass
             distance = 0
             count = 0
             while distance < distance_along_arc:
                 distance += self.length / sims_per_arc
                 count += 1
 
-            distance_before_len = distance - ((self.length / sims_per_arc) * (count-1))
-            distance_along_len = distance - distance_before_len
+            distance_before_len = (self.length / sims_per_arc) * (count-1)
+            distance_along_len = distance_along_arc - distance_before_len
+            # print(distance_along_len / (self.length / sims_per_arc))
             return distance_along_len / (self.length / sims_per_arc)
 
         # Finds the simulation point that happens BEFORE the data node. Returns the index
         def find_sim_node_index(self, distance_along_arc, sims_per_arc):
+
+            if distance_along_arc == 118.3858907:
+                pass
+
             distance = 0
             count = 0
             while distance < distance_along_arc:
                 distance += self.length / sims_per_arc
                 count += 1
-            return count-1
+            # Guard code to not let the index go past the actual length of the arc
+            if distance > self.length:
+                return count-2
+            else:
+                return count-1 if count > 0 else 0 # Make sure to return at least 0.
 
     class Segment:
         def __init__(self, id, start_x, start_y, end_x, end_y, arcs):
@@ -154,7 +167,15 @@ class Validation:
                 data_node.arc = self.arcs[arc_index]
                 self.arcs[arc_index].data_nodes.append(data_node)
 
-                data_node.distance_since_arc_start = data_node.distance_along_segment - self.arcs[arc_index].distance_along_segment
+                # Clamp data node to the end of the segment
+                if data_node.distance_along_segment < data_node.arc.segment.distance_travelled:
+                    data_node.distance_since_arc_start = data_node.distance_along_segment - self.arcs[arc_index].distance_along_segment
+                else:
+                    data_node.distance_since_arc_start = data_node.arc.length
+
+            for data_node in self.data_nodes:
+                if data_node.distance_along_segment > data_node.arc.segment.distance_travelled:
+                    print(f"OVER")
 
     arcs = [] # The curves between every single point
     segments = [] # Collections of arcs. This is "good" data. Only contains a segment where there is both velocity and spline data.
@@ -216,11 +237,14 @@ class Validation:
     def parse_data_nodes(self, csv_path):
 
         def calculate_segment_time():
-            for segment in self.segments:
+            for index, segment in enumerate(self.segments):
                 time = 0
                 for arc in segment.arcs:
+                    print(f"arc {arc.arc_id}: {arc.time} secs")
                     time += arc.time
-                segment.time = time
+                print(f"{index}")
+                self.segments[index].time = time
+                print(f"segment {segment.segment_id}: {segment.time} secs")
 
         # Read into string
         csv_file = open(csv_path, newline='\n')
@@ -233,9 +257,10 @@ class Validation:
             if index == 0:
                 continue
 
-            data_node = Validation.Data_Node(AX=float(line[12]), AY=float(line[13]), AZ=float(line[14]), roll=float(line[15]),
-                                             yaw=float(line[16]), front_left_dis=float(line[17]), front_right_dis=float(line[18]),
-                                             rear_right_dis=float(line[19]), rear_left_dis=float(line[20]),rpm=float(line[21]))
+            data_node = Validation.Data_Node(AX=float(line[13]), AY=float(line[14]), AZ=float(line[15]), roll=float(line[16]),
+                                             yaw=float(line[17]), front_left_dis=float(line[18]), front_right_dis=float(line[19]),
+                                             rear_right_dis=float(line[20]), rear_left_dis=float(line[21]),rpm=float(line[22]),
+                                             distance=float(line[4]))
             self.segments[self.get_segment_index(int(line[0]))].data_nodes.append(data_node)
             self.segments[self.get_segment_index(int(line[0]))].arcs[self.get_arc_index(int(line[1]), int(line[0]))].data_nodes.append(data_node)
             self.segments[self.get_segment_index(int(line[0]))].arcs[self.get_arc_index(int(line[1]), int(line[0]))].time = float(line[3])
@@ -291,6 +316,9 @@ class Validation:
             arcs.append(arc)
             prev_id = curr_id
 
+        for arc in self.arcs:
+            arc.segment = self.segments[self.get_segment_index(arc.segment_id)]
+
         # for segment in self.segments:
         #     print(f"id: {segment.segment_id}, start_x: {segment.start_x}, start_y: {segment.start_y}, end_x: {segment.end_x}, end_y: {segment.end_y}")
 
@@ -319,6 +347,17 @@ class Validation:
                     self.segments.pop(seg_index)
                     count+=1
                     break
+        # delete_segments = []
+        # for seg_index, segment in enumerate(self.segments):
+        #     if len(segment.arcs) < min_segment_length:
+        #         delete_segments.append(segment)
+        #         continue
+        #     for arc_index, arc in enumerate(segment.arcs):
+        #         if arc.length > max_arc_length:
+        #             delete_segments.append(segment)
+        #             break
+        # for segment in delete_segments:
+        #     self.segments.remove(segment)
         print("Filtered {} segments. {} segments remaining.".format(count, len(self.segments)))
 
     def calculate_correlation_coefficient(self, data:DataType):
@@ -491,13 +530,13 @@ class Validation:
             segment.distance_travelled *= 39.3701
             # Convert from mph to in/s
             segment.starting_velocity *= 17.6
-
             for data_node in segment.data_nodes:
                 data_node.AX *= 0.10197162129779283
                 data_node.AY *= 0.10197162129779283
                 data_node.AZ *= 0.10197162129779283
                 data_node.roll *= np.pi/180
                 data_node.yaw *= np.pi/180
+                data_node.distance_along_segment *= 39.3701
 
     def parse_data(self):
         validator.parse_arc_data("validator/output/04_arcs.csv")
@@ -541,34 +580,39 @@ class Validation:
             self.lerped_data.append(LapSimData())
             self.lerped_data[-1].initialize(len(segment.data_nodes))
             self.lerped_data[-1].time_array[0] = self.lapsim_data[seg_index].time_array[-1] # Store time var
+            print(f"arcs: {len(segment.arcs)}")
             for arc_index, arc in enumerate(segment.arcs):
                 # print(f"data nodes in arc: {arc.data_nodes}")
                 for data_index, data_node in enumerate(arc.data_nodes):
+                    # print(f"\nData node {data_index}")
                     # print(f"distance_since_arc_start: {data_node.distance_since_arc_start}")
                     # print(f"arc.length: {data_node.arc.length}")
-                    self.lerped_data[-1].AX[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AX[arc_index], self.lapsim_data[seg_index].AX[arc_index+1])
-                    self.lerped_data[-1].AY[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AY[arc_index], self.lapsim_data[seg_index].AY[arc_index+1])
-                    self.lerped_data[-1].front_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index], self.lapsim_data[seg_index].front_outer_displacement[arc_index+1])
-                    self.lerped_data[-1].rear_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index], self.lapsim_data[seg_index].rear_outer_displacement[arc_index+1])
-                    self.lerped_data[-1].front_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index], self.lapsim_data[seg_index].front_inner_displacement[arc_index+1])
-                    self.lerped_data[-1].rear_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_inner_displacement[arc_index], self.lapsim_data[seg_index].rear_inner_displacement[arc_index+1])
-                    self.lerped_data[-1].rpm[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rpm[arc_index], self.lapsim_data[seg_index].rpm[arc_index+1])
-                    count += 1
-
-                    # TODO: Test using multiple collection points along arc
-                    # print(f"data node distance along arc: {data_node.distance_since_arc_start}")
-                    # print(f"starting len distance along arc: {arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)*(arc.length/sims_per_arc)}")
-                    # print(f"ending len distance along arc: {(arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)+1)*(arc.length/sims_per_arc)}")
-                    # self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    # self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    # self.lerped_data[-1].front_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    # self.lerped_data[-1].rear_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    # self.lerped_data[-1].front_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    # self.lerped_data[-1].rear_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    # self.lerped_data[-1].rpm[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    # self.lerped_data[-1].AX[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AX[arc_index], self.lapsim_data[seg_index].AX[arc_index+1])
+                    # self.lerped_data[-1].AY[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AY[arc_index], self.lapsim_data[seg_index].AY[arc_index+1])
+                    # self.lerped_data[-1].front_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index], self.lapsim_data[seg_index].front_outer_displacement[arc_index+1])
+                    # self.lerped_data[-1].rear_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index], self.lapsim_data[seg_index].rear_outer_displacement[arc_index+1])
+                    # self.lerped_data[-1].front_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index], self.lapsim_data[seg_index].front_inner_displacement[arc_index+1])
+                    # self.lerped_data[-1].rear_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_inner_displacement[arc_index], self.lapsim_data[seg_index].rear_inner_displacement[arc_index+1])
+                    # self.lerped_data[-1].rpm[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rpm[arc_index], self.lapsim_data[seg_index].rpm[arc_index+1])
                     # count += 1
 
-        # Store all data in a csv format
+                    # TODO: Implement using multiple collection points along arc when arc length data is more accurate.
+                    print(f"Arc length: {arc.length}")
+                    print(f"data node distance along arc: {data_node.distance_since_arc_start}")
+                    # print(f"starting len distance along arc: {arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) * arc.length/sims_per_arc}")
+                    # print(f"ending len distance along arc: {(arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)+1) * arc.length/sims_per_arc}")
+                    # print(f"count {arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)} of {len(self.lapsim_data[seg_index].AY)}")
+                    # print(f"base count {arc_index*sims_per_arc}")
+                    self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].front_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].rear_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].front_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].rear_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].rpm[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    count += 1
+
+        # Store all data in arrays suitable for writing to a csv
         # Indices are segments
         self.time_sim, self.time_real, self.time_error = [], [], []
         # Indices are data nodes
@@ -584,6 +628,7 @@ class Validation:
             # Store time only once per segment, since only the time from the beginning to the end of the segment is collected.
             self.time_sim.append(self.lerped_data[seg_index].time_array[0])
             self.time_real.append(segment.time)
+            print(self.time_real)
             self.time_error.append(((self.time_sim[-1] - self.time_real[-1])/self.time_real[-1])*100 if self.time_real[-1] != 0 else None)
             for data_index, data_node in enumerate(segment.data_nodes):
                 # Segment ID
@@ -630,6 +675,9 @@ class Validation:
                 self.rpm_real.append(data_node.rpm)
                 self.rpm_error.append(rpm_err)
 
+        for index, time in enumerate(self.time_sim):
+            print(f"Sim time: {time}, Real time: {self.time_real[index]}")
+
         average_time_error = round(get_average_error(self.time_error), 1) if self.time_error else None
         average_AX_error = round(get_average_error(self.AX_error), 1) if self.AX_error else None
         average_AY_error = round(get_average_error(self.AY_error), 1) if self.AY_error else None
@@ -670,6 +718,7 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
+# validator.run_rust_code()
 validator.run_validation(1)
 
 data_type = validator.DataType.FO

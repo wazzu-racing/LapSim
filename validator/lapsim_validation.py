@@ -15,14 +15,13 @@ class Validation_Track():
 
         self.segments = segments
         self.segment_data = []
-        self.sim_per_arc = sim_per_arc
+        self.sims_per_arc = sim_per_arc
 
         print(f"[Created validation track]")
 
     def run(self):
         self.segment_data = []
         for index, segment in enumerate(self.segments):
-            print(f"\n[Segment {index}]\n")
             self.segment_data.append(self.run_segment(segment, self.car))
         return self.segment_data
 
@@ -32,12 +31,12 @@ class Validation_Track():
         lens = []
         rads = []
         for index, arc in enumerate(segment.arcs):
-            for sim in range(self.sim_per_arc):
-                lens.append(arc.length/self.sim_per_arc)
+            for sim in range(self.sims_per_arc):
+                lens.append(arc.length / self.sims_per_arc)
                 rads.append(arc.radius)
-            print(f"\n------ Arc {index} ------")
-            print(f"length: {lens[index]}")
-            print(f"radius: {rads[index]}")
+            # print(f"\n------ Arc {index} ------")
+            # print(f"length: {lens[index]}")
+            # print(f"radius: {rads[index]}")
 
         ##############################################
         #                 LAPSIM CODE                #
@@ -53,13 +52,10 @@ class Validation_Track():
 
         max_corner = self.car.max_corner * 32.17 * 12 # to in/s^2
 
-        n = len(segment.arcs)
+        n = len(segment.arcs * self.sims_per_arc)
 
         rads.append(rads[-1])
         lens.append(lens[-1])
-
-        print(f"rads: {len(rads)}")
-        print(f"lens: {len(lens)}")
 
         t_vels = np.sqrt(max_corner * np.array(rads))
 
@@ -141,7 +137,7 @@ class Validation_Track():
             # calculate time between nodes by averaging the velocities of the nodes at the start and end of the selected time frame
             t += lens[int(i)] / np.average([v3[i], v3[i + 1]])
             lapsim_data_storage.time_array.append(t)
-        print(f"Time: {t} seconds")
+        # print(f"Time: {t} seconds")
 
         lapsim_data_storage.infect_force_thetas()
         lapsim_data_storage.round_all_arrays(decimals=3)
