@@ -93,10 +93,6 @@ class Validation:
 
         # Finds the simulation point that happens BEFORE the data node. Returns the index
         def find_sim_node_index(self, distance_along_arc, sims_per_arc):
-
-            if distance_along_arc == 118.3858907:
-                pass
-
             distance = 0
             count = 0
             while distance < distance_along_arc:
@@ -172,10 +168,6 @@ class Validation:
                     data_node.distance_since_arc_start = data_node.distance_along_segment - self.arcs[arc_index].distance_along_segment
                 else:
                     data_node.distance_since_arc_start = data_node.arc.length
-
-            for data_node in self.data_nodes:
-                if data_node.distance_along_segment > data_node.arc.segment.distance_travelled:
-                    print(f"OVER")
 
     arcs = [] # The curves between every single point
     segments = [] # Collections of arcs. This is "good" data. Only contains a segment where there is both velocity and spline data.
@@ -465,7 +457,6 @@ class Validation:
 
                 return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
 
-
     def graph(self, graph_type:DataType):
 
         tk = tkinter.Tk()
@@ -504,8 +495,8 @@ class Validation:
                 ax.plot(len_RI_r, self.RI_dis_real, label='real_RI')
             case self.DataType.RPM:
                 # Plot both sim and real RPM
-                len_rpm = np.linspace(0, len(self.rpm_sim), len(self.rpm_sim))
-                len_rpm_r = np.linspace(0, len(self.rpm_real), len(self.rpm_real))
+                len_rpm = np.arange(0, len(self.rpm_sim))
+                len_rpm_r = np.linspace(0, len(self.rpm_real))
                 ax.plot(len_rpm, self.rpm_sim, label='rpm_sim')
                 ax.plot(len_rpm_r, self.rpm_real, label='rpm_real')
         ax.legend()
@@ -584,7 +575,6 @@ class Validation:
             for arc_index, arc in enumerate(segment.arcs):
                 # print(f"data nodes in arc: {arc.data_nodes}")
                 for data_index, data_node in enumerate(arc.data_nodes):
-                    # TODO: Implement using multiple collection points along arc when arc length data is more accurate.
                     # print(f"Arc length: {arc.length}")
                     # print(f"data node distance along arc: {data_node.distance_since_arc_start}")
                     self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
@@ -612,7 +602,6 @@ class Validation:
             # Store time only once per segment, since only the time from the beginning to the end of the segment is collected.
             self.time_sim.append(self.lerped_data[seg_index].time_array[0])
             self.time_real.append(segment.time)
-            print(self.time_real)
             self.time_error.append(((self.time_sim[-1] - self.time_real[-1])/self.time_real[-1])*100 if self.time_real[-1] != 0 else None)
             for data_index, data_node in enumerate(segment.data_nodes):
                 # Segment ID
@@ -654,7 +643,7 @@ class Validation:
                 self.RI_dis_real.append(data_node.rear_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_right_dis)
                 self.RI_dis_error.append(rear_inner_error)
                 # rpm
-                print(self.lerped_data[seg_index].rpm[data_index])
+                print(f"{data_node.rpm}")
                 rpm_err = ((self.lerped_data[seg_index].rpm[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
                 self.rpm_sim.append(self.lerped_data[seg_index].rpm[data_index])
                 self.rpm_real.append(data_node.rpm)
@@ -671,6 +660,7 @@ class Validation:
         average_FI_dis_error = round(get_average_error(self.FI_dis_error), 1) if self.FI_dis_error else None
         average_RI_dis_error = round(get_average_error(self.RI_dis_error), 1) if self.RI_dis_error else None
 
+        # Remove unrealistically large RPM
         for index, error in enumerate(self.rpm_error):
             if error is not None and error > 100000:
                 self.rpm_error[index] = None
@@ -709,6 +699,6 @@ class Validation:
 validator = Validation()
 validator.run_validation(2)
 
-# data_type = validator.DataType.FO
-# print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
-# validator.graph(data_type)
+data_type = validator.DataType.RPM
+print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
+validator.graph(data_type)
