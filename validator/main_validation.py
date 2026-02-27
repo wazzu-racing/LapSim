@@ -580,29 +580,13 @@ class Validation:
             self.lerped_data.append(LapSimData())
             self.lerped_data[-1].initialize(len(segment.data_nodes))
             self.lerped_data[-1].time_array[0] = self.lapsim_data[seg_index].time_array[-1] # Store time var
-            print(f"arcs: {len(segment.arcs)}")
+            # print(f"arcs: {len(segment.arcs)}")
             for arc_index, arc in enumerate(segment.arcs):
                 # print(f"data nodes in arc: {arc.data_nodes}")
                 for data_index, data_node in enumerate(arc.data_nodes):
-                    # print(f"\nData node {data_index}")
-                    # print(f"distance_since_arc_start: {data_node.distance_since_arc_start}")
-                    # print(f"arc.length: {data_node.arc.length}")
-                    # self.lerped_data[-1].AX[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AX[arc_index], self.lapsim_data[seg_index].AX[arc_index+1])
-                    # self.lerped_data[-1].AY[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].AY[arc_index], self.lapsim_data[seg_index].AY[arc_index+1])
-                    # self.lerped_data[-1].front_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index], self.lapsim_data[seg_index].front_outer_displacement[arc_index+1])
-                    # self.lerped_data[-1].rear_outer_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index], self.lapsim_data[seg_index].rear_outer_displacement[arc_index+1])
-                    # self.lerped_data[-1].front_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index], self.lapsim_data[seg_index].front_inner_displacement[arc_index+1])
-                    # self.lerped_data[-1].rear_inner_displacement[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rear_inner_displacement[arc_index], self.lapsim_data[seg_index].rear_inner_displacement[arc_index+1])
-                    # self.lerped_data[-1].rpm[count] = lerp(data_node.distance_since_arc_start/data_node.arc.length, 0, 1, self.lapsim_data[seg_index].rpm[arc_index], self.lapsim_data[seg_index].rpm[arc_index+1])
-                    # count += 1
-
                     # TODO: Implement using multiple collection points along arc when arc length data is more accurate.
-                    print(f"Arc length: {arc.length}")
-                    print(f"data node distance along arc: {data_node.distance_since_arc_start}")
-                    # print(f"starting len distance along arc: {arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) * arc.length/sims_per_arc}")
-                    # print(f"ending len distance along arc: {(arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)+1) * arc.length/sims_per_arc}")
-                    # print(f"count {arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)} of {len(self.lapsim_data[seg_index].AY)}")
-                    # print(f"base count {arc_index*sims_per_arc}")
+                    # print(f"Arc length: {arc.length}")
+                    # print(f"data node distance along arc: {data_node.distance_since_arc_start}")
                     self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].front_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
@@ -670,6 +654,7 @@ class Validation:
                 self.RI_dis_real.append(data_node.rear_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_right_dis)
                 self.RI_dis_error.append(rear_inner_error)
                 # rpm
+                print(self.lerped_data[seg_index].rpm[data_index])
                 rpm_err = ((self.lerped_data[seg_index].rpm[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
                 self.rpm_sim.append(self.lerped_data[seg_index].rpm[data_index])
                 self.rpm_real.append(data_node.rpm)
@@ -685,6 +670,10 @@ class Validation:
         average_RO_dis_error = round(get_average_error(self.RO_dis_error), 1) if self.RO_dis_error else None
         average_FI_dis_error = round(get_average_error(self.FI_dis_error), 1) if self.FI_dis_error else None
         average_RI_dis_error = round(get_average_error(self.RI_dis_error), 1) if self.RI_dis_error else None
+
+        for index, error in enumerate(self.rpm_error):
+            if error is not None and error > 100000:
+                self.rpm_error[index] = None
         average_rpm_error = round(get_average_error(self.rpm_error), 1) if self.rpm_error else None
 
         print(f"\n---------------OVERALL REPORT---------------\nAverage Time error: {average_time_error}%\nAverage AX error: {average_AX_error}%\nAverage AY error: {average_AY_error}%\nAverage FO error: {average_FO_dis_error}%\nAverage RO error: {average_RO_dis_error}%\nAverage FI error: {average_FI_dis_error}%\nAverage RI error: {average_RI_dis_error}%\nAverage RPM error: {average_rpm_error}%")
@@ -718,9 +707,8 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
-# validator.run_rust_code()
-validator.run_validation(1)
+validator.run_validation(2)
 
-data_type = validator.DataType.FO
-print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
-validator.graph(data_type)
+# data_type = validator.DataType.FO
+# print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
+# validator.graph(data_type)
