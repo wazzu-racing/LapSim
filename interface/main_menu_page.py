@@ -37,7 +37,7 @@ class PageStack(tkinter.Tk):
         self.geometry("1000x600")
         self.configure(bg="Black")
         # Set logo
-        image = ImageTk.PhotoImage(Image.open(file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "Images", "logo.png"))))
+        image = ImageTk.PhotoImage(Image.open(file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "Images", "wazzu_racing_logo.PNG"))))
         self.iconphoto(False, str(image))
 
         # Create a container frame for each page
