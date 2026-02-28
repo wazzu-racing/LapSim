@@ -200,6 +200,7 @@ class Validation:
             arc.end_x = float(line[9])
             arc.end_y = float(line[10])
             arc.length = float(line[11])
+            arc.turn = self.Arc.Turn.LEFT if line[12] == "left" else self.Arc.Turn.RIGHT
 
             self.arcs.append(arc)
 
@@ -695,8 +696,8 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
-validator.run_validation(2)
+validator.run_validation(50)
 
-data_type = validator.DataType.RPM
+data_type = validator.DataType.FO
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
 validator.graph(data_type)
