@@ -36,6 +36,41 @@ pub struct Arc {
     pub end_y: f64,       // Ending point y coordinate
 }
 
+impl Arc {
+    /// Get the direction that the arc turns (i.e. left / right)
+    pub fn turn_direction(&self) -> Direction {
+        // determine angle; positive is counterclockwise, negative is clockwise
+        let angle = self.end_angle - self.start_angle;
+
+        if angle > 0.0 {
+            // Counterclockwise - aka left
+            Direction::Left
+        } else if angle < 0.0 {
+            // Clockwise - aka right
+            Direction::Right
+        } else {
+            // Why is angle 0?? Makes no sense, but return right anyway
+            Direction::Right
+        }
+    }
+}
+
+impl ToString for Direction {
+    fn to_string(&self) -> String {
+        match &self {
+            Direction::Left => String::from("left"),
+            Direction::Right => String::from("right"),
+        }
+    }
+}
+
+/// Which direction an arc turns
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum Direction {
+    Left,
+    Right,
+}
+
 /// Maps an arc to its corresponding original GPS points with telemetry data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArcWithPoints {

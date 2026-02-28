@@ -345,6 +345,11 @@ pub fn plot_arcs(
                 y_arc.push(y);
             }
 
+            let arc_trace_hover: Vec<String> = (0..num_arc_points)
+                .into_iter()
+                .map(|_| format!("Direction {}", arc.turn_direction().to_string()))
+                .collect();
+
             let arc_trace = Scatter::new(x_arc, y_arc)
                 .mode(Mode::Lines)
                 .name(format!(
@@ -354,6 +359,8 @@ pub fn plot_arcs(
                     arc.radius
                 ))
                 .line(Line::new().width(3.0).color(color))
+                .text_array(arc_trace_hover)
+                .hover_info(plotly::common::HoverInfo::Text)
                 .web_gl_mode(true);
 
             plot.add_trace(arc_trace);

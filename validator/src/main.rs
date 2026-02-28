@@ -442,7 +442,7 @@ fn export_arcs(segments: &[TrackSegment], path: &str) -> std::io::Result<()> {
     let mut file = File::create(path)?;
     writeln!(
         file,
-        "segment_id,arc_id,center_x_m,center_y_m,radius_m,start_angle_rad,end_angle_rad,start_x_m,start_y_m,end_x_m,end_y_m,arc_length_m"
+        "segment_id,arc_id,center_x_m,center_y_m,radius_m,start_angle_rad,end_angle_rad,start_x_m,start_y_m,end_x_m,end_y_m,arc_length_m,direction"
     )?;
 
     for (seg_idx, segment) in segments.iter().enumerate() {
@@ -456,7 +456,7 @@ fn export_arcs(segments: &[TrackSegment], path: &str) -> std::io::Result<()> {
 
             writeln!(
                 file,
-                "{},{},{:.6},{:.6},{:.3},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.3}",
+                "{},{},{:.6},{:.6},{:.3},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.3},{}",
                 seg_idx + 1,
                 arc_idx + 1,
                 arc.center_x,
@@ -468,7 +468,8 @@ fn export_arcs(segments: &[TrackSegment], path: &str) -> std::io::Result<()> {
                 arc.start_y,
                 arc.end_x,
                 arc.end_y,
-                arc_length
+                arc_length,
+                arc.turn_direction().to_string()
             )?;
         }
     }
