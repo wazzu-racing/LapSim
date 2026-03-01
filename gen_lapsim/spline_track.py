@@ -624,7 +624,6 @@ class curve():
         for i in range(0, self.elem):
             rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy_n[i] - self.dy[i] * self.ddx_n[i]))
             len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
-            print((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
 
         return(len, rad)
 

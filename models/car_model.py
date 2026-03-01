@@ -221,9 +221,7 @@ class Car:
             applied force.
 
             :param A_engn: Engine force applied to the wheels (lbs)
-            :param b: Length from the rear track to the COG (in)
             :param t_r: Rear track length (in)
-            :param I_car: Moment of inertia of the car (lb * ft * s^2)
             :param W_car: Weight of the car (lbs)
             :return: None
             """
@@ -431,15 +429,15 @@ class Car:
             print(f"total_aligning_torque: {total_aligning_torque} inch pounds")
 
         return self.Car_Data_Snippet(AX=self.net_axial_accel, AY=self.net_lat_accel, velocity=velocity, torque=total_torque_about_z,
-             car_body_angle=car_angle, theta_accel=0, angular_accel=angular_acceleration, radius=r,
-             FO_load=self.FO_load, RO_load=self.RO_load, FI_load=self.FI_load, RI_load=self.RI_load,
-             front_inner_displacement=self.front_inner_displacement, front_outer_displacement=self.front_outer_displacement,
-             rear_outer_displacement=self.rear_outer_displacement, rear_inner_displacement=self.rear_inner_displacement,
-             FO_camber=self.FO_camber, RI_camber=self.RI_camber, FI_camber=self.FI_camber, RO_camber=self.RO_camber,
-             FO_FY=self.FO_FY, RI_FY=self.RI_FY, FI_FY=self.FI_FY, RO_FY=self.RO_FY,
-             FO_FX=self.FO_FX, RI_FX=self.RI_FX, FI_FX=self.FI_FX, RO_FX=self.RO_FX,
-             FI_slip=FI_slip_angle, RI_slip=RI_slip_angle, FO_slip=FO_slip_angle, RO_slip=RO_slip_angle
-             ,roll=roll, aligning_torque=total_aligning_torque, steer_angle=steer_angle)
+                                     car_body_angle=car_angle, theta_accel=0, angular_accel=angular_acceleration, radius=r,
+                                     FO_load=self.FO_load, RO_load=self.RO_load, FI_load=self.FI_load, RI_load=self.RI_load,
+                                     front_inner_displacement=self.front_inner_displacement, front_outer_displacement=self.front_outer_displacement,
+                                     rear_outer_displacement=self.rear_outer_displacement, rear_inner_displacement=self.rear_inner_displacement,
+                                     FO_camber=self.FO_camber, RI_camber=self.RI_camber, FI_camber=self.FI_camber, RO_camber=self.RO_camber,
+                                     FO_FY=self.FO_FY, RI_FY=self.RI_FY, FI_FY=self.FI_FY, RO_FY=self.RO_FY,
+                                     FO_FX=self.FO_FX, RI_FX=self.RI_FX, FI_FX=self.FI_FX, RO_FX=self.RO_FX,
+                                     FI_slip=FI_slip_angle, RI_slip=RI_slip_angle, FO_slip=FO_slip_angle, RO_slip=RO_slip_angle
+                                     ,roll=roll, aligning_torque=total_aligning_torque, steer_angle=steer_angle)
 
     def find_accurate_accel(self, radius, car_angle, braking=False, print_info = False, print_every_iteration = False):
         """
@@ -482,15 +480,15 @@ class Car:
             print(f"iterations: {iterations}")
 
         return self.Car_Data_Snippet(AX=output_AX, AY=output_AY, torque=torque, car_body_angle=car_angle, theta_accel=0,
-             velocity=accel.velocity, angular_accel=accel.angular_accel, radius=radius,
-             FO_load=accel.FO_load, RO_load=accel.RO_load, FI_load=accel.FI_load, RI_load=accel.RI_load,
-             front_inner_displacement=accel.front_inner_displacement, front_outer_displacement=accel.front_outer_displacement,
-             rear_outer_displacement=accel.rear_outer_displacement, rear_inner_displacement=accel.rear_inner_displacement,
-             FO_camber=accel.FO_camber, RI_camber=accel.RI_camber, FI_camber=accel.FI_camber, RO_camber=accel.RO_camber,
-             FO_FY=accel.FO_FY, RI_FY=accel.RI_FY, FI_FY=accel.FI_FY, RO_FY=accel.RO_FY,
-             FO_FX=accel.FO_FX, RI_FX=accel.RI_FX, FI_FX=accel.FI_FX, RO_FX=accel.RO_FX,
-             FI_slip=accel.FI_slip, RI_slip=accel.RI_slip, FO_slip=accel.FO_slip, RO_slip=accel.RO_slip
-             ,roll=accel.roll, aligning_torque=accel.aligning_torque, steer_angle=accel.steer_angle)
+                                     velocity=accel.velocity, angular_accel=accel.angular_accel, radius=radius,
+                                     FO_load=accel.FO_load, RO_load=accel.RO_load, FI_load=accel.FI_load, RI_load=accel.RI_load,
+                                     front_inner_displacement=accel.front_inner_displacement, front_outer_displacement=accel.front_outer_displacement,
+                                     rear_outer_displacement=accel.rear_outer_displacement, rear_inner_displacement=accel.rear_inner_displacement,
+                                     FO_camber=accel.FO_camber, RI_camber=accel.RI_camber, FI_camber=accel.FI_camber, RO_camber=accel.RO_camber,
+                                     FO_FY=accel.FO_FY, RI_FY=accel.RI_FY, FI_FY=accel.FI_FY, RO_FY=accel.RO_FY,
+                                     FO_FX=accel.FO_FX, RI_FX=accel.RI_FX, FI_FX=accel.FI_FX, RO_FX=accel.RO_FX,
+                                     FI_slip=accel.FI_slip, RI_slip=accel.RI_slip, FO_slip=accel.FO_slip, RO_slip=accel.RO_slip
+                                     ,roll=accel.roll, aligning_torque=accel.aligning_torque, steer_angle=accel.steer_angle)
 
     def create_accel_2D_array(self, n:int=20, print_info = False):
         """
@@ -711,15 +709,15 @@ class Car:
         # print(int(v*0.056818181818182*10))
 
         car_data_snippet = self.Car_Data_Snippet(AX=A_tire, AY=AY, torque=car_data_snippet.torque, theta_accel=0,
-         car_body_angle=self.car_angle_array[car_angle_array_index-1], radius=r, velocity=v, angular_accel=car_data_snippet.angular_accel,
-         FO_load=car_data_snippet.FO_load, RO_load=car_data_snippet.RO_load, FI_load=car_data_snippet.FI_load, RI_load=car_data_snippet.RI_load,
-         front_inner_displacement=car_data_snippet.front_inner_displacement, front_outer_displacement=car_data_snippet.front_outer_displacement,
-         rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
-         FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
-         FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
-         FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
-         FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
-         ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.powertrain.rpm[int(v*0.056818181818182*10)] if int(v*0.056818181818182*10) < 700 else -1)
+                                                 car_body_angle=self.car_angle_array[car_angle_array_index-1], radius=r, velocity=v, angular_accel=car_data_snippet.angular_accel,
+                                                 FO_load=car_data_snippet.FO_load, RO_load=car_data_snippet.RO_load, FI_load=car_data_snippet.FI_load, RI_load=car_data_snippet.RI_load,
+                                                 front_inner_displacement=car_data_snippet.front_inner_displacement, front_outer_displacement=car_data_snippet.front_outer_displacement,
+                                                 rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
+                                                 FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
+                                                 FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
+                                                 FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
+                                                 FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
+                                                 ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.powertrain.rpm[int(v*0.056818181818182*10)] if int(v*0.056818181818182*10) < 700 else -1)
 
         # bias_ratio = (self.powertrain.sprocket_T[int(v * 0.056818181818182 * 10)] - car_data_snippet.RI_FX * 9) / self.powertrain.sprocket_T[int(v * 0.056818181818182 * 10)]
         # print(bias_ratio)
@@ -1203,49 +1201,49 @@ class points:
     def __init__ (self):
         self.nds = []
 
-# def create_track_pickle(txt_path, pkl_path, is_autocross):
-#     points_arr = [np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType())]
-#
-#     arr_done_index = 0
-#
-#     with open(txt_path, "r") as f:
-#         content = f.read()
-#     curr_num = ""
-#     writing = False
-#     for char in content:
-#         if char == '[':
-#             writing = True
-#         elif char == ']' and writing:
-#             points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
-#             curr_num = ""
-#             arr_done_index += 1
-#             writing = False
-#         elif char == ',' and writing:
-#             points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
-#             curr_num = ""
-#         elif char != " " and writing:
-#             curr_num += char
-#
-#     points_x = points_arr[0].astype(float)
-#     points_y = points_arr[1].astype(float)
-#     points_x2 = points_arr[2].astype(float)
-#     points_y2 = points_arr[3].astype(float)
-#
-#     track = points()
-#
-#     rang = 97 if is_autocross else 129
-#     for i in range(rang):
-#         n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
-#         track.nds.append(n)
-#
-#     with open(pkl_path, "wb") as f:
-#         pickle.dump(track, f)
-#
-#     print("created!")
-#
-# create_track_pickle("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/Points for Autocross.rtf",
-#                     "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/autocross_trk_points.pkl",
-#                     True)
+        # def create_track_pickle(txt_path, pkl_path, is_autocross):
+        #     points_arr = [np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType()), np.array([], dtype=np.dtypes.StringDType())]
+        #
+        #     arr_done_index = 0
+        #
+        #     with open(txt_path, "r") as f:
+        #         content = f.read()
+        #     curr_num = ""
+        #     writing = False
+        #     for char in content:
+        #         if char == '[':
+        #             writing = True
+        #         elif char == ']' and writing:
+        #             points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
+        #             curr_num = ""
+        #             arr_done_index += 1
+        #             writing = False
+        #         elif char == ',' and writing:
+        #             points_arr[arr_done_index] = np.append(points_arr[arr_done_index], curr_num)
+        #             curr_num = ""
+        #         elif char != " " and writing:
+        #             curr_num += char
+        #
+        #     points_x = points_arr[0].astype(float)
+        #     points_y = points_arr[1].astype(float)
+        #     points_x2 = points_arr[2].astype(float)
+        #     points_y2 = points_arr[3].astype(float)
+        #
+        #     track = points()
+        #
+        #     rang = 97 if is_autocross else 129
+        #     for i in range(rang):
+        #         n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
+        #         track.nds.append(n)
+        #
+        #     with open(pkl_path, "wb") as f:
+        #         pickle.dump(track, f)
+        #
+        #     print("created!")
+        #
+        # create_track_pickle("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/Points for Autocross.rtf",
+        #                     "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/autocross_trk_points.pkl",
+        #                     True)
 
         # future code for accounting for tire orientation
         '''

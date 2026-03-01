@@ -167,6 +167,50 @@ class Validation:
                 else:
                     data_node.distance_since_arc_start = data_node.arc.length
 
+    # class Calculated_Data_Node:
+    #     def __init__(self, car, FO_dis, RO_dis, FI_dis, RI_dis):
+    #         self.car = car
+    #         self.FO_dis = FO_dis
+    #         self.RO_dis = RO_dis
+    #         self.FI_dis = FI_dis
+    #         self.RI_dis = RI_dis
+    #
+    #         self.do_calcs()
+    #
+    #     FO_dis: float = 0
+    #     RO_dis: float = 0
+    #     FI_dis: float = 0
+    #     RI_dis: float = 0
+    #     FO_load : float = 0
+    #     RO_load : float = 0
+    #     FI_load : float = 0
+    #     RI_load : float = 0
+    #     FO_FY: float = 0
+    #     RO_FY: float = 0
+    #     FI_FY: float = 0
+    #     RI_FY: float = 0
+    #     FO_FX: float = 0
+    #     RO_FX: float = 0
+    #     FI_FX: float = 0
+    #     RI_FX: float = 0
+    #     AX: float = 0
+    #     AY: float = 0
+    #
+    #     def do_calcs(self):
+    #         self.calculate_loads()
+    #
+    #     def calculate_loads(self):
+    #         self.FO_load = self.FO_dis / self.car.K_RF
+    #         self.RO_load = self.RO_dis / self.car.K_RR
+    #         self.FI_load = self.FI_dis / self.car.K_RF
+    #         self.RI_load = self.RI_dis / self.car.K_RR
+    #
+
+        # TODO:
+        # 1. Talk to Max and get wheel displacement from shock displacement
+        # 2. Talk to Calvin and get static shock displacement numbers
+        # 3. Choose whether to validate mine or old model
+
     arcs = [] # The curves between every single point
     segments = [] # Collections of arcs. This is "good" data. Only contains a segment where there is both velocity and spline data.
     lapsim_data = [] # Data collected by running the lapsim. Contains segments number of LapSimData objects.
@@ -696,7 +740,7 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
-validator.run_validation(50)
+validator.run_validation(1)
 
 data_type = validator.DataType.FO
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
