@@ -709,15 +709,15 @@ class Car:
         # print(int(v*0.056818181818182*10))
 
         car_data_snippet = self.Car_Data_Snippet(AX=A_tire, AY=AY, torque=car_data_snippet.torque, theta_accel=0,
-                                                 car_body_angle=self.car_angle_array[car_angle_array_index-1], radius=r, velocity=v, angular_accel=car_data_snippet.angular_accel,
-                                                 FO_load=car_data_snippet.FO_load, RO_load=car_data_snippet.RO_load, FI_load=car_data_snippet.FI_load, RI_load=car_data_snippet.RI_load,
-                                                 front_inner_displacement=car_data_snippet.front_inner_displacement, front_outer_displacement=car_data_snippet.front_outer_displacement,
-                                                 rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
-                                                 FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
-                                                 FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
-                                                 FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
-                                                 FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
-                                                 ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.powertrain.rpm[int(v*0.056818181818182*10)] if int(v*0.056818181818182*10) < 700 else -1)
+                 car_body_angle=self.car_angle_array[car_angle_array_index-1], radius=r, velocity=v, angular_accel=car_data_snippet.angular_accel,
+                 FO_load=car_data_snippet.FO_load, RO_load=car_data_snippet.RO_load, FI_load=car_data_snippet.FI_load, RI_load=car_data_snippet.RI_load,
+                 front_inner_displacement=car_data_snippet.front_inner_displacement, front_outer_displacement=car_data_snippet.front_outer_displacement,
+                 rear_outer_displacement=car_data_snippet.rear_outer_displacement, rear_inner_displacement=car_data_snippet.rear_inner_displacement,
+                 FO_camber=car_data_snippet.FO_camber, RI_camber=car_data_snippet.RI_camber, FI_camber=car_data_snippet.FI_camber, RO_camber=car_data_snippet.RO_camber,
+                 FO_FY=car_data_snippet.FO_FY, RI_FY=car_data_snippet.RI_FY, FI_FY=car_data_snippet.FI_FY, RO_FY=car_data_snippet.RO_FY,
+                 FO_FX=car_data_snippet.FO_FX, RI_FX=car_data_snippet.RI_FX, FI_FX=car_data_snippet.FI_FX, RO_FX=car_data_snippet.RO_FX,
+                 FI_slip=car_data_snippet.FI_slip, RI_slip=car_data_snippet.RI_slip, FO_slip=car_data_snippet.FO_slip, RO_slip=car_data_snippet.RO_slip
+                 ,roll=car_data_snippet.roll, aligning_torque=car_data_snippet.aligning_torque, rpm=self.powertrain.rpm[int(v*0.056818181818182*10)] if int(v*0.056818181818182*10) < 700 else -1)
 
         # bias_ratio = (self.powertrain.sprocket_T[int(v * 0.056818181818182 * 10)] - car_data_snippet.RI_FX * 9) / self.powertrain.sprocket_T[int(v * 0.056818181818182 * 10)]
         # print(bias_ratio)

@@ -485,7 +485,7 @@ class curve():
         LEFT = 0
         RIGHT = 1
 
-    def __init__(self, n1, n2, elem = 50):
+    def __init__(self, n1, n2, elem = 10):
         self.n1 = n1
         self.n2 = n2
         self.elem = elem
@@ -843,7 +843,7 @@ class track():
                     y_array.append(y)
                     turn_array.append(turn)
 
-        points = []
+        points, start_vel_pts = [], []
         for index in range(len(x_array)):
             points.append((x_array[index], y_array[index]))
             # track_subplot.plot(x_array[index], y_array[index], marker='o', color="Green" if turn_array[index] == curve.Turn.RIGHT else "red", markersize=1) # Uncomment to visually see left and right turns along track

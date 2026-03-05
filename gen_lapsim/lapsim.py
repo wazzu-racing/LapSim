@@ -16,6 +16,7 @@ class LapSimData:
         # Arrays for lateral and axial acceleration of car
         self.AY = [] # Positive AY is turning right, negative AY is turning left.
         self.AX = []
+        self.velocity = []
         # Radii
         self.radii = []
         #Array for car body angle
@@ -81,6 +82,7 @@ class LapSimData:
         # Collect lateral and axial acceleration
         self.AX = np.zeros(int(n + 1))
         self.AY = np.zeros(int(n + 1))
+        self.velocity = np.zeros(int(n + 1))
         #Radii
         self.radii = np.zeros(int(n + 1))
         # Collect car body angle
@@ -139,6 +141,7 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX[index] = car_data_snippet.AX
         self.AY[index] = car_data_snippet.AY
+        self.velocity[index] = car_data_snippet.velocity
 
         #Radii
         self.radii[index] = car_data_snippet.radius
@@ -238,6 +241,7 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX = np.round(np.array(self.AX), decimals=decimals)
         self.AY = np.round(np.array(self.AY), decimals=decimals)
+        self.velocity = np.round(np.array(self.velocity), decimals=decimals)
 
         # radii
         self.radii = np.round(np.array(self.radii), decimals=decimals)
@@ -293,6 +297,51 @@ class LapSimData:
 
         #Engine/drivetrain
         self.rpm = np.round(np.array(self.rpm), decimals=decimals)
+
+    def do_stuff(self, nd_rad, dx):
+        self.straight_start_indices, self.start_vels = [], []
+        self.index_arr, total_index = [], 0
+        self.min_radius = 900
+        self.min_length = 8
+        streak = 0
+        lengths, length_index = [], -1
+        one_length = False
+        for index, rad in enumerate(nd_rad):
+            if rad > self.min_radius:
+                if not one_length:
+                    # Remove the last array of lengths if it was not large enough.
+                    if streak < self.min_length and lengths:
+                        lengths.pop()
+                        for _ in range(streak):
+                            self.index_arr.pop()
+                        length_index -= 1
+                        self.straight_start_indices.pop()
+                        self.start_vels.pop()
+                    else:
+                        print(streak)
+
+                    length_index += 1
+                    lengths.append([])
+                    lengths[length_index].append(dx)
+                    self.straight_start_indices.append(index)
+                    self.start_vels.append(self.velocity[index])
+                    one_length = True
+                    streak = 1
+                else:
+                    lengths[length_index].append(dx)
+                    streak+=1
+
+                # Deal with total index stuff
+                self.index_arr.append(total_index)
+
+            else:
+                one_length = False
+
+            total_index += 1
+
+        print(self.start_vels)
+        print(f"Average starting vel: {np.average(self.start_vels)}")
+        print(f"Max starting vel: {np.max(self.start_vels)}")
 
     def print_index_of_data(self, index):
         if index > len(self.AX)-1 or index < 0:
@@ -482,8 +531,6 @@ class four_wheel:
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
-        # for v in v3:
-        #     print(v)
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
@@ -499,6 +546,8 @@ class four_wheel:
         if self.validating:
             for i in range(len(self.nturn_dirs)):
                 self.lapsim_data_storage.AY[i] = abs(self.lapsim_data_storage.AY[i])
+
+        self.lapsim_data_storage.do_stuff(self.nd_rad, dx)
 
         self.dx = dx
         self.n = n

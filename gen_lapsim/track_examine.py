@@ -9,7 +9,7 @@ from matplotlib.figure import Figure
 
 from gen_lapsim.spline_track import track
 
-class get_lengths:
+class Get_Straights:
     def parse_text_to_track_pkl(self, txt_path):
         """
         Parses data from a .rtf text file to create a track object in pickle format.
@@ -144,5 +144,5 @@ class get_lengths:
         self.display()
 
 
-getL = get_lengths()
+getL = Get_Straights()
 getL.run()

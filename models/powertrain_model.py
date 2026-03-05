@@ -4,7 +4,7 @@ import csv
 
 class Powertrain:
     
-    def __init__(self, final_drive = 4.8, engine_data = ""):
+    def __init__(self, final_drive = 4, engine_data = ""):
         self.engn_rpm = [] # engine crankshaft rpm
         self.hp = [] # horsepower
         self.engn_T = [] # Torque supplied from engine (ft*lb)
@@ -34,7 +34,7 @@ class Powertrain:
         with open(engine_data, newline='') as dat_file:
             reader = csv.reader(dat_file, delimiter=delim)
 
-            # appending data to engn_rpm, hp, and axl_T lists
+            # appending data to engn_rpm, hp, and sprocket_T lists
             i = 0
             for line in reader:
                 if i >= 1: # skipping first line
@@ -49,7 +49,7 @@ class Powertrain:
         
         self.speed = []
         previous_gear = 0
-        for i in range(0, 700):
+        for i in range(0, 900):
             self.speed.append(i/10) # mph
             wheel_rpm = self.speed[-1] * 88 / self.circumfrence # multiplies speed by 88 to convert from mph to ft/min
             best_gear = previous_gear
@@ -61,8 +61,8 @@ class Powertrain:
                 rpm = wheel_rpm * self.full_ratios[j] # engine rpm
                 pwr = self.get_engn_pwr(rpm) # power output of engine
                 engn_T = self.get_engn_T(rpm) # torque output of engine
-                axl_T = engn_T * self.full_ratios[j] # torque delivered to axle
-                self.gear_T[j].append(axl_T)
+                sprocket_T = engn_T * self.full_ratios[j] # torque delivered to axle
+                self.gear_T[j].append(sprocket_T)
                 if (pwr > max_pwr) and (j >= previous_gear):
                     max_pwr = pwr
                     best_gear = j
@@ -73,6 +73,7 @@ class Powertrain:
             self.sprocket_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
             self.axl_pwr.append(self.get_engn_pwr(best_rpm)) # power delivered to axel with most effecient gear (index = mph*10)
             self.rpm.append(best_rpm)
+            print(self.rpm[-1])
 
     def get_engn_pwr(self, rpm):
         if rpm <= self.engn_rpm[0]:
@@ -122,7 +123,7 @@ class Powertrain:
         plt.grid()
         plt.show()
 
-# train = drivetrain()
+train = Powertrain(engine_data="/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/engine_array.csv")
 # x = train.engn_rpm
 # y = []
 # for i in x:

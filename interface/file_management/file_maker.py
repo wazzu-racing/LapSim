@@ -27,7 +27,7 @@ class FileMaker:
             return
 
         # Create pickle files that store the nodes of the autocross and endurance tracks using .rtf files.
-        self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Autocross.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
+        self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Auto_Points_25.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
         self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Endurance.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "endurance_trk_points.pkl")), is_autocross=False)
 
         # Create folder directories in user's Documents folder.
@@ -169,7 +169,7 @@ class FileMaker:
 
         track = self.points()
 
-        rang = 97 if is_autocross else 129
+        rang = 98 if is_autocross else 129
         for i in range(rang):
             n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
             track.nds.append(n)
