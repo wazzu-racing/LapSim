@@ -298,51 +298,6 @@ class LapSimData:
         #Engine/drivetrain
         self.rpm = np.round(np.array(self.rpm), decimals=decimals)
 
-    def do_stuff(self, nd_rad, dx):
-        self.straight_start_indices, self.start_vels = [], []
-        self.index_arr, total_index = [], 0
-        self.min_radius = 900
-        self.min_length = 8
-        streak = 0
-        lengths, length_index = [], -1
-        one_length = False
-        for index, rad in enumerate(nd_rad):
-            if rad > self.min_radius:
-                if not one_length:
-                    # Remove the last array of lengths if it was not large enough.
-                    if streak < self.min_length and lengths:
-                        lengths.pop()
-                        for _ in range(streak):
-                            self.index_arr.pop()
-                        length_index -= 1
-                        self.straight_start_indices.pop()
-                        self.start_vels.pop()
-                    else:
-                        print(streak)
-
-                    length_index += 1
-                    lengths.append([])
-                    lengths[length_index].append(dx)
-                    self.straight_start_indices.append(index)
-                    self.start_vels.append(self.velocity[index])
-                    one_length = True
-                    streak = 1
-                else:
-                    lengths[length_index].append(dx)
-                    streak+=1
-
-                # Deal with total index stuff
-                self.index_arr.append(total_index)
-
-            else:
-                one_length = False
-
-            total_index += 1
-
-        # print(self.start_vels)
-        # print(f"Average starting vel: {np.average(self.start_vels)}")
-        # print(f"Max starting vel: {np.max(self.start_vels)}")
-
     def print_index_of_data(self, index):
         if index > len(self.AX)-1 or index < 0:
             return
@@ -521,6 +476,7 @@ class four_wheel:
                 # print(f"{int(i)} rad {self.nd_rad[int(i)]}")
                 # print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)] * 180/math.pi}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
 
+            print(f"velocity: {self.lapsim_data_storage.velocity[i]}")
             self.lapsim_data_storage.total_distance[int(i)] = dx * i
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
