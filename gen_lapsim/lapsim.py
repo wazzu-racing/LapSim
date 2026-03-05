@@ -339,9 +339,9 @@ class LapSimData:
 
             total_index += 1
 
-        print(self.start_vels)
-        print(f"Average starting vel: {np.average(self.start_vels)}")
-        print(f"Max starting vel: {np.max(self.start_vels)}")
+        # print(self.start_vels)
+        # print(f"Average starting vel: {np.average(self.start_vels)}")
+        # print(f"Max starting vel: {np.max(self.start_vels)}")
 
     def print_index_of_data(self, index):
         if index > len(self.AX)-1 or index < 0:
