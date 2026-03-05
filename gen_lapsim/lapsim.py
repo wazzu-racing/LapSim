@@ -16,6 +16,8 @@ class LapSimData:
         # Arrays for lateral and axial acceleration of car
         self.AY = [] # Positive AY is turning right, negative AY is turning left.
         self.AX = []
+        # Radii
+        self.radii = []
         #Array for car body angle
         self.car_body_angle = []
         # Arrays for slip angle for each tire
@@ -79,6 +81,8 @@ class LapSimData:
         # Collect lateral and axial acceleration
         self.AX = np.zeros(int(n + 1))
         self.AY = np.zeros(int(n + 1))
+        #Radii
+        self.radii = np.zeros(int(n + 1))
         # Collect car body angle
         self.car_body_angle = np.zeros(int(n + 1))
         # Arrays for slip angles for each tire
@@ -135,6 +139,9 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX[index] = car_data_snippet.AX
         self.AY[index] = car_data_snippet.AY
+
+        #Radii
+        self.radii[index] = car_data_snippet.radius
 
         # Collect car body angle
         self.car_body_angle[index] = car_data_snippet.car_body_angle
@@ -231,6 +238,9 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX = np.round(np.array(self.AX), decimals=decimals)
         self.AY = np.round(np.array(self.AY), decimals=decimals)
+
+        # radii
+        self.radii = np.round(np.array(self.radii), decimals=decimals)
 
         # Car body angle
         self.car_body_angle = np.round(np.array(self.car_body_angle), decimals=decimals)

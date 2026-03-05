@@ -6,6 +6,7 @@ from display_trk import DisplayTrack
 from interface.file_management.file_manager import file_manager
 from gen_lapsim.spline_track import LapSimUI
 
+
 class ImportTrackPage(tkinter.Frame):
 
     def __init__(self, parent, controller):

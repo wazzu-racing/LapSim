@@ -177,26 +177,14 @@ class FileMaker:
         with open(pkl_path, "wb") as f:
             pickle.dump(track, f)
 
+        # with open(pkl_path, "rb") as f:
+        #     points = pickle.load(f)
+        #     lapData = LapData(points)
+        #
+        # with open(pkl_path, "wb") as f:
+        #     pickle.dump(lapData, f)
+
 # FileMaker object used throughout the program. (think of as a singleton.)
 file_maker = FileMaker()
 
-# racecar = Car()
-#
-# print(f"Total runtime: {racecar.end - racecar.start} seconds")
-#
-# with open(file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent.parent, "config_data", "track_points", "autocross_trk_points.pkl")), "rb") as f:
-#     points_trk = pickle.load(f)
-#
-# points_x = []
-# points_y = []
-# points_x2 = []
-# points_y2 = []
-# for node in points_trk.nds:
-#     points_x.append(node.x1)
-#     points_y.append(node.y1)
-#     points_x2.append(node.x2)
-#     points_y2.append(node.y2)
-#
-# track = track(points_x, points_y, points_x2, points_y2, racecar)
-# track.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
-# track.run_sim(racecar)
+# file_maker.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/Auto_Points_25.rtf", "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/auto_25.pkl", True)
