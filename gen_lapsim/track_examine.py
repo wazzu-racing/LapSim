@@ -3,11 +3,13 @@ import tkinter
 import numpy as np
 import pickle
 
+from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 from gen_lapsim.spline_track import track
+from models.car_model import Car
 
 class Get_Straights:
     def parse_text_to_track_pkl(self, txt_path):
@@ -108,7 +110,7 @@ class Get_Straights:
                 print(length)
                 sum_lens.append(np.sum(length))
 
-        print(f"Average length: {np.average(sum_lens)/12} feet")
+        # print(f"Average length: {np.average(sum_lens)/12} feet")
 
     def display(self):
         track_root = tkinter.Tk() # For window of graph and viewable values
@@ -143,6 +145,30 @@ class Get_Straights:
         self.get_lens()
         self.display()
 
+    def run_accel(self):
+        self.points_x =  [0, 0, 0]
+        self.points_y =  [0, 10000, 15000]
+        self.points_x2 = [100, 100, 100]
+        self.points_y2 = [0, 10000, 15000]
+
+        trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, None)
+        trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
+
+        car = Car()
+
+        trk.run_sim(car, 5000, 0, 2)
+
+        space = np.linspace(0, 5000, 5001)
+        space = np.multiply(space, trk.sim.dx)
+
+        for index, AX in enumerate(trk.sim.lapsim_data_storage.AX):
+            print(f"AX: {AX}")
+            print(f"velocity: {trk.sim.lapsim_data_storage.velocity[index]}")
+            print(f"gear: {trk.sim.car.powertrain.gear_vel[int(trk.sim.lapsim_data_storage.velocity[index]*0.056818181818182*10) if trk.sim.lapsim_data_storage.velocity[index]*0.056818181818182*10 < 900 else 0]+1}")
+
+        plt.plot(space, trk.sim.lapsim_data_storage.velocity)
+        plt.grid()
+        plt.show()
 
 getL = Get_Straights()
-getL.run()
+getL.run_accel()
