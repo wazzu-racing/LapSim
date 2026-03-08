@@ -29,11 +29,11 @@ class DisplayTrack:
     # Saves data from lap_data.points into organized arrays.
     def initialize_notgenerated_track(self, lap_data):
         # Guard code to make sure user has given points file and car file. (should never really be activated, just a precaution)
-        if lap_data.points is not None and lap_data.car is not None:
+        if lap_data.points is not None and lap_data.Car is not None:
             # loading points
             self.points = lap_data.points
 
-            self.car = lap_data.car
+            self.car = lap_data.Car
 
             # defining different points
             try: # try-except to account for different point storage formats (this first one is the newer format)
@@ -76,7 +76,7 @@ class DisplayTrack:
         # Run lapsim and plot the track.
         def run_and_plot():
             #run sim to get data
-            self.notgenerated_trk.run_sim(car=lap_data.car, nodes=self.nodes)
+            self.notgenerated_trk.run_sim(car=lap_data.Car, nodes=self.nodes)
 
             # If no previous lap data, just plot the lap. Else, give the user a REPORT.
             if prev_lap_data is None:
@@ -93,7 +93,7 @@ class DisplayTrack:
             self.ui_instance.running_from_ungenerated_track = True
 
         # creating track object
-        self.notgenerated_trk = spln.track(self.points_x, self.points_y, self.points_x2, self.points_y2, lap_data.car)
+        self.notgenerated_trk = spln.track(self.points_x, self.points_y, self.points_x2, self.points_y2, lap_data.Car)
 
         # optimizing track
         if len(self.points_x) > 5:

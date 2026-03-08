@@ -5,7 +5,7 @@ from tkinter import filedialog
 import numpy as np
 import pickle
 
-from LapData import LapData
+from interface.LapData import LapData
 from interface.file_management.file_manager import file_manager
 
 class CarSettingsWindow:
@@ -44,8 +44,8 @@ class CarSettingsWindow:
             self.car = car
             self.car_file_path = self.car.file_location
         else:
-            self.car = lap_data.car
-            self.car_file_path = lap_data.car.file_location
+            self.car = lap_data.Car
+            self.car_file_path = lap_data.Car.file_location
 
         # Variables for each entry on screen
         self.settings = {
@@ -252,7 +252,7 @@ class CarSettingsWindow:
     # Open the window and change the variables in the window to the car currently in use.
     def open_window(self):
         if self.display_track is not None:
-            self.change_vars_to_car(self.lap_data.car)
+            self.change_vars_to_car(self.lap_data.Car)
         else:
             self.change_vars_to_car(self.car)
         self.root.deiconify() # Show the window
@@ -274,7 +274,7 @@ class CarSettingsWindow:
         prev_lap_data.car = deepcopy(self.car)
 
         self.apply_changes(save_car_file=False)
-        self.lap_data.car = self.car
+        self.lap_data.Car = self.car
         self.change_vars_to_car(self.car)
         # If the user wants to generate a REPORT, pass prev_lap_data, etc. arguments into create_and_show_notgenerated_track func
         if self.generate_report.get():

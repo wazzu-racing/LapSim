@@ -3,6 +3,7 @@ from enum import Enum
 import numpy as np
 import math
 
+from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -945,26 +946,18 @@ class track():
         for index, i in enumerate(self.arcs):
             i.compute()
 
-    def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
-        self.car = car
-
+    def plt_sim(self):
         # setup for position vs velocity plot
-        self.run_sim(car, nodes, start, end)
-        track_subplot.set_title('Simulation Results:')
-        track_subplot.set_xlabel('Position (ft)')
-        track_subplot.set_ylabel('Vehicle Speed (mph)')
-        track_subplot.grid()
-        track_subplot.plot(self.nodes, self.v3)
-        track_subplot.axis('equal')
-        track_canvas.draw()
-        track_canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
-        track_root.mainloop()
+        plt.title('Simulation Results:')
+        plt.xlabel('Position (ft)')
+        plt.ylabel('Vehicle Speed (mph)')
+        plt.grid()
+        plt.plot(self.nodes, self.v3)
+        plt.show()
     
     def refine_track(self):
         self.run_sim('single_point')
 
-        elem = 50
-        t_step = 10
         m_step = 3
         grad = np.zeros(len(self.nds))
         mag_grad = 0

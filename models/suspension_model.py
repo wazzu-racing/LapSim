@@ -210,7 +210,7 @@ def node_forces(FX, FY, FZ):
 
 
 
-car = car_model.car()
+car = car_model.Car()
 
 tc_x = np.concatenate((car.A_accel, np.flip(car.A_brake[1:-1])))
 tc_y = np.concatenate((car.AY, np.flip(car.AY[1:-1])))

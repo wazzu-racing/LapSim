@@ -1,6 +1,9 @@
+import copy
 import math
 import os
 import pickle
+from dataclasses import dataclass
+
 from matplotlib import pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -86,12 +89,14 @@ class car():
     FX_out_r = 0 # max possible axial acceleration from rear outer wheel
     FX_in_r = 0  # max possible axial acceleration from rear inner wheel
     # in, displacement of tires in vertical based on change in weight on tires. Default to 0.
-    D_1 = 0 # Front inner wheel vertical displacement in inches
-    D_2 = 0 # Front outer wheel vertical displacement in inches
-    D_3 = 0 # Rear inner wheel vertical displacement in inches
-    D_4 = 0 # Rear outer wheel vertical displacement in inches
+    front_inner_displacement = 0 # Front inner wheel vertical displacement in inches
+    front_outer_displacement = 0 # Front outer wheel vertical displacement in inches
+    rear_inner_displacement = 0 # Rear inner wheel vertical displacement in inches
+    rear_outer_displacement = 0 # Rear outer wheel vertical displacement in inches
     # degrees, theta of accel force of car
     theta_accel = 0
+
+    velocity = 0
 
     # aero csv file delimiter
     aero_delimiter = ';'
@@ -247,6 +252,101 @@ class car():
         print(time.time() - start_time)
         '''
 
+    class Car_Data_Snippet:
+        """
+        Represents the data that the car model experiences at an instance along the track.
+        """
+        def __init__(self, racecar, index):
+            # Acceleration & movement
+            self.AX = racecar.instant_AX
+            self.AY = racecar.instant_AY
+            self.velocity = racecar.velocity
+            # Tire measurements
+            self.front_outer_displacement = racecar.front_outer_displacement
+            self.front_inner_displacement = racecar.front_inner_displacement
+            self.rear_outer_displacement = racecar.rear_outer_displacement
+            self.rear_inner_displacement = racecar.rear_inner_displacement
+            self.FO_camber = racecar.C_out_f
+            self.FI_camber = racecar.C_out_f
+            self.RO_camber = racecar.C_out_f
+            self.RI_camber = racecar.C_out_f
+            # Tire forces
+            self.FO_load = racecar.W_out_f
+            self.FI_load = racecar.W_in_f
+            self.RO_load = racecar.W_out_r
+            self.RI_load = racecar.W_in_r
+            self.FO_FY = racecar.FY_out_f
+            self.FI_FY = racecar.FY_in_f
+            self.RO_FY = racecar.FY_out_r
+            self.RI_FY = racecar.FY_in_r
+            self.FO_FX = racecar.FX_out_f
+            self.FI_FX = racecar.FX_in_f
+            self.RO_FX = racecar.FX_out_r
+            self.RI_FX = racecar.FX_in_r
+
+            self.racecar = racecar
+            self.index = index
+
+        @classmethod
+        def get_interpolated_copy(cls, curr_snippet, curr_ratio, prev_ratio):
+            snippet = cls(curr_snippet.racecar, -1)
+
+            # Interpolate
+            if curr_snippet.AX > 0: # If car is accelerating
+                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].AX
+                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].AY
+                snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].velocity
+                # Tire measurements
+                snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_outer_displacement
+                snippet.front_inner_displacement = curr_ratio * curr_snippet.front_inner_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_inner_displacement
+                snippet.rear_outer_displacement = curr_ratio * curr_snippet.rear_outer_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].rear_outer_displacement
+                snippet.rear_inner_displacement = curr_ratio * curr_snippet.rear_inner_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].rear_inner_displacement
+                snippet.FO_camber = curr_ratio * curr_snippet.FO_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_camber
+                snippet.FI_camber = curr_ratio * curr_snippet.FI_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_camber
+                snippet.RO_camber = curr_ratio * curr_snippet.RO_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_camber
+                snippet.RI_camber = curr_ratio * curr_snippet.RI_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_camber
+                # Tire forces
+                snippet.FO_load = curr_ratio * curr_snippet.FO_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_load
+                snippet.FI_load = curr_ratio * curr_snippet.FI_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_load
+                snippet.RO_load = curr_ratio * curr_snippet.RO_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_load
+                snippet.RI_load = curr_ratio * curr_snippet.RI_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_load
+                snippet.FO_FY = curr_ratio * curr_snippet.FO_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_FY
+                snippet.FI_FY = curr_ratio * curr_snippet.FI_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_FY
+                snippet.RO_FY = curr_ratio * curr_snippet.RO_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_FY
+                snippet.RI_FY = curr_ratio * curr_snippet.RI_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_FY
+                snippet.FO_FX = curr_ratio * curr_snippet.FO_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_FX
+                snippet.FI_FX = curr_ratio * curr_snippet.FI_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_FX
+                snippet.RO_FX = curr_ratio * curr_snippet.RO_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_FX
+                snippet.RI_FX = curr_ratio * curr_snippet.RI_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_FX
+            else: # If car is braking
+                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].AX
+                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].AY
+                snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].velocity
+                # Tire measurements
+                snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_outer_displacement
+                snippet.front_inner_displacement = curr_ratio * curr_snippet.front_inner_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_inner_displacement
+                snippet.rear_outer_displacement = curr_ratio * curr_snippet.rear_outer_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].rear_outer_displacement
+                snippet.rear_inner_displacement = curr_ratio * curr_snippet.rear_inner_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].rear_inner_displacement
+                snippet.FO_camber = curr_ratio * curr_snippet.FO_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_camber
+                snippet.FI_camber = curr_ratio * curr_snippet.FI_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_camber
+                snippet.RO_camber = curr_ratio * curr_snippet.RO_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_camber
+                snippet.RI_camber = curr_ratio * curr_snippet.RI_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_camber
+                # Tire forces
+                snippet.FO_load = curr_ratio * curr_snippet.FO_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_load
+                snippet.FI_load = curr_ratio * curr_snippet.FI_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_load
+                snippet.RO_load = curr_ratio * curr_snippet.RO_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_load
+                snippet.RI_load = curr_ratio * curr_snippet.RI_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_load
+                snippet.FO_FY = curr_ratio * curr_snippet.FO_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_FY
+                snippet.FI_FY = curr_ratio * curr_snippet.FI_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_FY
+                snippet.RO_FY = curr_ratio * curr_snippet.RO_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_FY
+                snippet.RI_FY = curr_ratio * curr_snippet.RI_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_FY
+                snippet.FO_FX = curr_ratio * curr_snippet.FO_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_FX
+                snippet.FI_FX = curr_ratio * curr_snippet.FI_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_FX
+                snippet.RO_FX = curr_ratio * curr_snippet.RO_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_FX
+                snippet.RI_FX = curr_ratio * curr_snippet.RI_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_FX
+
+            return snippet
+
     def compute_traction(self):
         # finding max cornering (lateral) acceleration
         low_guess = 0 # low estimate for max cornering (lateral) acceleration (g)
@@ -265,228 +365,167 @@ class car():
         self.AY = np.linspace(0, self.max_corner, 100)
         self.A_accel = []
         self.A_brake = []
-        for i in self.AY:
+        self.accel_car_data_snippets = []
+        self.brake_car_data_snippets = []
+        for index, i in enumerate(self.AY):
             self.A_accel.append(self.max_accel(i))
+            self.accel_car_data_snippets.append(self.Car_Data_Snippet(self, index))
             self.A_brake.append(self.max_brake(i))
+            self.brake_car_data_snippets.append(self.Car_Data_Snippet(self, index))
         self.max_corner -= 0.0001
-        
+        # Gear changes
+        self.accel(0, 0)
+        self.static_snippet = self.Car_Data_Snippet(self, -1) # Used to describe the state of the car during gear changes
+
     # Returns true if the car can generate the axial traction based on AY and AX. Returns false otherwise.
     # AY is magnitude of lateral acceleration, AX is magnitude of axial acceleration, both are measured in g's
     def accel(self, AY, AX, bitch = False):
+        self.instant_AY, self.instant_AX = AY, AX
+
         W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
         W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
 
         roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
         W_shift_x = roll * self.H # lateral shift in center of mass (in)
 
-        W_out_f = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # vertical force on front outter wheel in pounds
-        W_in_f = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h)  # vertical force on front inner wheel in pounds
-        W_out_r = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # vertical force on rear outter wheel in pounds
-        W_in_r = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h)  # vertical force on rear inner wheel in pounds
-
-        # Set variables to corresponding class variable
-        self.W_out_f = W_out_f
-        self.W_in_f = W_in_f
-        self.W_out_r = W_out_r
-        self.W_in_r = W_in_r
+        self.W_out_f = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # vertical force on front outter wheel in pounds
+        self.W_in_f = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h)  # vertical force on front inner wheel in pounds
+        self.W_out_r = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # vertical force on rear outter wheel in pounds
+        self.W_in_r = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h)  # vertical force on rear inner wheel in pounds
 
         # Set displacement vars to their values
-        self.D_1 = (self.W_out_f - self.W_1) / self.K_RF # doesn't matter whether W_1 is the outer or inner tire at the moment since both front tires have the same weight.
-        self.D_2 = (self.W_in_f - self.W_2) / self.K_RF # doesn't matter whether W_2 is the outer or inner tire at the moment since both front tires have the same weight.
-        self.D_3 = (self.W_out_r - self.W_3) / self.K_RR # doesn't matter whether W_3 is the outer or inner tire at the moment since both rear tires have the same weight.
-        self.D_4 = (self.W_in_r - self.W_4) / self.K_RR # doesn't matter whether W_4 is the outer or inner tire at the moment since both rear tires have the same weight.
+        self.front_inner_displacement = (self.W_in_f - self.W_1) / self.K_RF # doesn't matter whether W_1 is the outer or inner tire at the moment since both front tires have the same weight.
+        self.front_outer_displacement = (self.W_out_f - self.W_2) / self.K_RF # doesn't matter whether W_2 is the outer or inner tire at the moment since both front tires have the same weight.
+        self.rear_inner_displacement = (self.W_in_r - self.W_3) / self.K_RR # doesn't matter whether W_3 is the outer or inner tire at the moment since both rear tires have the same weight.
+        self.rear_outer_displacement = (self.W_out_r - self.W_4) / self.K_RR # doesn't matter whether W_4 is the outer or inner tire at the moment since both rear tires have the same weight.
 
         # Ensuring that none of the wheel loads are below zero as this would mean the car is tipping
-        for i in [W_out_f, W_in_f, W_out_r, W_in_r]:
+        for i in [self.W_out_f, self.W_in_f, self.W_out_r, self.W_in_r]:
             if i < 0: return False
 
-        C_out_f = abs(self.CMB_STC_F + (W_out_f-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
-        C_in_f = abs(self.CMB_STC_F + (W_in_f-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
-        C_out_r = abs(self.CMB_STC_F + (W_out_r-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
-        C_in_r = abs(self.CMB_STC_F + (W_in_r-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
+        self.C_out_f = abs(self.CMB_STC_F + (self.W_out_f-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
+        self.C_in_f = abs(self.CMB_STC_F + (self.W_in_f-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
+        self.C_out_r = abs(self.CMB_STC_F + (self.W_out_r-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
+        self.C_in_r = abs(self.CMB_STC_F + (self.W_in_r-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
 
-        FY_out_f = self.tires.traction('corner', W_out_f, C_out_f) # max possible lateral acceleration from front outter wheel in pounds
-        FY_in_f = self.tires.traction('corner', W_in_f, C_in_f)    # max possible lateral acceleration from front inner wheel in pounds
-        FY_out_r = self.tires.traction('corner', W_out_r, C_out_r) # max possible lateral acceleration from rear outter wheel in pounds
-        FY_in_r = self.tires.traction('corner', W_in_r, C_in_r)    # max possible lateral acceleration from rear inner wheel in pounds
-
-        # Set variables to corresponding class variable
-        self.FY_out_f = FY_out_f
-        self.FY_in_f = FY_in_f
-        self.FY_out_r = FY_out_r
-        self.FY_in_r = FY_in_r
+        self.FY_out_f = self.tires.traction('corner', self.W_out_f, self.C_out_f) # max possible lateral acceleration from front outter wheel in pounds
+        self.FY_in_f = self.tires.traction('corner', self.W_in_f, self.C_in_f)    # max possible lateral acceleration from front inner wheel in pounds
+        self.FY_out_r = self.tires.traction('corner', self.W_out_r, self.C_out_r) # max possible lateral acceleration from rear outter wheel in pounds
+        self.FY_in_r = self.tires.traction('corner', self.W_in_r, self.C_in_r)    # max possible lateral acceleration from rear inner wheel in pounds
 
         FY_f = AY * self.W_car * self.W_bias # minimum necessary lateral force from front tires
         FY_r = AY * self.W_car * (1-self.W_bias) # minimum necessary lateral force from rear tires
 
         # checking if the car can generate enough lateral force
-        if (FY_f > FY_out_f+FY_in_f) or (FY_r > FY_out_r+FY_in_r): return False
+        if (FY_f > self.FY_out_f+self.FY_in_f) or (FY_r > self.FY_out_r+self.FY_in_r): return False
 
         if bitch:
-            print((W_in_f + W_out_f) / (W_out_f + W_out_r + W_in_f + W_in_r))
+            print((self.W_in_f + self.W_out_f) / (self.W_out_f + self.W_out_r + self.W_in_f +self. W_in_r))
 
         if AX == 0: return True # returning true if no axial acceleration
 
-        f_factor = ((FY_out_f + FY_in_f)**2 - FY_f**2)**0.5 / (FY_out_f + FY_in_f)
-        r_factor = ((FY_out_r + FY_in_r)**2 - FY_r**2)**0.5 / (FY_out_r + FY_in_r)
+        f_factor = ((self.FY_out_f + self.FY_in_f)**2 - FY_f**2)**0.5 / (self.FY_out_f + self.FY_in_f)
+        r_factor = ((self.FY_out_r + self.FY_in_r)**2 - FY_r**2)**0.5 / (self.FY_out_r + self.FY_in_r)
 
-        FX_out_f = f_factor * self.tires.traction('accel', W_out_f, C_out_f) # max possible axial acceleration from front outter wheel in pounds
-        FX_in_f = f_factor * self.tires.traction('accel', W_in_f, C_in_f)    # max possible axial acceleration from front inner wheel in pounds
-        FX_out_r = r_factor * self.tires.traction('accel', W_out_r, C_out_r) # max possible axial acceleration from rear outter wheel in pounds
-        FX_in_r = r_factor * self.tires.traction('accel', W_in_r, C_in_r)    # max possible axial acceleration from rear inner wheel in pounds
-
-        # Set variables to corresponding class variable
-        self.FX_out_f = FX_out_f
-        self.FX_in_f = FX_in_f
-        self.FX_out_r = FX_out_r
-        self.FX_in_r = FX_in_r
+        self.FX_out_f = f_factor * self.tires.traction('accel', self.W_out_f, self.C_out_f) # max possible axial acceleration from front outter wheel in pounds
+        self.FX_in_f = f_factor * self.tires.traction('accel', self.W_in_f, self.C_in_f)    # max possible axial acceleration from front inner wheel in pounds
+        self.FX_out_r = r_factor * self.tires.traction('accel', self.W_out_r, self.C_out_r) # max possible axial acceleration from rear outter wheel in pounds
+        self.FX_in_r = r_factor * self.tires.traction('accel', self.W_in_r, self.C_in_r)    # max possible axial acceleration from rear inner wheel in pounds
 
         self.theta_accel = math.atan2(abs(AY), AX) * 180/math.pi
 
         # Calculating max lateral acceleration from tire traction
         if AX > 0:
-            FX = FX_out_r + FX_in_r
+            FX = self.FX_out_r + self.FX_in_r
         else:
-            FX = FX_out_f + FX_in_f + FX_out_r + FX_in_r
-        
+            FX = self.FX_out_f + self.FX_in_f + self.FX_out_r + self.FX_in_r
+
         if bitch:
-            print(FX_out_f / W_out_f)
-            print(FX_in_f / W_in_f)
-            print(FX_out_r / W_out_r)
-            print(FX_in_r / W_in_r)
+            print(self.FX_out_f / self.W_out_f)
+            print(self.FX_in_f / self.W_in_f)
+            print(self.FX_out_r / self.W_out_r)
+            print(self.FX_in_r / self.W_in_r)
 
         # Checking if the car can generate the necessary axial tire traction
         if abs(FX/self.W_car) < abs(AX):return False
         else: return True
-
-    # modified accel function, currently unfinished. Will account for tire orientation
-    def accel2(self, AY, AX, S_c, steer, r):
-        W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
-        W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
-
-        roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
-        W_shift_x = roll * self.H # lateral shift in center of mass (in)
-
-        W_f_out = W_f/2 + self.W_f/self.t_f*(W_shift_x + AY*self.h) # force on front outter wheel
-        W_f_in = W_f/2 - self.W_f/self.t_f*(W_shift_x + AY*self.h)  # force on front inner wheel
-        W_r_out = W_r/2 + self.W_r/self.t_r*(W_shift_x + AY*self.h) # force on rear outter wheel
-        W_r_in = W_r/2 - self.W_r/self.t_r*(W_shift_x + AY*self.h)  # force on rear inner wheel
-
-        # Ensuring that none of the wheel loads are below zero as this would mean the car is tipping
-        for i in [W_f_out, W_f_in, W_r_out, W_r_in]:
-            if i < 0: return False
-
-        C_f_out = abs(self.CMB_STC_F + (W_f_out-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
-        C_f_in = abs(self.CMB_STC_F + (W_f_in-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
-        C_r_out = abs(self.CMB_STC_R + (W_r_out-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
-        C_r_in = abs(self.CMB_STC_R + (W_r_in-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
-
-        if r == 0:
-            S_f_in = steer
-            S_f_out = steer
-            S_r_in = 0
-            S_r_out = 0
-        else:
-            S_f_in  = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a - np.cos(S_c)*self.t_f/2)))
-            S_f_out = steer - np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_f/2)/(r - np.sin(S_c)*self.a + np.cos(S_c)*self.t_f/2)))
-            S_r_in  = np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_r/2)/(r + np.sin(S_c)*self.a - np.cos(S_c)*self.t_r/2)))
-            S_r_out = np.rad2deg(S_c + np.arctan((np.cos(S_c)*self.a + np.sin(S_c)*self.t_r/2)/(r + np.sin(S_c)*self.a + np.cos(S_c)*self.t_r/2)))
-        
-        FY_f_in = abs(self.tires.FY_curves.eval(S_f_in, W_f_in, C_f_in))
-        FY_f_out = abs(self.tires.FY_curves.eval(S_f_out, W_f_out, C_f_out))
-        FY_r_in = abs(self.tires.FY_curves.eval(S_r_in, W_r_in, C_r_in))
-        FY_r_out = abs(self.tires.FY_curves.eval(S_r_out, W_r_out, C_r_out))
-
-        FY_f = AY * self.W_car * self.W_bias # minimum necessary lateral force from front tires
-        FY_r = AY * self.W_car * (1-self.W_bias) # minimum necessary lateral force from rear tires
-
-        # checking if the car can generate enough lateral force
-        if (FY_f > FY_f_out+FY_f_in) or (FY_r > FY_r_out+FY_r_in): return False
-
-        if AX == 0: return True # returning true if no axial acceleration
-
-        f_factor = ((FY_f_out + FY_f_in)**2 - FY_f**2)**0.5 / (FY_f_out + FY_f_in)
-        r_factor = ((FY_r_out + FY_r_in)**2 - FY_r**2)**0.5 / (FY_r_out + FY_r_in)
-
-        # max possible axial acceleration from front outter wheel
-        FX_out_f = np.tan(FY_f_out/abs(self.tires.FY_curves.max(W_f_out, C_f_out))) * abs(self.tires.FX_curves.get_max(W_f_out, C_f_out))
-        FX_out_r = np.tan(FY_r_out/abs(self.tires.FY_curves.max(W_r_out, C_r_out))) * abs(self.tires.FX_curves.get_max(W_r_out, C_r_out))
-        FX_in_f = np.tan(FY_f_in/abs(self.tires.FY_curves.max(W_f_in, C_f_in))) * abs(self.tires.FX_curves.get_max(W_f_in, C_f_in))
-        FX_in_r = np.tan(FY_r_in/abs(self.tires.FY_curves.max(W_r_in, C_r_in))) * abs(self.tires.FX_curves.get_max(W_r_in, C_r_in))
-        
-        # Calculating max lateral acceleration from tire traction
-        if AX > 0:
-            FX = FX_out_r + FX_in_r
-        else:
-            FX = FX_out_f + FX_in_f + FX_out_r + FX_in_r
-        
-        # Checking if the car can generate the necessary axial tire traction
-        if abs(FX/self.W_car) < abs(AX): return False
-        else: return True
-
 
     # recursive function to find the max axial acceleration; AY is lateral acceleration in g's
     def max_accel(self, AY, low_guess = 0, high_guess = 2):
         guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
 
         # returns the guess value if high and low estimates have converged
-        if high_guess - low_guess < 0.0001:
+        if high_guess - low_guess < 0.0000000001:
             return guess
 
         if self.accel(AY, guess): # sets low estimate to the guess value if the car can handle cornering acceleration equal to the guess value
             return self.max_accel(AY, guess, high_guess)
         else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
             return self.max_accel(AY, low_guess, guess)
-    
+
     def max_brake(self, AY, low_guess = -3, high_guess = 0):
         guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
 
         # returns the guess value if high and low estimates have converged
-        if high_guess - low_guess < 0.0001:
+        if high_guess - low_guess < 0.0000000001:
             return guess
 
         if self.accel(AY, guess): # sets high estimate to the guess value if the car can handle breaking acceleration equal to the guess value
             return self.max_brake(AY, low_guess, guess)
         else: # sets low estimate to the guess value if the car cannot handle breaking acceleration equal to the guess value
             return self.max_brake(AY, guess, high_guess)
-    
+
     # calculates the max axial acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
     # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
     # set r to zero for a track straight track with no curvature
     def curve_accel(self, v, r, transmission_gear='optimal'):
+        snippet = None
+        self.velocity = v
+
         AY = 0
         if r > 0:
             AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
-        
+
         drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
 
-        A_tire = 0
+        returned = False
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY: # If max AY along a turn is more than or equal to the current AY
                 # linearly interpolating self.A_accel to find the max acceleration at lateral acceleration AY
-                A_tire = ((AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_accel[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_accel[i-1] - self.get_drag(v * 0.0568182))
+                curr_ratio = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])
+                prev_ratio = (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])
+                snippet = self.Car_Data_Snippet.get_interpolated_copy(self.accel_car_data_snippets[i], curr_ratio, prev_ratio)
+                # print(f"\nprev_accel: {self.A_accel[i-1]}, accel: {snippet.AX}, next_accel: {self.A_accel[i]}")
+                # print(f"accel: {snippet.AX}")
+                # print(f"prev_dis: {self.accel_car_data_snippets[i-1].FO_camber}, dis: {snippet.FO_camber}, next_dis: {self.accel_car_data_snippets[i].FO_camber}")
+                returned = True
                 break
-
-        A_tire -= drag # incorporating drag
-        A_tire *= 32.17 * 12 # Converting from G's to in/s^2
+        if not returned:
+            snippet = copy.deepcopy(self.accel_car_data_snippets[-1])
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
-        A_engn -= drag # incorporating drag
-        A_engn *= 32.17*12 # converting from G's to in/s^2
+
+        # print(f"A_engn: {A_engn}, A_tire: {snippet.AX}")
 
         # returns either tire or engine acceleration depending on which is the limiting factor
-        if A_tire < A_engn:
-            return A_tire
-        else:
-            return A_engn
+        if A_engn < snippet.AX:
+            snippet.AX = A_engn
+            snippet.AX -= drag
+            # print(snippet.AX)
+            return snippet
+        snippet.AX -= drag
+        # print(snippet.AX)
+        return snippet
 
-    
     # calculates the max braking acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
     # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
     # set r to zero for a track straight track with no curvature
     def curve_brake(self, v, r):
+        snippet = None
+        self.velocity = v
+
         AY = 0
         if r > 0:
             AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
@@ -495,25 +534,32 @@ class car():
 
         drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
 
-        A_tire = 0
+        returned = False
         for i in range(1, len(self.AY)):
             if self.AY[i] >= AY:
-                # linearly interpolating self.A_brake to find the braking acceleration at lateral acceleration AY
-                A_tire = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])*self.A_brake[i] + (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])*self.A_brake[i-1]
+                # linearly interpolating self.A_accel to find the max acceleration at lateral acceleration AY
+                curr_ratio = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])
+                prev_ratio = (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])
+                snippet = self.Car_Data_Snippet.get_interpolated_copy(self.brake_car_data_snippets[i], curr_ratio, prev_ratio)
+                # print(f"\nprev_accel: {self.A_brake[i-1]}, accel: {snippet.AX}, next_accel: {self.A_brake[i]}")
+                # print(f"prev_dis: {self.brake_car_data_snippets[i-1].front_outer_displacement}, dis: {snippet.front_outer_displacement}, next_dis: {self.brake_car_data_snippets[i].front_outer_displacement}")
+                returned = True
                 break
-        
-        A_tire -= drag # incorporating drag
-        A_tire *= 32.17 * 12 # Converting from G's to in/s^2
-        
-        return A_tire
-    
+        if not returned:
+            snippet = copy.deepcopy(self.brake_car_data_snippets[-1])
+
+        snippet.AX -= drag # incorporating drag
+        # print(snippet.AX)
+
+        return snippet
+
     # returns drag acceleration (in/s^2) given vehicle speed
     # v = speed (in/s)
     def curve_idle(self, v):
         drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
         drag *= 32.17 * 12 # converting from G's to in/s^2
         return -drag # returns negative because drag slows the car
-    
+
     # returns drag force in G's (index = speed of car (mph))
     def get_drag(self, mph):
         if mph >= len(self.aero_arr)-1: # check if car speed exceeds aero_arr size
@@ -549,7 +595,7 @@ class car():
         self.z_rf *= ratio
         self.z_rr *= ratio
         self.compute_traction()
-        
+
 
     def traction_curve(self):
         plt.plot(self.AY, self.A_accel)
@@ -558,3 +604,10 @@ class car():
         plt.ylabel('Axial Acceleration (g\'s)')
         plt.grid()
         plt.show()
+
+# racecar = car()
+# for index, snippet in enumerate(racecar.accel_car_data_snippets):
+#     print(snippet.AX)
+
+# racecar.accel(racecar.AY[-1], racecar.A_brake[-1])
+# print(f"FO: {racecar.FY_out_f}, RO: {racecar.FY_out_r}")

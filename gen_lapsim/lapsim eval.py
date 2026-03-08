@@ -130,7 +130,7 @@ if False:
     plt.show()
 
 if False:
-    track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [99999999, 99999999, 99999999, 99999999], car_model.car(final_drive = 4.8), 1500)
+    track = lpsm.four_wheel([246*3, 246*3, 246*3, 246*3], [99999999, 99999999, 99999999, 99999999], car_model.Car(final_drive = 4.8), 1500)
     times = []
     #track.car = car_model.car(final_drive = 3)
     nds, v3, t = track.run()

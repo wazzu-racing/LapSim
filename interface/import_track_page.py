@@ -93,8 +93,8 @@ class ImportTrackPage(tkinter.Frame):
                 self.car_check.grid(row=3, column=2, pady=(0, 0))
                 # save car into lap_data file
                 car = pickle.load(open(self.car_file, "rb"))
-                self.lap_data.car = car  # save car into lap_data file
-                self.lap_data.car.file_location = self.car_file
+                self.lap_data.Car = car  # save car into lap_data file
+                self.lap_data.Car.file_location = self.car_file
             # Enable plot button if both files are selected
             if self.car_file and self.lap_data:
                 self.show_run_lapsim_button()

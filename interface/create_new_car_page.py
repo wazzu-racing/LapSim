@@ -117,7 +117,7 @@ class CreateNewCarPage(tkinter.Frame):
         # Reset data vars
         self.tire_file_path = ""
         self.drivetrain_file_path = ""
-        self.car = car_model.car()
+        self.car = car_model.Car()
         self.settings_window.change_vars_to_car(self.car)
 
         # Reset UI
