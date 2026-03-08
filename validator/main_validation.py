@@ -23,11 +23,15 @@ class Validation:
         AZ = 2
         ROLL = 3
         YAW = 4
-        FO = 5
-        FI = 6
-        RO = 7
-        RI = 8
-        RPM = 9
+        FO_dis = 5
+        FI_dis = 6
+        RO_dis = 7
+        RI_dis = 8
+        FO_load = 9
+        FI_load = 10
+        RO_load = 11
+        RI_load = 12
+        RPM = 13
 
     class Data_Node:
         def __init__(self, AX, AY, roll, yaw, front_left_dis, front_right_dis, rear_left_dis, rear_right_dis, rpm, distance):
@@ -168,51 +172,6 @@ class Validation:
                     data_node.distance_since_arc_start = data_node.distance_along_segment - self.arcs[arc_index].distance_along_segment
                 else:
                     data_node.distance_since_arc_start = data_node.arc.length
-
-    class Calculated_Data_Node:
-        def __init__(self, racecar, FO_dis, RO_dis, FI_dis, RI_dis):
-            self.racecar = racecar
-            self.FO_dis = FO_dis
-            self.RO_dis = RO_dis
-            self.FI_dis = FI_dis
-            self.RI_dis = RI_dis
-
-            self.do_calcs()
-
-        FO_dis: float = 0
-        RO_dis: float = 0
-        FI_dis: float = 0
-        RI_dis: float = 0
-        FO_load : float = 0
-        RO_load : float = 0
-        FI_load : float = 0
-        RI_load : float = 0
-        FO_FY: float = 0
-        RO_FY: float = 0
-        FI_FY: float = 0
-        RI_FY: float = 0
-        FO_FX: float = 0
-        RO_FX: float = 0
-        FI_FX: float = 0
-        RI_FX: float = 0
-        AX: float = 0
-        AY: float = 0
-
-        def do_calcs(self):
-            self.calculate_loads()
-
-        def calculate_loads(self):
-            self.FO_load = self.FO_dis / self.racecar.K_RF
-            self.RO_load = self.RO_dis / self.racecar.K_RR
-            self.FI_load = self.FI_dis / self.racecar.K_RF
-            self.RI_load = self.RI_dis / self.racecar.K_RR
-
-
-
-        # TODO:
-        # 1. Talk to Max and get wheel displacement from shock displacement
-        # 2. Talk to Calvin and get static shock displacement numbers
-        # 3. Choose whether to validate mine or old model
 
     arcs = [] # The curves between every single point
     segments = [] # Collections of arcs. This is "good" data. Only contains a segment where there is both velocity and spline data.
@@ -429,7 +388,7 @@ class Validation:
         den_sim_comp, den_real_comp = [], []
 
         match data:
-            case self.DataType.FO:
+            case self.DataType.FO_dis:
                 # Calculate real mean
                 for dis in self.FO_dis_real:
                     sum_real += dis
@@ -447,7 +406,7 @@ class Validation:
 
                 return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
 
-            case self.DataType.FI:
+            case self.DataType.FI_dis:
                 # Calculate real mean
                 for dis in self.FI_dis_real:
                     sum_real += dis
@@ -466,7 +425,7 @@ class Validation:
 
                 return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
 
-            case self.DataType.RO:
+            case self.DataType.RO_dis:
                 # Calculate real mean
                 for dis in self.RO_dis_real:
                     sum_real += dis
@@ -485,7 +444,7 @@ class Validation:
 
                 return np.sum(numerator) / np.sqrt(np.sum(den_sim_comp) * np.sum(den_real_comp))
 
-            case self.DataType.RI:
+            case self.DataType.RI_dis:
                 # Calculate real mean
                 for dis in self.RI_dis_real:
                     sum_real += dis
@@ -525,15 +484,6 @@ class Validation:
 
     def calculate_forces(self):
 
-        turn = []
-        FR_shock, FL_shock, RL_shock = [], [], []
-        for segment in self.segments:
-            for data_node in segment.data_nodes:
-                turn.append(data_node.arc.turn)
-                FR_shock.append(data_node.front_right_shock)
-                FL_shock.append(data_node.front_left_shock)
-                RL_shock.append(data_node.rear_left_shock)
-
         # Static values for shock potentiometers
         static_FL_shock = 1.552
         static_FR_shock = 1.092
@@ -543,35 +493,47 @@ class Validation:
         MR_F = 1
         MR_R = 1.1786
 
-        for index, _ in enumerate(FR_shock):
-            print(f"\nINSTANCE:" + "left turn" if turn[index] == self.Arc.Turn.LEFT else "right turn")
-            if turn[index] == self.Arc.Turn.LEFT:
-                # Calculate wheel displacement
-                FO_dis = (FR_shock[index] - static_FR_shock) * MR_F
-                FI_dis = (FL_shock[index] - static_FL_shock) * MR_F
-                RO_dis = None
-                RI_dis = (RL_shock[index] - static_RL_shock) * MR_R
+        FO_load_real = []
+        FI_load_real = []
+        RI_load_real = []
+        RO_load_real = []
 
-                # Calculate the loads on each tire
-                FO_load = self.racecar.W_2 + FO_dis * self.racecar.K_RF
-                FI_load = self.racecar.W_1 + FI_dis * self.racecar.K_RF
-                RI_load = self.racecar.W_3 + RI_dis * self.racecar.K_RR
-                RO_load = self.racecar.W_car - (FO_load + FI_load + RI_load)
+        for segment in self.segments:
+            FO_load_real.append([])
+            FI_load_real.append([])
+            RI_load_real.append([])
+            RO_load_real.append([])
+            for data_node in segment.data_nodes:
 
-                print(f"FO_load: {FO_load}\nFI_load: {FI_load}\nRI_load: {RI_load}\nRO_load: {RO_load}")
-            else:
-                # Calculate wheel displacement
-                FO_dis = (FL_shock[index] - static_FL_shock) * MR_F
-                FI_dis = (FR_shock[index] - static_FR_shock) * MR_F
-                RO_dis = (RL_shock[index] - static_RL_shock) * MR_R
-                RI_dis = None
+                if data_node.arc.turn == self.Arc.Turn.LEFT:
+                    # Calculate wheel displacement
+                    FO_dis = (data_node.front_right_shock - static_FR_shock) * MR_F
+                    FI_dis = (data_node.front_left_shock - static_FL_shock) * MR_F
+                    RO_dis = None
+                    RI_dis = (data_node.rear_left_shock - static_RL_shock) * MR_R
 
-                # Calculate the loads on each tire
-                FO_load = self.racecar.W_1 + FO_dis * self.racecar.K_RF
-                FI_load = self.racecar.W_2 + FI_dis * self.racecar.K_RF
-                RO_load = self.racecar.W_3 + RO_dis * self.racecar.K_RR
-                RI_load = self.racecar.W_car - (FO_load + FI_load + RO_load)
-                print(f"FO_load: {FO_load}\nFI_load: {FI_load}\nRO_load: {RO_load}\nRI_load: {RI_load}")
+                    # Calculate the loads on each tire
+                    FO_load_real[-1].append(self.racecar.W_2 + FO_dis * self.racecar.K_RF)
+                    FI_load_real[-1].append(self.racecar.W_1 + FI_dis * self.racecar.K_RF)
+                    RI_load_real[-1].append(self.racecar.W_3 + RI_dis * self.racecar.K_RR)
+                    RO_load_real[-1].append(self.racecar.W_car - (FO_load_real[-1][-1] + FI_load_real[-1][-1] + RI_load_real[-1][-1]))
+                else:
+                    # Calculate wheel displacement
+                    FO_dis = (data_node.front_left_shock - static_FL_shock) * MR_F
+                    FI_dis = (data_node.front_right_shock - static_FR_shock) * MR_F
+                    RO_dis = (data_node.rear_left_shock - static_RL_shock) * MR_R
+                    RI_dis = None
+
+                    # Calculate the loads on each tire
+                    FO_load_real[-1].append(self.racecar.W_1 + FO_dis * self.racecar.K_RF)
+                    FI_load_real[-1].append(self.racecar.W_2 + FI_dis * self.racecar.K_RF)
+                    RO_load_real[-1].append(self.racecar.W_3 + RO_dis * self.racecar.K_RR)
+                    RI_load_real[-1].append(self.racecar.W_car - (FO_load_real[-1][-1] + FI_load_real[-1][-1] + RO_load_real[-1][-1]))
+
+                print(f"\nINSTANCE:" + "left turn" if data_node.arc.turn == self.Arc.Turn.LEFT else "right turn")
+                print(f"FO_load: {FO_load_real[-1][-1]}\nFI_load: {FI_load_real[-1][-1]}\nRI_load: {RI_load_real[-1][-1]}\nRO_load: {RO_load_real[-1][-1]}")
+
+        return FO_load_real, FI_load_real, RO_load_real, RI_load_real
 
     def graph(self, graph_type:DataType):
 
@@ -598,24 +560,54 @@ class Validation:
                 len_AY_r = np.linspace(0, len(self.AY_real), len(self.AY_real))
                 ax.plot(len_AY, self.AY_sim, label='sim_AY')
                 ax.plot(len_AY_r, self.AY_real, label='real_AY')
-            case self.DataType.FI:
+            case self.DataType.FO_dis:
+                # Plot both sim and real FO dis
+                len_FO = np.linspace(0, len(self.FO_dis_sim), len(self.FO_dis_sim))
+                len_FO_r = np.linspace(0, len(self.FO_dis_real), len(self.FO_dis_real))
+                ax.plot(len_FO, self.FO_dis_sim, label='sim_FO')
+                ax.plot(len_FO_r, self.FO_dis_real, label='real_FO')
+            case self.DataType.FI_dis:
                 # Plot both sim and real FI dis
                 len_FI = np.linspace(0, len(self.FI_dis_sim), len(self.FI_dis_sim))
                 len_FI_r = np.linspace(0, len(self.FI_dis_real), len(self.FI_dis_real))
                 ax.plot(len_FI, self.FI_dis_sim, label='sim_FI')
                 ax.plot(len_FI_r, self.FI_dis_real, label='real_FI')
-            case self.DataType.RO:
+            case self.DataType.RO_dis:
                 # Plot both sim and real RO dis
                 len_RO = np.linspace(0, len(self.RO_dis_sim), len(self.RO_dis_sim))
                 len_RO_r = np.linspace(0, len(self.RO_dis_real), len(self.RO_dis_real))
                 ax.plot(len_RO, self.RO_dis_sim, label='sim_RO')
                 ax.plot(len_RO_r, self.RO_dis_real, label='real_RO')
-            case self.DataType.RI:
+            case self.DataType.RI_dis:
                 # Plot both sim and real RI dis
                 len_RI = np.linspace(0, len(self.RI_dis_sim), len(self.RI_dis_sim))
                 len_RI_r = np.linspace(0, len(self.RI_dis_real), len(self.RI_dis_real))
                 ax.plot(len_RI, self.RI_dis_sim, label='sim_RI')
                 ax.plot(len_RI_r, self.RI_dis_real, label='real_RI')
+            case self.DataType.FO_load:
+                # Plot both sim and real FO load
+                len_FO = np.linspace(0, len(self.FO_load_sim), len(self.FO_load_sim))
+                len_FO_r = np.linspace(0, len(self.FO_load_real), len(self.FO_load_real))
+                ax.plot(len_FO, self.FO_load_sim, label='sim_load_FO')
+                ax.plot(len_FO_r, self.FO_load_real, label='real_load_FO')
+            case self.DataType.FI_load:
+                # Plot both sim and real FI load
+                len_FI = np.linspace(0, len(self.FI_load_sim), len(self.FI_load_sim))
+                len_FI_r = np.linspace(0, len(self.FI_load_real), len(self.FI_load_real))
+                ax.plot(len_FI, self.FI_load_sim, label='sim_load_FI')
+                ax.plot(len_FI_r, self.FI_load_real, label='real_load_FI')
+            case self.DataType.RO_load:
+                # Plot both sim and real RO load
+                len_RO = np.linspace(0, len(self.RO_load_sim), len(self.RO_load_sim))
+                len_RO_r = np.linspace(0, len(self.RO_load_real), len(self.RO_load_real))
+                ax.plot(len_RO, self.RO_load_sim, label='sim_load_RO')
+                ax.plot(len_RO_r, self.RO_load_real, label='real_load_RO')
+            case self.DataType.RI_load:
+                # Plot both sim and real RI load
+                len_RI = np.linspace(0, len(self.RI_load_sim), len(self.RI_load_sim))
+                len_RI_r = np.linspace(0, len(self.RI_load_real), len(self.RI_load_real))
+                ax.plot(len_RI, self.RI_load_sim, label='sim_load_RI')
+                ax.plot(len_RI_r, self.RI_load_real, label='real_load_RI')
             case self.DataType.RPM:
                 # Plot both sim and real RPM
                 len_rpm = np.arange(0, len(self.rpm_sim))
@@ -686,14 +678,12 @@ class Validation:
             segment.compute_arc_segment_distances()
             segment.calculate_distance_differences()
 
-        self.segments = [self.segments[0]]
+        self.segments = [self.segments[2]]
 
         print(f"data nodes in segment: {len(self.segments[0].data_nodes)}")
 
         val_track = Validation_Track(self.segments, self.racecar, sims_per_arc)
         self.lapsim_data = val_track.run()
-
-        self.calculate_forces()
 
         # Lerp sim data to match the position of real data
         for seg_index, segment in enumerate(self.segments):
@@ -707,14 +697,19 @@ class Validation:
                 for data_index, data_node in enumerate(arc.data_nodes):
                     # print(f"Arc length: {arc.length}")
                     # print(f"data node distance along arc: {data_node.distance_since_arc_start}")
-
                     self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].rpm[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+
                     self.lerped_data[-1].front_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].rear_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].front_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_inner_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].rear_inner_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rear_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    self.lerped_data[-1].rpm[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+
+                    self.lerped_data[-1].FI_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].FI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].FI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].FO_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].FO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].FO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].RI_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].RO_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     count += 1
 
         # Store all data in arrays suitable for writing to a csv
@@ -723,12 +718,19 @@ class Validation:
         # Indices are data nodes
         self.rpm_sim, self.rpm_real, self.rpm_error = [], [], []
         self.arc_id, self.segment_id = [], []
+
         self.AX_sim, self.AY_sim = [], []
         self.AX_real, self.AY_real = [], []
         self.AX_error, self.AY_error = [], []
+
         self.FO_dis_sim, self.RO_dis_sim, self.FI_dis_sim, self.RI_dis_sim = [], [], [], []
         self.FO_dis_real, self.RO_dis_real, self.FI_dis_real, self.RI_dis_real = [], [], [], []
         self.FO_dis_error, self.RO_dis_error, self.FI_dis_error, self.RI_dis_error = [], [], [], []
+
+        self.FO_load_sim, self.RO_load_sim, self.FI_load_sim, self.RI_load_sim = [], [], [], []
+        self.FO_load_real_temp, self.FI_load_real_temp, self.RO_load_real_temp, self.RI_load_real_temp = self.calculate_forces()
+        self.FO_load_real, self.FI_load_real, self.RO_load_real, self.RI_load_real = [], [], [], []
+        self.FO_load_error, self.RO_load_error, self.FI_load_error, self.RI_load_error = [], [], [], []
         for seg_index, segment in enumerate(self.segments):
             print(self.lerped_data[seg_index].AX)
             # Store time only once per segment, since only the time from the beginning to the end of the segment is collected.
@@ -750,29 +752,53 @@ class Validation:
                 self.AY_sim.append(self.lerped_data[seg_index].AY[data_index])
                 self.AY_real.append(data_node.AY)
                 self.AY_error.append(AY_err)
-                # FO
+                # FO_dis
                 front_outer_dis = data_node.front_right_shock if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_left_shock
                 front_outer_error = ((self.lerped_data[seg_index].front_outer_displacement[data_index] - front_outer_dis)/front_outer_dis)*100 if front_outer_dis != 0 else None
                 self.FO_dis_sim.append(self.lerped_data[seg_index].front_outer_displacement[data_index])
                 self.FO_dis_real.append(front_outer_dis)
                 self.FO_dis_error.append(front_outer_error)
-                # RO
+                # RO_dis
                 rear_outer_dis = None if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_left_shock
                 rear_outer_error = ((self.lerped_data[seg_index].rear_outer_displacement[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != None and rear_outer_dis != 0 else None
                 self.RO_dis_sim.append(self.lerped_data[seg_index].rear_outer_displacement[data_index])
                 self.RO_dis_real.append(rear_outer_dis)
                 self.RO_dis_error.append(rear_outer_error)
-                # FI
+                # FI_dis
                 front_inner_dis = data_node.front_left_shock if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_right_shock
                 front_inner_error = ((self.lerped_data[seg_index].front_inner_displacement[data_index] - front_inner_dis)/front_inner_dis)*100 if front_inner_dis != 0 else None
                 self.FI_dis_sim.append(self.lerped_data[seg_index].front_inner_displacement[data_index])
                 self.FI_dis_real.append(front_inner_dis)
                 self.FI_dis_error.append(front_inner_error)
-                # RI
+                # RI_dis
                 rear_inner_dis = data_node.rear_left_shock if data_node.arc.turn == Validation.Arc.Turn.LEFT else None
                 rear_inner_error = ((self.lerped_data[seg_index].rear_inner_displacement[data_index] - rear_inner_dis)/rear_inner_dis)*100 if rear_inner_dis != None and rear_inner_dis != 0 else None
                 self.RI_dis_sim.append(self.lerped_data[seg_index].rear_inner_displacement[data_index])
                 self.RI_dis_real.append(rear_inner_dis)
+                self.RI_dis_error.append(rear_inner_error)
+                # FO_load
+                front_outer_load = self.FO_load_real_temp[seg_index][data_index]
+                front_outer_load_error = ((self.lerped_data[seg_index].FO_load_array[data_index] - front_outer_load)/front_outer_load)*100 if front_outer_load != 0 else None
+                self.FO_load_sim.append(self.lerped_data[seg_index].FO_load_array[data_index])
+                self.FO_load_real.append(front_outer_load)
+                self.FO_dis_error.append(front_outer_error)
+                # RO_load
+                rear_outer_load = self.RO_load_real_temp[seg_index][data_index]
+                rear_outer_load_error = ((self.lerped_data[seg_index].RO_load_array[data_index] - rear_outer_load)/rear_outer_load)*100 if rear_outer_load != 0 else None
+                self.RO_load_sim.append(self.lerped_data[seg_index].RO_load_array[data_index])
+                self.RO_load_real.append(rear_outer_load)
+                self.RO_dis_error.append(rear_outer_error)
+                # FI_load
+                front_inner_load = self.FI_load_real_temp[seg_index][data_index]
+                front_inner_load_error = ((self.lerped_data[seg_index].FI_load_array[data_index] - front_inner_load)/front_inner_load)*100 if front_inner_load != 0 else None
+                self.FI_load_sim.append(self.lerped_data[seg_index].FI_load_array[data_index])
+                self.FI_load_real.append(front_inner_load)
+                self.FI_dis_error.append(front_inner_error)
+                # RI_load
+                rear_inner_load = self.RI_load_real_temp[seg_index][data_index]
+                rear_inner_load_error = ((self.lerped_data[seg_index].RI_load_array[data_index] - rear_inner_load)/rear_inner_load)*100 if rear_inner_load != 0 else None
+                self.RI_load_sim.append(self.lerped_data[seg_index].RI_load_array[data_index])
+                self.RI_load_real.append(rear_inner_load)
                 self.RI_dis_error.append(rear_inner_error)
                 # rpm
                 rpm_err = ((self.lerped_data[seg_index].rpm[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
@@ -827,6 +853,6 @@ class Validation:
 validator = Validation()
 validator.run_validation(50, get_error=False)
 
-data_type = validator.DataType.AX
+data_type = validator.DataType.FO_load
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
 validator.graph(data_type)
