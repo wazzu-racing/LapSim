@@ -42,7 +42,10 @@ class Validation:
             self.front_left_shock = front_left_dis # inches
             self.front_right_shock = front_right_dis # inches
             self.rear_left_shock = rear_left_dis # inches
-            self.rear_right_shock = rear_right_dis # inches
+            self.front_left_dis = 0
+            self.front_right_dis = 0
+            self.rear_left_dis = 0
+            self.rear_right_dis = 0
             self.rpm = rpm
             self.distance_along_segment = distance
 
@@ -505,12 +508,19 @@ class Validation:
             RO_load_real.append([])
             for data_node in segment.data_nodes:
 
+                front_right_dis = (data_node.front_right_shock - static_FR_shock) * MR_F
+                front_left_dis = (data_node.front_left_shock - static_FL_shock) * MR_F
+                rear_left_dis = (data_node.rear_left_shock - static_RL_shock) * MR_R
+
                 if data_node.arc.turn == self.Arc.Turn.LEFT:
                     # Calculate wheel displacement
-                    FO_dis = (data_node.front_right_shock - static_FR_shock) * MR_F
-                    FI_dis = (data_node.front_left_shock - static_FL_shock) * MR_F
+                    FO_dis = front_right_dis
+                    FI_dis = front_left_dis
                     RO_dis = None
-                    RI_dis = (data_node.rear_left_shock - static_RL_shock) * MR_R
+                    RI_dis = rear_left_dis
+                    data_node.front_right_dis = front_right_dis
+                    data_node.front_left_dis = front_left_dis
+                    data_node.rear_left_dis = rear_left_dis
 
                     # Calculate the loads on each tire
                     FO_load_real[-1].append(self.racecar.W_2 + FO_dis * self.racecar.K_RF)
@@ -519,10 +529,13 @@ class Validation:
                     RO_load_real[-1].append(self.racecar.W_car - (FO_load_real[-1][-1] + FI_load_real[-1][-1] + RI_load_real[-1][-1]))
                 else:
                     # Calculate wheel displacement
-                    FO_dis = (data_node.front_left_shock - static_FL_shock) * MR_F
-                    FI_dis = (data_node.front_right_shock - static_FR_shock) * MR_F
-                    RO_dis = (data_node.rear_left_shock - static_RL_shock) * MR_R
+                    FO_dis = front_left_dis
+                    FI_dis = front_right_dis
+                    RO_dis = rear_left_dis
                     RI_dis = None
+                    data_node.front_right_dis = front_right_dis
+                    data_node.front_left_dis = front_left_dis
+                    data_node.rear_left_dis = rear_left_dis
 
                     # Calculate the loads on each tire
                     FO_load_real[-1].append(self.racecar.W_1 + FO_dis * self.racecar.K_RF)
@@ -564,26 +577,26 @@ class Validation:
                 # Plot both sim and real FO dis
                 len_FO = np.linspace(0, len(self.FO_dis_sim), len(self.FO_dis_sim))
                 len_FO_r = np.linspace(0, len(self.FO_dis_real), len(self.FO_dis_real))
-                ax.plot(len_FO, self.FO_dis_sim, label='sim_FO')
-                ax.plot(len_FO_r, self.FO_dis_real, label='real_FO')
+                ax.plot(len_FO, self.FO_dis_sim, label='sim_FO_dis')
+                ax.plot(len_FO_r, self.FO_dis_real, label='real_FO_dis')
             case self.DataType.FI_dis:
                 # Plot both sim and real FI dis
                 len_FI = np.linspace(0, len(self.FI_dis_sim), len(self.FI_dis_sim))
                 len_FI_r = np.linspace(0, len(self.FI_dis_real), len(self.FI_dis_real))
-                ax.plot(len_FI, self.FI_dis_sim, label='sim_FI')
-                ax.plot(len_FI_r, self.FI_dis_real, label='real_FI')
+                ax.plot(len_FI, self.FI_dis_sim, label='sim_FI_dis')
+                ax.plot(len_FI_r, self.FI_dis_real, label='real_FI_dis')
             case self.DataType.RO_dis:
                 # Plot both sim and real RO dis
                 len_RO = np.linspace(0, len(self.RO_dis_sim), len(self.RO_dis_sim))
                 len_RO_r = np.linspace(0, len(self.RO_dis_real), len(self.RO_dis_real))
-                ax.plot(len_RO, self.RO_dis_sim, label='sim_RO')
-                ax.plot(len_RO_r, self.RO_dis_real, label='real_RO')
+                ax.plot(len_RO, self.RO_dis_sim, label='sim_RO_dis')
+                ax.plot(len_RO_r, self.RO_dis_real, label='real_RO_dis')
             case self.DataType.RI_dis:
                 # Plot both sim and real RI dis
                 len_RI = np.linspace(0, len(self.RI_dis_sim), len(self.RI_dis_sim))
                 len_RI_r = np.linspace(0, len(self.RI_dis_real), len(self.RI_dis_real))
-                ax.plot(len_RI, self.RI_dis_sim, label='sim_RI')
-                ax.plot(len_RI_r, self.RI_dis_real, label='real_RI')
+                ax.plot(len_RI, self.RI_dis_sim, label='sim_RI_dis')
+                ax.plot(len_RI_r, self.RI_dis_real, label='real_RI_dis')
             case self.DataType.FO_load:
                 # Plot both sim and real FO load
                 len_FO = np.linspace(0, len(self.FO_load_sim), len(self.FO_load_sim))
@@ -678,7 +691,7 @@ class Validation:
             segment.compute_arc_segment_distances()
             segment.calculate_distance_differences()
 
-        self.segments = [self.segments[2]]
+        # self.segments = [self.segments[2]]
 
         print(f"data nodes in segment: {len(self.segments[0].data_nodes)}")
 
@@ -753,25 +766,25 @@ class Validation:
                 self.AY_real.append(data_node.AY)
                 self.AY_error.append(AY_err)
                 # FO_dis
-                front_outer_dis = data_node.front_right_shock if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_left_shock
+                front_outer_dis = data_node.front_right_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_left_dis
                 front_outer_error = ((self.lerped_data[seg_index].front_outer_displacement[data_index] - front_outer_dis)/front_outer_dis)*100 if front_outer_dis != 0 else None
                 self.FO_dis_sim.append(self.lerped_data[seg_index].front_outer_displacement[data_index])
                 self.FO_dis_real.append(front_outer_dis)
                 self.FO_dis_error.append(front_outer_error)
                 # RO_dis
-                rear_outer_dis = None if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_left_shock
-                rear_outer_error = ((self.lerped_data[seg_index].rear_outer_displacement[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != None and rear_outer_dis != 0 else None
+                rear_outer_dis = None if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_left_dis
+                rear_outer_error = ((self.lerped_data[seg_index].rear_outer_dis[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != None and rear_outer_dis != 0 else None
                 self.RO_dis_sim.append(self.lerped_data[seg_index].rear_outer_displacement[data_index])
                 self.RO_dis_real.append(rear_outer_dis)
                 self.RO_dis_error.append(rear_outer_error)
                 # FI_dis
-                front_inner_dis = data_node.front_left_shock if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_right_shock
+                front_inner_dis = data_node.front_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.front_right_dis
                 front_inner_error = ((self.lerped_data[seg_index].front_inner_displacement[data_index] - front_inner_dis)/front_inner_dis)*100 if front_inner_dis != 0 else None
                 self.FI_dis_sim.append(self.lerped_data[seg_index].front_inner_displacement[data_index])
                 self.FI_dis_real.append(front_inner_dis)
                 self.FI_dis_error.append(front_inner_error)
                 # RI_dis
-                rear_inner_dis = data_node.rear_left_shock if data_node.arc.turn == Validation.Arc.Turn.LEFT else None
+                rear_inner_dis = data_node.rear_left_dis if data_node.arc.turn == Validation.Arc.Turn.LEFT else None
                 rear_inner_error = ((self.lerped_data[seg_index].rear_inner_displacement[data_index] - rear_inner_dis)/rear_inner_dis)*100 if rear_inner_dis != None and rear_inner_dis != 0 else None
                 self.RI_dis_sim.append(self.lerped_data[seg_index].rear_inner_displacement[data_index])
                 self.RI_dis_real.append(rear_inner_dis)
@@ -851,8 +864,8 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
-validator.run_validation(50, get_error=False)
+validator.run_validation(1, get_error=False)
 
-data_type = validator.DataType.FO_load
+data_type = validator.DataType.FI_dis
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
 validator.graph(data_type)
