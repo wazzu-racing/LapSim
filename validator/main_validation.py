@@ -5,9 +5,13 @@ import tkinter
 from enum import Enum
 
 import numpy as np
+from scipy import stats
+from PIL.ImageEnhance import Color
+from matplotlib import pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+import matplotlib.patches as patches
 
 from gen_lapsim.lapsim import LapSimData
 from lapsim_validation import Validation_Track
@@ -27,11 +31,14 @@ class Validation:
         FI_dis = 6
         RO_dis = 7
         RI_dis = 8
-        FO_load = 9
-        FI_load = 10
-        RO_load = 11
-        RI_load = 12
-        RPM = 13
+        FR_dis = 9
+        FL_dis = 10
+        RL_dis = 11
+        FO_load = 12
+        FI_load = 13
+        RO_load = 14
+        RI_load = 15
+        RPM = 16
 
     class Data_Node:
         def __init__(self, AX, AY, roll, yaw, front_left_dis, front_right_dis, rear_left_dis, rear_right_dis, rpm, distance):
@@ -170,9 +177,9 @@ class Validation:
                 data_node.arc = self.arcs[arc_index]
                 self.arcs[arc_index].data_nodes.append(data_node)
 
-                # Clamp data node to the end of the segment
                 if data_node.distance_along_segment < data_node.arc.segment.distance_travelled:
                     data_node.distance_since_arc_start = data_node.distance_along_segment - self.arcs[arc_index].distance_along_segment
+                # Clamp data node to the end of the segment
                 else:
                     data_node.distance_since_arc_start = data_node.arc.length
 
@@ -268,6 +275,57 @@ class Validation:
         calculate_segment_time()
 
     def parse_acceleration_data(self, csv_path):
+        def get_smoothed_acceleration():
+            tk = tkinter.Tk()
+            fig = Figure(figsize=(10, 10), dpi=100)
+            ax = fig.add_subplot(111)
+            canvas = FigureCanvasTkAgg(fig, tk)
+            canvas.draw()
+            toolbar = NavigationToolbar2Tk(canvas, tk)
+            canvas.get_tk_widget().pack()
+            toolbar.update()
+
+            raw_AX, raw_AY = [], []
+
+            csv_file = open(csv_path, newline='\n')
+            reader = csv.reader(csv_file)
+
+            for index, line in enumerate(reader):
+                raw_AX.append(float(line[0]))
+                raw_AY.append(float(line[1]))
+                if index >= 1000:
+                    break
+
+            np_raw_AX, np_raw_AY = np.array(raw_AX), np.array(raw_AY)
+
+            window_size = 39 # Must be odd to have the moving average be centered on the current value
+
+            moving_average_AX = np.convolve(np_raw_AX, np.ones(window_size) / window_size, mode='same')
+            moving_average_AX[:int(window_size/2)] = np.nan # Remove the elements which are invalid
+
+            moving_average_AY = np.convolve(np_raw_AY, np.ones(window_size) / window_size, mode='same')
+            moving_average_AY[:int(window_size/2)] = np.nan # Remove the elements which are invalid
+
+            smoothing_constant = 0.15
+
+            smoothed_AX, smoothed_AY = [], []
+            for i in range(len(moving_average_AX)):
+                if i >= int(window_size/2):
+                    prev_AX = 0
+                    if i > int(window_size/2) and len(smoothed_AX) > 0: prev_AX = smoothed_AX[-1]
+                    smoothed_AX.append(smoothing_constant * moving_average_AX[i] + (1 - smoothing_constant) * prev_AX)
+
+            ax.plot(np.linspace(0, len(smoothed_AX), len(smoothed_AX)), smoothed_AX)
+            # ax.plot(np.linspace(0, len(raw_AY), len(raw_AX)), raw_AY)
+            ax.set_xlabel('Data point')
+            ax.set_ylabel('Acceleration (G\'s)')
+            ax.grid()
+            tk.mainloop()
+
+        get_smoothed_acceleration()
+
+        return
+
         # Read into string
         csv_file = open(csv_path, newline='\n')
         reader = csv.reader(csv_file)
@@ -277,15 +335,7 @@ class Validation:
             if index == 0:
                 continue
 
-        raw_AX, raw_AY = [0, 3, 5, 7, 8, 0, 3, 5, 7, 8, 0, 3, 5, 7, 8, 0, 3, 5, 7, 8, 0, 3, 5, 7, 8], [0, 3, 5, 7, 8, 0, 3, 5, 7, 8, 0, 3, 5, 7, 8, 0, 3, 5, 7, 8, 0, 3, 5, 7, 8]
-        np_raw_AX, np_raw_AY = np.array(raw_AX), np.array(raw_AY)
-
-        window_size = 11 # Must be odd to have the moving average be centered on the current value
-
-        moving_average_AX = np.convolve(np_raw_AX, np.ones(window_size) / window_size, mode='same')
-        moving_average_AX = moving_average_AX[window_size/2:]
-
-        # TODO: Parse acceleration data into raw_AX and raw_AY and put it into data_nodes REMEMBER THE ARRAY IS SMALLER NOW
+            break # TODO: Parse acceleration data into raw_AX and raw_AY and put it into data_nodes REMEMBER THE ARRAY IS SMALLER NOW
 
     def parse_spline_data(self, csv_path):
         # Read into string
@@ -314,7 +364,7 @@ class Validation:
 
             if curr_id != prev_id:
                 end_x = self.arcs[index-1].end_x
-                end_y = self.arcs[index-1].start_y
+                end_y = self.arcs[index-1].end_y
                 segment = self.Segment(prev_id, start_x, start_y, end_x, end_y, arcs)
                 self.segments.append(segment)
 
@@ -356,17 +406,6 @@ class Validation:
         return None
 
     def filter_inaccurate_segments(self, max_arc_length, min_segment_length=0):
-        # count = 0
-        # for seg_index, segment in enumerate(self.segments):
-        #     if len(segment.arcs) < min_segment_length:
-        #         self.segments.pop(seg_index)
-        #         count+=1
-        #         continue
-        #     for arc_index, arc in enumerate(segment.arcs):
-        #         if arc.length > max_arc_length:
-        #             self.segments.pop(seg_index)
-        #             count+=1
-        #             break
         delete_segments = []
         for seg_index, segment in enumerate(self.segments):
             if len(segment.arcs) < min_segment_length:
@@ -377,8 +416,13 @@ class Validation:
                     delete_segments.append(segment)
                     break
         for segment in delete_segments:
+            print(f"Deleted segment {segment.segment_id}, max arc length: {np.max([arc.length for arc in segment.arcs])}")
             self.segments.remove(segment)
-        print("Filtered {} segments. {} segments remaining.".format(len(delete_segments), len(self.segments)))
+        print("Filtered {} segments. {} segments remaining:".format(len(delete_segments), len(self.segments)))
+        for segment in self.segments:
+            print(f"Segment {segment.segment_id}")
+            for arc in segment.arcs:
+                print(f"Arc {arc.arc_id} - {arc.turn}")
 
     def calculate_correlation_coefficient(self, data:DataType):
         mean_sim, mean_real = 0, 0
@@ -543,12 +587,12 @@ class Validation:
                     RO_load_real[-1].append(self.racecar.W_3 + RO_dis * self.racecar.K_RR)
                     RI_load_real[-1].append(self.racecar.W_car - (FO_load_real[-1][-1] + FI_load_real[-1][-1] + RO_load_real[-1][-1]))
 
-                print(f"\nINSTANCE:" + "left turn" if data_node.arc.turn == self.Arc.Turn.LEFT else "right turn")
-                print(f"FO_load: {FO_load_real[-1][-1]}\nFI_load: {FI_load_real[-1][-1]}\nRI_load: {RI_load_real[-1][-1]}\nRO_load: {RO_load_real[-1][-1]}")
+                # print(f"\nINSTANCE:" + "left turn" if data_node.arc.turn == self.Arc.Turn.LEFT else "right turn")
+                # print(f"FO_load: {FO_load_real[-1][-1]}\nFI_load: {FI_load_real[-1][-1]}\nRI_load: {RI_load_real[-1][-1]}\nRO_load: {RO_load_real[-1][-1]}")
 
         return FO_load_real, FI_load_real, RO_load_real, RI_load_real
 
-    def graph(self, graph_type:DataType):
+    def graph(self, graph_type:DataType, show_segments:bool = False, center:bool = False):
 
         tk = tkinter.Tk()
         fig = Figure(figsize=(10, 10), dpi=100)
@@ -564,70 +608,212 @@ class Validation:
                 # Plot both sim and real AX
                 len_AX = np.linspace(0, len(self.AX_sim), len(self.AX_sim))
                 len_AX_r = np.linspace(0, len(self.AX_real), len(self.AX_real))
-                print(self.AX_sim)
-                ax.plot(len_AX, self.AX_sim, label='sim_AX')
-                ax.plot(len_AX_r, self.AX_real, label='real_AX')
+                ax.set_title("Axial Acceleration")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("AX (G's)")
+                ax.plot(len_AX, self.AX_sim, label='sim')
+                ax.plot(len_AX_r, self.AX_real, label='real')
             case self.DataType.AY:
                 # Plot both sim and real AY
                 len_AY = np.linspace(0, len(self.AY_sim), len(self.AY_sim))
                 len_AY_r = np.linspace(0, len(self.AY_real), len(self.AY_real))
-                ax.plot(len_AY, self.AY_sim, label='sim_AY')
-                ax.plot(len_AY_r, self.AY_real, label='real_AY')
+                ax.set_title("Lateral Acceleration")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("AY (G's)")
+                ax.plot(len_AY, self.AY_sim, label='sim')
+                ax.plot(len_AY_r, self.AY_real, label='real')
             case self.DataType.FO_dis:
                 # Plot both sim and real FO dis
                 len_FO = np.linspace(0, len(self.FO_dis_sim), len(self.FO_dis_sim))
                 len_FO_r = np.linspace(0, len(self.FO_dis_real), len(self.FO_dis_real))
-                ax.plot(len_FO, self.FO_dis_sim, label='sim_FO_dis')
-                ax.plot(len_FO_r, self.FO_dis_real, label='real_FO_dis')
+                ax.set_title("FO Wheel Displacement")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Wheel Displacement (in)")
+                ax.plot(len_FO, self.FO_dis_sim, label='sim')
+                ax.plot(len_FO_r, self.FO_dis_real, label='real')
             case self.DataType.FI_dis:
                 # Plot both sim and real FI dis
                 len_FI = np.linspace(0, len(self.FI_dis_sim), len(self.FI_dis_sim))
                 len_FI_r = np.linspace(0, len(self.FI_dis_real), len(self.FI_dis_real))
-                ax.plot(len_FI, self.FI_dis_sim, label='sim_FI_dis')
-                ax.plot(len_FI_r, self.FI_dis_real, label='real_FI_dis')
+                ax.set_title("FI Wheel Displacement")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Wheel Displacement (in)")
+                ax.plot(len_FI, self.FI_dis_sim, label='sim')
+                ax.plot(len_FI_r, self.FI_dis_real, label='real')
             case self.DataType.RO_dis:
                 # Plot both sim and real RO dis
                 len_RO = np.linspace(0, len(self.RO_dis_sim), len(self.RO_dis_sim))
                 len_RO_r = np.linspace(0, len(self.RO_dis_real), len(self.RO_dis_real))
-                ax.plot(len_RO, self.RO_dis_sim, label='sim_RO_dis')
-                ax.plot(len_RO_r, self.RO_dis_real, label='real_RO_dis')
+                ax.set_title("RO Wheel Displacement")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Wheel Displacement (in)")
+                ax.plot(len_RO, self.RO_dis_sim, label='sim')
+                ax.plot(len_RO_r, self.RO_dis_real, label='real')
+            case self.DataType.FR_dis:
+                # Plot both sim and real FR dis
+                if not show_segments:
+                    if center:
+                        FR_dis_real_average = np.average(self.FR_dis_real)
+                        FR_dis_sim_average = np.average(self.FR_dis_sim)
+                        # FR_dis_sim_average = stats.trim_mean(np.average(self.FR_dis_sim), proportiontocut=0.1)
+                        FR_dis_real_mod = np.array(self.FR_dis_real) + (FR_dis_sim_average - FR_dis_real_average)
+                    else:
+                        FR_dis_real_mod = np.array(self.FR_dis_real)
+                    len_FR = np.linspace(0, len(self.FR_dis_sim), len(self.FR_dis_sim))
+                    len_FR_r = np.linspace(0, len(self.FR_dis_real), len(self.FR_dis_real))
+                    ax.set_title("FR Wheel Displacement")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Wheel Displacement (in)")
+                    ax.plot(len_FR, self.FR_dis_sim, label='sim')
+                    ax.plot(len_FR_r, FR_dis_real_mod, label='real')
+                else:
+                    ax.set_title("FR Wheel Displacement")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Wheel Displacement (in)")
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                    data_num = 0
+                    FR_dis_real_average = stats.trim_mean(np.average(self.FR_dis_real), proportiontocut=0.1)
+                    for seg_index, segment in enumerate(self.segments):
+                        array_data_indices = []
+                        array_data_sim = []
+                        array_data_real = []
+                        for index, data_point in enumerate(segment.data_nodes):
+                            array_data_indices.append(data_num)
+                            array_data_sim.append(self.lerped_data[seg_index].front_outer_displacement[index] if data_point.arc.turn == self.Arc.Turn.LEFT else self.lerped_data[seg_index].front_inner_displacement[index])
+                            array_data_real.append(data_point.front_right_dis - FR_dis_real_average if center else data_point.front_right_dis)
+                            data_num+=1
+                        ax.vlines(x=array_data_indices[-1], ymin=-1, ymax=1, color='silver', linestyle='--')
+                        ax.plot(array_data_indices, array_data_sim, color='royalblue')
+                        ax.plot(array_data_indices, array_data_real, color='darkorange')
+            case self.DataType.FL_dis:
+                # Plot both sim and real FL dis
+                if not show_segments:
+                    if center:
+                        FL_dis_real_average = stats.trim_mean(np.average(self.FL_dis_real), proportiontocut=0.1)
+                        FL_dis_real_mod = np.array(self.FL_dis_real) - FL_dis_real_average
+                    else:
+                        FL_dis_real_mod = np.array(self.FL_dis_real)
+                    len_FL = np.linspace(0, len(self.FL_dis_sim), len(self.FL_dis_sim))
+                    len_FL_r = np.linspace(0, len(self.FL_dis_real), len(self.FL_dis_real))
+                    ax.set_title("FL Wheel Displacement")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Wheel Displacement (in)")
+                    ax.plot(len_FL, self.FL_dis_sim, label='sim')
+                    ax.plot(len_FL_r, FL_dis_real_mod, label='real')
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                else:
+                    ax.set_title("FL Wheel Displacement")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Wheel Displacement (in)")
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                    data_num = 0
+                    FL_dis_real_average = stats.trim_mean(np.average(self.FL_dis_real), proportiontocut=0.1)
+                    for seg_index, segment in enumerate(self.segments):
+                        array_data_indices = []
+                        array_data_sim = []
+                        array_data_real = []
+                        for index, data_point in enumerate(segment.data_nodes):
+                            array_data_indices.append(data_num)
+                            array_data_sim.append(self.lerped_data[seg_index].front_outer_displacement[index] if data_point.arc.turn == self.Arc.Turn.RIGHT else self.lerped_data[seg_index].front_inner_displacement[index])
+                            array_data_real.append(data_point.front_left_dis - FL_dis_real_average if center else data_point.front_left_dis)
+                            data_num+=1
+                        ax.vlines(x=array_data_indices[-1], ymin=-1, ymax=1, color='silver', linestyle='--')
+                        ax.plot(array_data_indices, array_data_sim, color='royalblue')
+                        ax.plot(array_data_indices, array_data_real, color='darkorange')
+            case self.DataType.RL_dis:
+                # Plot both sim and real RO dis
+                if not show_segments:
+                    if center:
+                        RL_dis_real_average = stats.trim_mean(np.average(self.RL_dis_real), proportiontocut=0.1)
+                        RL_dis_real_mod = np.array(self.RL_dis_real) - RL_dis_real_average
+                    else:
+                        RL_dis_real_mod = np.array(self.RL_dis_real)
+                    len_RL = np.linspace(0, len(self.RL_dis_sim), len(self.RL_dis_sim))
+                    len_RL_r = np.linspace(0, len(self.RL_dis_real), len(self.RL_dis_real))
+                    ax.set_title("RL Wheel Displacement")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Wheel Displacement (in)")
+                    ax.plot(len_RL, self.RL_dis_sim, label='sim')
+                    ax.plot(len_RL_r, RL_dis_real_mod, label='real')
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                else:
+                    ax.set_title("RL Wheel Displacement")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Wheel Displacement (in)")
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                    data_num = 0
+                    RL_dis_real_average = stats.trim_mean(np.average(self.RL_dis_real), proportiontocut=0.1)
+                    for seg_index, segment in enumerate(self.segments):
+                        array_data_indices = []
+                        array_data_sim = []
+                        array_data_real = []
+                        for index, data_point in enumerate(segment.data_nodes):
+                            array_data_indices.append(data_num)
+                            array_data_sim.append(self.lerped_data[seg_index].rear_outer_displacement[index] if data_point.arc.turn == self.Arc.Turn.RIGHT else self.lerped_data[seg_index].rear_inner_displacement[index])
+                            array_data_real.append(data_point.rear_left_dis - RL_dis_real_average if center else data_point.rear_left_dis)
+                            data_num+=1
+                        ax.vlines(x=array_data_indices[-1], ymin=-1, ymax=1, color='silver', linestyle='--')
+                        ax.plot(array_data_indices, array_data_sim, color='royalblue')
+                        ax.plot(array_data_indices, array_data_real, color='darkorange')
             case self.DataType.RI_dis:
                 # Plot both sim and real RI dis
                 len_RI = np.linspace(0, len(self.RI_dis_sim), len(self.RI_dis_sim))
                 len_RI_r = np.linspace(0, len(self.RI_dis_real), len(self.RI_dis_real))
-                ax.plot(len_RI, self.RI_dis_sim, label='sim_RI_dis')
-                ax.plot(len_RI_r, self.RI_dis_real, label='real_RI_dis')
+                ax.set_title("RI Wheel Displacement")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Wheel Displacement (in)")
+                ax.plot(len_RI, self.RI_dis_sim, label='sim')
+                ax.plot(len_RI_r, self.RI_dis_real, label='real')
             case self.DataType.FO_load:
                 # Plot both sim and real FO load
                 len_FO = np.linspace(0, len(self.FO_load_sim), len(self.FO_load_sim))
                 len_FO_r = np.linspace(0, len(self.FO_load_real), len(self.FO_load_real))
-                ax.plot(len_FO, self.FO_load_sim, label='sim_load_FO')
-                ax.plot(len_FO_r, self.FO_load_real, label='real_load_FO')
+                ax.set_title("FO Load")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Load (lbs)")
+                ax.plot(len_FO, self.FO_load_sim, label='sim')
+                ax.plot(len_FO_r, self.FO_load_real, label='real')
             case self.DataType.FI_load:
                 # Plot both sim and real FI load
                 len_FI = np.linspace(0, len(self.FI_load_sim), len(self.FI_load_sim))
                 len_FI_r = np.linspace(0, len(self.FI_load_real), len(self.FI_load_real))
-                ax.plot(len_FI, self.FI_load_sim, label='sim_load_FI')
-                ax.plot(len_FI_r, self.FI_load_real, label='real_load_FI')
+                ax.set_title("FI Load")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Load (lbs)")
+                ax.plot(len_FI, self.FI_load_sim, label='sim')
+                ax.plot(len_FI_r, self.FI_load_real, label='real')
             case self.DataType.RO_load:
                 # Plot both sim and real RO load
                 len_RO = np.linspace(0, len(self.RO_load_sim), len(self.RO_load_sim))
                 len_RO_r = np.linspace(0, len(self.RO_load_real), len(self.RO_load_real))
-                ax.plot(len_RO, self.RO_load_sim, label='sim_load_RO')
-                ax.plot(len_RO_r, self.RO_load_real, label='real_load_RO')
+                ax.set_title("RO Load")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Load (lbs)")
+                ax.plot(len_RO, self.RO_load_sim, label='sim')
+                ax.plot(len_RO_r, self.RO_load_real, label='real')
             case self.DataType.RI_load:
                 # Plot both sim and real RI load
                 len_RI = np.linspace(0, len(self.RI_load_sim), len(self.RI_load_sim))
                 len_RI_r = np.linspace(0, len(self.RI_load_real), len(self.RI_load_real))
-                ax.plot(len_RI, self.RI_load_sim, label='sim_load_RI')
-                ax.plot(len_RI_r, self.RI_load_real, label='real_load_RI')
+                ax.set_title("RI Load")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("Load (lbs)")
+                ax.plot(len_RI, self.RI_load_sim, label='sim')
+                ax.plot(len_RI_r, self.RI_load_real, label='real')
             case self.DataType.RPM:
                 # Plot both sim and real RPM
                 len_rpm = np.arange(0, len(self.rpm_sim))
                 len_rpm_r = np.linspace(0, len(self.rpm_real))
-                ax.plot(len_rpm, self.rpm_sim, label='rpm_sim')
-                ax.plot(len_rpm_r, self.rpm_real, label='rpm_real')
-        ax.legend()
+                ax.set_title("RPM")
+                ax.set_xlabel("Data point")
+                ax.set_ylabel("RPM")
+                ax.plot(len_rpm, self.rpm_sim, label='sim')
+                ax.plot(len_rpm_r, self.rpm_real, label='real')
         tk.mainloop()
 
     def convert_units(self):
@@ -684,19 +870,20 @@ class Validation:
 
         self.parse_data()
         self.convert_units()
-        self.filter_inaccurate_segments(max_arc_length=500, min_segment_length=3)
+        self.filter_inaccurate_segments(max_arc_length=500, min_segment_length=2)
 
         # Compute numbers for data nodes (places where actual data is collected by data acq)
         for segment in self.segments:
             segment.compute_arc_segment_distances()
             segment.calculate_distance_differences()
 
-        # self.segments = [self.segments[2]]
+        # self.segments = [self.segments[21]]
 
-        print(f"data nodes in segment: {len(self.segments[0].data_nodes)}")
+        # print(f"data nodes in segment: {len(self.segments[0].data_nodes)}")
 
         val_track = Validation_Track(self.segments, self.racecar, sims_per_arc)
         self.lapsim_data = val_track.run()
+        val_track.plt_sim()
 
         # Lerp sim data to match the position of real data
         for seg_index, segment in enumerate(self.segments):
@@ -739,13 +926,16 @@ class Validation:
         self.FO_dis_sim, self.RO_dis_sim, self.FI_dis_sim, self.RI_dis_sim = [], [], [], []
         self.FO_dis_real, self.RO_dis_real, self.FI_dis_real, self.RI_dis_real = [], [], [], []
         self.FO_dis_error, self.RO_dis_error, self.FI_dis_error, self.RI_dis_error = [], [], [], []
+        self.FR_dis_sim, self.FL_dis_sim, self.RL_dis_sim = [], [], []
+        self.FR_dis_real, self.FL_dis_real, self.RL_dis_real = [], [], []
+        self.FR_dis_error, self.FL_dis_error, self.RL_dis_error = [], [], []
 
         self.FO_load_sim, self.RO_load_sim, self.FI_load_sim, self.RI_load_sim = [], [], [], []
         self.FO_load_real_temp, self.FI_load_real_temp, self.RO_load_real_temp, self.RI_load_real_temp = self.calculate_forces()
         self.FO_load_real, self.FI_load_real, self.RO_load_real, self.RI_load_real = [], [], [], []
         self.FO_load_error, self.RO_load_error, self.FI_load_error, self.RI_load_error = [], [], [], []
         for seg_index, segment in enumerate(self.segments):
-            print(self.lerped_data[seg_index].AX)
+            # print(self.lerped_data[seg_index].AX)
             # Store time only once per segment, since only the time from the beginning to the end of the segment is collected.
             self.time_sim.append(self.lerped_data[seg_index].time_array[0])
             self.time_real.append(segment.time)
@@ -773,7 +963,7 @@ class Validation:
                 self.FO_dis_error.append(front_outer_error)
                 # RO_dis
                 rear_outer_dis = None if data_node.arc.turn == Validation.Arc.Turn.LEFT else data_node.rear_left_dis
-                rear_outer_error = ((self.lerped_data[seg_index].rear_outer_dis[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != None and rear_outer_dis != 0 else None
+                rear_outer_error = ((self.lerped_data[seg_index].rear_outer_displacement[data_index] - rear_outer_dis)/rear_outer_dis)*100 if rear_outer_dis != None and rear_outer_dis != 0 else None
                 self.RO_dis_sim.append(self.lerped_data[seg_index].rear_outer_displacement[data_index])
                 self.RO_dis_real.append(rear_outer_dis)
                 self.RO_dis_error.append(rear_outer_error)
@@ -789,6 +979,27 @@ class Validation:
                 self.RI_dis_sim.append(self.lerped_data[seg_index].rear_inner_displacement[data_index])
                 self.RI_dis_real.append(rear_inner_dis)
                 self.RI_dis_error.append(rear_inner_error)
+                # FR_dis
+                front_right_dis = data_node.front_right_dis
+                front_right_dis_sim = self.lerped_data[seg_index].front_outer_displacement[data_index] if data_node.arc.turn == Validation.Arc.Turn.LEFT else self.lerped_data[seg_index].front_inner_displacement[data_index]
+                front_right_error = ((front_right_dis_sim - front_right_dis)/front_right_dis)*100 if front_right_dis != None and front_right_dis != 0 else None
+                self.FR_dis_sim.append(front_right_dis_sim)
+                self.FR_dis_real.append(front_right_dis)
+                self.FR_dis_error.append(front_right_error)
+                # FL_dis
+                front_left_dis = data_node.front_left_dis
+                front_left_dis_sim = self.lerped_data[seg_index].front_inner_displacement[data_index] if data_node.arc.turn == Validation.Arc.Turn.LEFT else self.lerped_data[seg_index].front_outer_displacement[data_index]
+                front_left_dis_error = ((front_left_dis_sim - front_left_dis)/front_left_dis)*100 if front_left_dis != None and front_left_dis != 0 else None
+                self.FL_dis_sim.append(front_left_dis_sim)
+                self.FL_dis_real.append(front_left_dis)
+                self.FL_dis_error.append(front_left_dis_error)
+                # RL_dis
+                rear_left_dis = data_node.rear_left_dis
+                rear_left_dis_sim = self.lerped_data[seg_index].rear_inner_displacement[data_index] if data_node.arc.turn == Validation.Arc.Turn.LEFT else self.lerped_data[seg_index].rear_outer_displacement[data_index]
+                rear_left_error = ((rear_left_dis_sim - rear_left_dis)/rear_left_dis)*100 if rear_left_dis != None and rear_left_dis != 0 else None
+                self.RL_dis_sim.append(rear_left_dis_sim)
+                self.RL_dis_real.append(rear_left_dis)
+                self.RL_dis_error.append(rear_left_error)
                 # FO_load
                 front_outer_load = self.FO_load_real_temp[seg_index][data_index]
                 front_outer_load_error = ((self.lerped_data[seg_index].FO_load_array[data_index] - front_outer_load)/front_outer_load)*100 if front_outer_load != 0 else None
@@ -864,8 +1075,9 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
-validator.run_validation(1, get_error=False)
+# validator.run_rust_code()
+validator.run_validation(20, get_error=False)
 
-data_type = validator.DataType.FI_dis
+data_type = validator.DataType.FL_dis
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
-validator.graph(data_type)
+validator.graph(data_type, False, True)

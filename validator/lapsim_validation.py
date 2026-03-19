@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from gen_lapsim.lapsim import LapSimData
 
@@ -46,6 +47,7 @@ class Validation_Track():
         lapsim_data_storage.initialize(len(lens))
 
         t_vels = np.sqrt(car.max_corner * np.array(rads))
+        # print(t_vels)
 
         # Finding total length of track
         track = np.sum(lens)
@@ -73,6 +75,7 @@ class Validation_Track():
                 v2[int(i - 1)] = np.sqrt(v2[int(i)] ** 2 - 2 * snippet.AX * lens[int(i)])
             snippet.AX /= (32.17 * 12)
             lapsim_data_storage.AX[int(i)] = snippet.AX
+        # print(v2)
 
         # Determine the speed if the car accelerated for the entire length of the traffic, starting from 0 mph at node 0
         v1 = np.zeros(int(n + 1))
@@ -101,8 +104,17 @@ class Validation_Track():
                 lapsim_data_storage.append_data_arrays(snippet, int(i)) # Positive AY is turning right, negative AY is turning left.
 
             else:
-                # Calculate and record data
-                snippet = self.car.curve_accel(v1[int(i)], rads[int(i)])  # in g's
+                # Calculate axial acceleration
+                snippet = self.car.curve_accel(v1[int(i)], rads[int(i)]) # AX in g's
+
+                # Figure out if the maximum possible acceleration currently is not enough to satisfy the next velocity.
+                # If it does not satisfy the next velocity, then replace that next velocity with the velocity produced
+                # from the current axial acceleration.
+                snippet.AX *= 32.17 * 12 # convert to in/s^2
+                if (np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * lens[i]) < v1[int(i + 1)]) or (v1[int(i + 1)] == 0.):
+                    v1[int(i + 1)] = np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * lens[i])
+                snippet.AX /= (32.17 * 12) # convert back to g's
+
                 lapsim_data_storage.append_data_arrays(snippet, int(i)) # Positive AY is turning right, negative AY is turning left.
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
@@ -112,54 +124,62 @@ class Validation_Track():
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
+            lapsim_data_storage.velocity[i] = v3[i]
+        # print(v3)
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
         for i in np.arange(0, len(v2) - 1):
-            # calculate time between nodes by averaging the velocities of the nodes at the start and end of the selected time frame
             t += lens[int(i)] / np.average([v3[i], v3[i + 1]])
             lapsim_data_storage.time_array.append(t)
-        # print(f"Time: {t} seconds")
+
+        # print("NEW SEGMENT")
+        # print(f"starting velocity: {segment.starting_velocity} in/s")
+        # for index, vel in enumerate(lapsim_data_storage.velocity):
+        #     print(f"{lapsim_data_storage.AX[index]} g's at {vel} in/s")
 
         return lapsim_data_storage
 
         lapsim_data_storage.infect_force_thetas()
         lapsim_data_storage.round_all_arrays(decimals=3)
 
-    def plt_sim(self, car, nodes = 5000, start = 0, end = 0):
-        # TODO
-        pass
-        # self.car = car
-        #
-        # # setup for position vs velocity plot
-        # self.run_sim(car, nodes, start, end)
-        # plt.title('Simulation Results:')
-        # plt.xlabel('Position (ft)')
-        # plt.ylabel('Vehicle Speed (mph)')
-        # plt.grid()
-        # plt.plot(self.nodes, self.v3)
-        # plt.axis('equal')
-        # plt.show()
+    def plt_sim(self):
+        tk = tkinter.Tk()
+        fig = Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, tk)
+        canvas.draw()
+        toolbar = NavigationToolbar2Tk(canvas, tk)
+        canvas.get_tk_widget().pack()
+        toolbar.update()
+
+        count = 0
+        for data in self.segment_data:
+            ax.plot(np.linspace(count, len(data.velocity)+count, len(data.velocity))+count, data.velocity)
+            count += len(data.velocity)
+        tk.mainloop()
 
     def plt_track(self, arcs):
-        root = tkinter.Tk()
-        root.title("Track")
-
-        fig = plt.Figure(figsize=(10, 10))
-        ax = fig.add_subplot(111)
-
-        # Plot data
-        for index in range(len(arcs)):
-            if arcs[index].bad_data:
-                ax.plot(self.arcs[index].x, self.arcs[index].y, color='red')
-            else:
-                ax.plot(self.arcs[index].x, self.arcs[index].y, color='green')
-        ax.plot(self.arcs[-1].x, self.arcs[-1].y, color='red') # Last arc is assumed to be bad data
-
-        canvas = FigureCanvasTkAgg(fig, root)
-        toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=True)
-        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-        toolbar.update()
-        canvas.draw()
-
-        root.mainloop()
+        # Does not work; need to fix
+        pass
+        # root = tkinter.Tk()
+        # root.title("Track")
+        #
+        # fig = plt.Figure(figsize=(10, 10))
+        # ax = fig.add_subplot(111)
+        #
+        # # Plot data
+        # for index in range(len(arcs)):
+        #     if arcs[index].bad_data:
+        #         ax.plot(self.arcs[index].x, self.arcs[index].y, color='red')
+        #     else:
+        #         ax.plot(self.arcs[index].x, self.arcs[index].y, color='green')
+        # ax.plot(self.arcs[-1].x, self.arcs[-1].y, color='red') # Last arc is assumed to be bad data
+        #
+        # canvas = FigureCanvasTkAgg(fig, root)
+        # toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=True)
+        # canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        # toolbar.update()
+        # canvas.draw()
+        #
+        # root.mainloop()

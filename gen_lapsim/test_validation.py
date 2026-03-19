@@ -53,7 +53,7 @@ class Track_Examine:
         trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
 
         trk.run_sim(racecar, 5000, 0, 98)
-        trk.plt_sim()
+        # trk.plt_sim()
 
     def run(self):
         self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf")

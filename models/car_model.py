@@ -480,7 +480,6 @@ class car():
     # set r to zero for a track straight track with no curvature
     def curve_accel(self, v, r, transmission_gear='optimal'):
         snippet = None
-        self.velocity = v
 
         AY = 0
         if r > 0:
@@ -497,9 +496,6 @@ class car():
                 curr_ratio = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])
                 prev_ratio = (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])
                 snippet = self.Car_Data_Snippet.get_interpolated_copy(self.accel_car_data_snippets[i], curr_ratio, prev_ratio)
-                # print(f"\nprev_accel: {self.A_accel[i-1]}, accel: {snippet.AX}, next_accel: {self.A_accel[i]}")
-                # print(f"accel: {snippet.AX}")
-                # print(f"prev_dis: {self.accel_car_data_snippets[i-1].FO_camber}, dis: {snippet.FO_camber}, next_dis: {self.accel_car_data_snippets[i].FO_camber}")
                 returned = True
                 break
         if not returned:
@@ -507,16 +503,12 @@ class car():
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
 
-        # print(f"A_engn: {A_engn}, A_tire: {snippet.AX}")
-
         # returns either tire or engine acceleration depending on which is the limiting factor
         if A_engn < snippet.AX:
             snippet.AX = A_engn
             snippet.AX -= drag
-            # print(snippet.AX)
             return snippet
         snippet.AX -= drag
-        # print(snippet.AX)
         return snippet
 
     # calculates the max braking acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
@@ -524,7 +516,6 @@ class car():
     # set r to zero for a track straight track with no curvature
     def curve_brake(self, v, r):
         snippet = None
-        self.velocity = v
 
         AY = 0
         if r > 0:
@@ -541,8 +532,6 @@ class car():
                 curr_ratio = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])
                 prev_ratio = (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])
                 snippet = self.Car_Data_Snippet.get_interpolated_copy(self.brake_car_data_snippets[i], curr_ratio, prev_ratio)
-                # print(f"\nprev_accel: {self.A_brake[i-1]}, accel: {snippet.AX}, next_accel: {self.A_brake[i]}")
-                # print(f"prev_dis: {self.brake_car_data_snippets[i-1].front_outer_displacement}, dis: {snippet.front_outer_displacement}, next_dis: {self.brake_car_data_snippets[i].front_outer_displacement}")
                 returned = True
                 break
         if not returned:
@@ -606,6 +595,15 @@ class car():
         plt.show()
 
 # racecar = car()
+# snippet100 = racecar.brake_car_data_snippets[-1]
+# print(snippet100.AY)
+# print(f"FO_load: {snippet100.FO_load}\nFI_load: {snippet100.FI_load}\nRO_load: {snippet100.RO_load}\nRI_load: {snippet100.RI_load}\n")
+# snippet66 = racecar.brake_car_data_snippets[66]
+# print(snippet66.AY)
+# print(f"FO_load: {snippet66.FO_load}\nFI_load: {snippet66.FI_load}\nRO_load: {snippet66.RO_load}\nRI_load: {snippet66.RI_load}\n")
+# snippet33 = racecar.brake_car_data_snippets[33]
+# print(snippet33.AY)
+# print(f"FO_load: {snippet33.FO_load}\nFI_load: {snippet33.FI_load}\nRO_load: {snippet33.RO_load}\nRI_load: {snippet33.RI_load}\n")
 # for index, snippet in enumerate(racecar.accel_car_data_snippets):
 #     print(snippet.AX)
 

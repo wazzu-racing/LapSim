@@ -21,7 +21,7 @@ class drivetrain:
         self.final_drive = final_drive
         self.primary_drive = 1.69
 
-        self.wheel_radius = 9/12 # ft # 9/12 for 92
+        self.wheel_radius = 10.5/12 # ft # 9/12 for 92
         self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
         self.shift_time = 0 # seconds
 
@@ -49,7 +49,7 @@ class drivetrain:
         
         self.speed = []
         previous_gear = 0
-        for i in range(0, 900):
+        for i in range(0, 2000):
             self.speed.append(i/10) # mph
             wheel_rpm = self.speed[-1] * 88 / self.circumfrence # multiplies speed by 88 to convert from mph to ft/min
             best_gear = previous_gear
@@ -108,7 +108,6 @@ class drivetrain:
         ratio = (mph*10) % 1
         
         if gear == 'optimal':
-            print(indx)
             return (self.axl_T[indx]*(1-ratio) + self.axl_T[indx+1]*ratio) / self.wheel_radius
         else:
             return (self.gear_T[gear][indx]*(1-ratio) + self.gear_T[gear][indx+1]*ratio) / self.wheel_radius

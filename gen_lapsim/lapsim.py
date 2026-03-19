@@ -1,7 +1,12 @@
 import math
+import tkinter
 
 import numpy as np
 import copy
+import matplotlib.pyplot as plt
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from gen_lapsim.spline_track import curve
 
@@ -307,6 +312,9 @@ class four_wheel:
                         gear += 1
                         shift_time = self.car.drivetrain.shift_time
                         shifting = False
+                # Figure out if the maximum possible acceleration currently is not enough to satisfy the next velocity.
+                # If it does not satisfy the next velocity, then replace that next velocity with the velocity produced
+                # from the current axial acceleration.
                 if (np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * self.dx) < v1[int(i + 1)]) or (v1[int(i + 1)] == 0.):
                     v1[int(i + 1)] = np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * self.dx)
 
@@ -336,6 +344,23 @@ class four_wheel:
         self.v2 = v2
         self.v1 = v1
         self.t = t
+
+        # tk = tkinter.Tk()
+        # fig = Figure(figsize=(10, 10), dpi=100)
+        # ax = fig.add_subplot(111)
+        # canvas = FigureCanvasTkAgg(fig, tk)
+        # canvas.draw()
+        # toolbar = NavigationToolbar2Tk(canvas, tk)
+        # canvas.get_tk_widget().pack()
+        # toolbar.update()
+        #
+        # ax.plot(np.linspace(0, len(self.v2), len(self.v2)), v2, color="red")
+        # ax.plot(np.linspace(0, len(self.v3), len(self.v3)), v3)
+        # ax.plot(np.linspace(0, len(self.v1), len(self.v1)), v1, color="blue")
+        # ax.plot(np.linspace(0, len(self.t_vel), len(self.t_vel)), self.t_vel)
+        # ax.legend()
+        # ax.grid()
+        # tk.mainloop()
 
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
