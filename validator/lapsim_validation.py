@@ -35,9 +35,6 @@ class Validation_Track():
             for sim in range(self.sims_per_arc):
                 lens.append(arc.length / self.sims_per_arc)
                 rads.append(arc.radius)
-            # print(f"\n------ Arc {index} ------")
-            # print(f"length: {lens[index]}")
-            # print(f"radius: {rads[index]}")
 
         ##############################################
         #                 LAPSIM CODE                #

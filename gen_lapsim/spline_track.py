@@ -661,7 +661,7 @@ class track():
         self.loading_window = None
 
         # Get the minimum distance the CG of the car needs from the apex of the turn
-        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2
+        self.car_rad = np.max([self.car.t_r, self.car.t_f])/2 if car is not None else 29
 
         self.len = []
 
@@ -938,6 +938,7 @@ class track():
             self.turn_dirs += i.turn_dirs
         self.sim = lapsim.four_wheel(self.len, self.rad, self.turn_dirs, car, nodes)
         self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
+        return self.t
         # print(f'Total Travel Time: {self.t}')
 
     def update_track(self):

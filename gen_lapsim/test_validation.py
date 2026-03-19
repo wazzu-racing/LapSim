@@ -52,7 +52,7 @@ class Track_Examine:
         trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, racecar)
         trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
 
-        trk.run_sim(racecar, 5000, 0, 98)
+        trk.run_sim(racecar, 10000, 0, 98)
         # trk.plt_sim()
 
     def run(self):

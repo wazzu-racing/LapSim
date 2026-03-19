@@ -27,8 +27,6 @@ class car():
     l = 60.04
     # vertical center of gravity (in)
     h = 9
-    # in, CG height to roll axis
-    H = 10.521
     # in, roll axis height, front and rear
     z_rf = 2
     z_rr = 3
@@ -377,6 +375,26 @@ class car():
         self.accel(0, 0)
         self.static_snippet = self.Car_Data_Snippet(self, -1) # Used to describe the state of the car during gear changes
 
+    def recalculate_characteristics(self):
+        # weight over front track
+        self.W_f = self.W_1 + self.W_2
+        # weight over rear track
+        self.W_r = self.W_3 + self.W_4
+        # total weight of car (minus driver) (lbm)
+        self.W_car = self.W_f + self.W_r
+        # weight bias, if less than 0.5, then the rear of the car will have more weight, if more than 0.5, then the front will have more weight
+        self.W_bias = self.W_f/self.W_car
+        # in, distance from CG to rear track
+        self.b = self.l * self.W_bias
+        # in, distance from CG to front track
+        self.a = self.l - self.b
+        # in, CG height to roll axis
+        self.H = self.h - (self.a*self.z_rf + self.b*self.z_rr)/self.l
+        # Rolling resistance force, in/s^2
+        self.a_rr = -(self.C_rr * self.W_1 + self.C_rr * self.W_2 + self.C_rr * self.W_3 + self.C_rr * self.W_4)/self.W_car * 386.089
+
+        self.compute_traction()
+
     # Returns true if the car can generate the axial traction based on AY and AX. Returns false otherwise.
     # AY is magnitude of lateral acceleration, AX is magnitude of axial acceleration, both are measured in g's
     def accel(self, AY, AX, bitch = False):
@@ -405,8 +423,8 @@ class car():
 
         self.C_out_f = abs(self.CMB_STC_F + (self.W_out_f-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
         self.C_in_f = abs(self.CMB_STC_F + (self.W_in_f-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
-        self.C_out_r = abs(self.CMB_STC_F + (self.W_out_r-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
-        self.C_in_r = abs(self.CMB_STC_F + (self.W_in_r-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
+        self.C_out_r = abs(self.CMB_STC_R + (self.W_out_r-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
+        self.C_in_r = abs(self.CMB_STC_R + (self.W_in_r-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
 
         self.FY_out_f = self.tires.traction('corner', self.W_out_f, self.C_out_f) # max possible lateral acceleration from front outter wheel in pounds
         self.FY_in_f = self.tires.traction('corner', self.W_in_f, self.C_in_f)    # max possible lateral acceleration from front inner wheel in pounds
@@ -584,7 +602,6 @@ class car():
         self.z_rf *= ratio
         self.z_rr *= ratio
         self.compute_traction()
-
 
     def traction_curve(self):
         plt.plot(self.AY, self.A_accel)

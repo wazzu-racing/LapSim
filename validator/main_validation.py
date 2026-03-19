@@ -422,7 +422,7 @@ class Validation:
         for segment in self.segments:
             print(f"Segment {segment.segment_id}")
             for arc in segment.arcs:
-                print(f"Arc {arc.arc_id} - {arc.turn}")
+                print(f"Arc {arc.arc_id} - {arc.radius}")
 
     def calculate_correlation_coefficient(self, data:DataType):
         mean_sim, mean_real = 0, 0
