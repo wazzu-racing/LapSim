@@ -321,8 +321,8 @@ class LapSimUI:
         # Stuff for track_root is made in load_track.
         track_root.deiconify() # Show the window
 
-        tkinter_data_bools = [tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False)]
-        data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car"]
+        tkinter_data_bools = [tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,True), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False), tkinter.BooleanVar(track_root,False)]
+        data_options = ["Time", "Acceleration", "Vertical Force", "Lateral Force", "Axial Force", "Force Vector", "Force Magnitude", "Force Direction", "Wheel Displacement", "Theta of Force on Car", "Radius"]
 
         data_label_frame = tkinter.Frame(track_root, width=600, height=500, bg="gray13")
         data_label_frame.grid(row=1, column=2, padx=0, pady=0, sticky="nsew")
@@ -485,7 +485,7 @@ class curve():
         LEFT = 0
         RIGHT = 1
 
-    def __init__(self, n1, n2, elem = 50):
+    def __init__(self, n1, n2, elem = 10):
         self.n1 = n1
         self.n2 = n2
         self.elem = elem
@@ -576,7 +576,6 @@ class curve():
 
             self.c += num/dom * 1000/self.elem
 
-
             # H = 1
             # if self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i] < 0:
             #     H = -1
@@ -601,7 +600,6 @@ class curve():
 
     # Determine the turning dir at each point along the arc.
     def determine_turn_dirs(self):
-
         # Uses cross product of derivatives on a point of an arc to get the concavity of the arc, and therefore turning dir.
         def determine_turn_dir_on_one_point(ddx, ddy, dx, dy):
             cross = dx * ddy - dy * ddx
@@ -624,7 +622,6 @@ class curve():
         for i in range(0, self.elem):
             rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy_n[i] - self.dy[i] * self.ddx_n[i]))
             len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
-            print((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
 
         return(len, rad)
 
@@ -686,6 +683,8 @@ def get_data_string(self, lapsim_data_storage, tkinter_data_bools, index):
         content += f"Vertical displacement of front outer tire: {round(lapsim_data_storage.front_outer_displacement[index], 2)} in\nVertical displacement of front inner tire: {round(lapsim_data_storage.front_inner_displacement[index], 2)} in\nVertical displacement of rear outer tire: {round(lapsim_data_storage.rear_outer_displacement[index], 2)} in\nVertical displacement of rear inner tire: {round(lapsim_data_storage.rear_inner_displacement[index], 2)} in\n\n"
     if tkinter_data_bools[9].get():
         content += f"Theta of Force on Car: {round(lapsim_data_storage.theta_accel[index], 2)} deg\n\n"
+    if tkinter_data_bools[10].get():
+        content += f"Radius: {round(lapsim_data_storage.radii[index], 2)} in\n\n"
     content += f"\n\"Outer\" refers to the tires on the outside of the turn;\n \"Inner\" refers to the tires on the inside of the turn."
     return content
 
@@ -844,7 +843,7 @@ class track():
                     y_array.append(y)
                     turn_array.append(turn)
 
-        points = []
+        points, start_vel_pts = [], []
         for index in range(len(x_array)):
             points.append((x_array[index], y_array[index]))
             # track_subplot.plot(x_array[index], y_array[index], marker='o', color="Green" if turn_array[index] == curve.Turn.RIGHT else "red", markersize=1) # Uncomment to visually see left and right turns along track

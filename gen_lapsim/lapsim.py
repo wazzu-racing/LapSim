@@ -16,6 +16,9 @@ class LapSimData:
         # Arrays for lateral and axial acceleration of car
         self.AY = [] # Positive AY is turning right, negative AY is turning left.
         self.AX = []
+        self.velocity = []
+        # Radii
+        self.radii = []
         #Array for car body angle
         self.car_body_angle = []
         # Arrays for slip angle for each tire
@@ -79,6 +82,9 @@ class LapSimData:
         # Collect lateral and axial acceleration
         self.AX = np.zeros(int(n + 1))
         self.AY = np.zeros(int(n + 1))
+        self.velocity = np.zeros(int(n + 1))
+        #Radii
+        self.radii = np.zeros(int(n + 1))
         # Collect car body angle
         self.car_body_angle = np.zeros(int(n + 1))
         # Arrays for slip angles for each tire
@@ -135,6 +141,10 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX[index] = car_data_snippet.AX
         self.AY[index] = car_data_snippet.AY
+        self.velocity[index] = car_data_snippet.velocity
+
+        #Radii
+        self.radii[index] = car_data_snippet.radius
 
         # Collect car body angle
         self.car_body_angle[index] = car_data_snippet.car_body_angle
@@ -231,6 +241,10 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX = np.round(np.array(self.AX), decimals=decimals)
         self.AY = np.round(np.array(self.AY), decimals=decimals)
+        self.velocity = np.round(np.array(self.velocity), decimals=decimals)
+
+        # radii
+        self.radii = np.round(np.array(self.radii), decimals=decimals)
 
         # Car body angle
         self.car_body_angle = np.round(np.array(self.car_body_angle), decimals=decimals)
@@ -462,6 +476,7 @@ class four_wheel:
                 # print(f"{int(i)} rad {self.nd_rad[int(i)]}")
                 # print(f"FI - slip: {self.lapsim_data_storage.FI_slip[int(i)] * 180/math.pi}, FY: {self.lapsim_data_storage.FI_FY_array[int(i)]}\nFO - slip: {self.lapsim_data_storage.FO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.FO_FY_array[int(i)]}\nRI - slip: {self.lapsim_data_storage.RI_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RI_FY_array[int(i)]}\nRO - slip: {self.lapsim_data_storage.RO_slip[int(i)]* 180/math.pi}, FY: {self.lapsim_data_storage.RO_FY_array[int(i)]}\n")
 
+            print(f"velocity: {self.lapsim_data_storage.velocity[i]}")
             self.lapsim_data_storage.total_distance[int(i)] = dx * i
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
@@ -472,8 +487,6 @@ class four_wheel:
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
-        # for v in v3:
-        #     print(v)
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
@@ -489,6 +502,8 @@ class four_wheel:
         if self.validating:
             for i in range(len(self.nturn_dirs)):
                 self.lapsim_data_storage.AY[i] = abs(self.lapsim_data_storage.AY[i])
+
+        self.lapsim_data_storage.do_stuff(self.nd_rad, dx)
 
         self.dx = dx
         self.n = n

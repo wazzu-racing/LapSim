@@ -27,7 +27,7 @@ class FileMaker:
             return
 
         # Create pickle files that store the nodes of the autocross and endurance tracks using .rtf files.
-        self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Autocross.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
+        self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Auto_Points_25.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "autocross_trk_points.pkl")), is_autocross=True)
         self.parse_text_to_track_pkl(txt_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "Points for Endurance.rtf")), pkl_path=file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "track_points", "endurance_trk_points.pkl")), is_autocross=False)
 
         # Create folder directories in user's Documents folder.
@@ -90,7 +90,7 @@ class FileMaker:
         if not self.car_file_exists(): # Make sure that the car file does not already exist.
             # Create car model and put into user's documents folder.
             racecar = Car(False, tire_path=os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), drivetrain_path=os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"))
-            racecar.compute_acceleration(250, func=save, open_main_window=True, controller=controller, run_from="file_maker")
+            racecar.compute_acceleration(20, func=save, open_main_window=True, controller=controller, run_from="file_maker")
 
     def car_file_exists(self):
         if Path(os.path.join(self.models_file_path, "CAR_73.pkl")).exists():
@@ -169,7 +169,7 @@ class FileMaker:
 
         track = self.points()
 
-        rang = 97 if is_autocross else 129
+        rang = 98 if is_autocross else 129
         for i in range(rang):
             n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
             track.nds.append(n)
@@ -177,26 +177,14 @@ class FileMaker:
         with open(pkl_path, "wb") as f:
             pickle.dump(track, f)
 
+        # with open(pkl_path, "rb") as f:
+        #     points = pickle.load(f)
+        #     lapData = LapData(points)
+        #
+        # with open(pkl_path, "wb") as f:
+        #     pickle.dump(lapData, f)
+
 # FileMaker object used throughout the program. (think of as a singleton.)
 file_maker = FileMaker()
 
-# racecar = Car()
-#
-# print(f"Total runtime: {racecar.end - racecar.start} seconds")
-#
-# with open(file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent.parent, "config_data", "track_points", "autocross_trk_points.pkl")), "rb") as f:
-#     points_trk = pickle.load(f)
-#
-# points_x = []
-# points_y = []
-# points_x2 = []
-# points_y2 = []
-# for node in points_trk.nds:
-#     points_x.append(node.x1)
-#     points_y.append(node.y1)
-#     points_x2.append(node.x2)
-#     points_y2.append(node.y2)
-#
-# track = track(points_x, points_y, points_x2, points_y2, racecar)
-# track.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
-# track.run_sim(racecar)
+# file_maker.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/config_data/track_points/Auto_Points_25.rtf", "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim/auto_25.pkl", True)
