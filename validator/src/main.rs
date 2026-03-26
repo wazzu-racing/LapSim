@@ -447,12 +447,7 @@ fn export_arcs(segments: &[TrackSegment], path: &str) -> std::io::Result<()> {
 
     for (seg_idx, segment) in segments.iter().enumerate() {
         for (arc_idx, arc) in segment.arcs.iter().enumerate() {
-            // Calculate arc length from radius and angle difference
-            let mut angle_diff = arc.end_angle - arc.start_angle;
-            if angle_diff < 0.0 {
-                angle_diff += 2.0 * std::f64::consts::PI;
-            }
-            let arc_length = arc.radius * angle_diff;
+            let arc_length = arc.arc_length();
 
             writeln!(
                 file,

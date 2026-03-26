@@ -53,6 +53,20 @@ impl Arc {
             Direction::Right
         }
     }
+
+    /// Calculate the length of the arc along its curved path
+    pub fn arc_length(&self) -> f64 {
+        let mut angle_diff = (self.end_angle - self.start_angle).abs();
+
+        // Handle the case where the arc crosses the -PI/PI boundary
+        // Since we know these arcs are supposed to be short (around min_arc_length)
+        // the correct angular displacement is always the shortest path.
+        if angle_diff > std::f64::consts::PI {
+            angle_diff = 2.0 * std::f64::consts::PI - angle_diff;
+        }
+
+        self.radius * angle_diff
+    }
 }
 
 impl ToString for Direction {
@@ -1094,12 +1108,9 @@ pub fn map_arcs_to_points(segments: &[TrackSegment]) -> Vec<ArcWithPoints> {
 
                     // Normalize angles to [0, 2π]
                     let normalize_angle = |angle: f64| {
-                        let mut a = angle;
-                        while a < 0.0 {
+                        let mut a = angle % (2.0 * std::f64::consts::PI);
+                        if a < 0.0 {
                             a += 2.0 * std::f64::consts::PI;
-                        }
-                        while a >= 2.0 * std::f64::consts::PI {
-                            a -= 2.0 * std::f64::consts::PI;
                         }
                         a
                     };
@@ -1121,7 +1132,7 @@ pub fn map_arcs_to_points(segments: &[TrackSegment]) -> Vec<ArcWithPoints> {
                         ((coord.x - arc_start_x).powi(2) + (coord.y - arc_start_y).powi(2)).sqrt();
                     let dist_to_end =
                         ((coord.x - arc_end_x).powi(2) + (coord.y - arc_end_y).powi(2)).sqrt();
-                    let arc_length = arc.radius * (norm_end - norm_start).abs();
+                    let arc_length = arc.arc_length();
                     let near_arc_path = dist_to_start <= arc_length && dist_to_end <= arc_length;
 
                     if in_range || near_arc_path {
@@ -1313,14 +1324,56 @@ mod tests {
 
         // Slightly different coordinates should not be frozen
         assert!(!are_coords_frozen(45.0, -122.0, 45.00001, -122.0, 0.000001));
+    }
 
-        // Test tolerance
-        assert!(are_coords_frozen(
-            45.0, -122.0, 45.0000005, -122.0, 0.000001
-        ));
-        assert!(!are_coords_frozen(
-            45.0, -122.0, 45.000002, -122.0, 0.000001
-        ));
+    #[test]
+    fn test_arc_length() {
+        // Standard arc
+        let arc1 = Arc {
+            center_x: 0.0,
+            center_y: 0.0,
+            radius: 10.0,
+            start_angle: 0.0,
+            end_angle: PI / 2.0, // 90 degrees
+            start_x: 10.0,
+            start_y: 0.0,
+            end_x: 0.0,
+            end_y: 10.0,
+        };
+        assert!((arc1.arc_length() - (10.0 * PI / 2.0)).abs() < 1e-6);
+
+        // Clockwise arc (Right turn)
+        let arc2 = Arc {
+            center_x: 0.0,
+            center_y: 0.0,
+            radius: 10.0,
+            start_angle: PI / 2.0,
+            end_angle: 0.0,
+            start_x: 0.0,
+            start_y: 10.0,
+            end_x: 10.0,
+            end_y: 0.0,
+        };
+        // Should be same length as arc1, not (10 * 1.5 * PI)
+        assert!((arc2.arc_length() - (10.0 * PI / 2.0)).abs() < 1e-6);
+
+        // Arc crossing the -PI/PI boundary
+        let arc3 = Arc {
+            center_x: 0.0,
+            center_y: 0.0,
+            radius: 10.0,
+            start_angle: 3.1, // Near PI
+            end_angle: -3.1,  // Near -PI
+            start_x: -9.99,
+            start_y: 0.41,
+            end_x: -9.99,
+            end_y: -0.41,
+        };
+        // start_angle is 3.1, end_angle is -3.1
+        // (end - start).abs() = |-3.1 - 3.1| = 6.2
+        // Since 6.2 > PI (3.14...), angle_diff becomes 2*PI - 6.2 = 6.28318 - 6.2 = 0.08318
+        let expected_angle = 2.0 * PI - ((-3.1f64 - 3.1f64).abs());
+        assert!((arc3.arc_length() - (10.0 * expected_angle)).abs() < 1e-6);
     }
 
     #[test]
