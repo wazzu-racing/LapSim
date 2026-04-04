@@ -73,6 +73,8 @@ class Validation_Track():
             lapsim_data_storage.AX[int(i)] = snippet.AX
 
         # Determine the speed if the car accelerated for the entire length of the traffic, starting from 0 mph at node 0
+        if segment.segment_id == 2:
+            pass
         v1 = np.zeros(int(n + 1))
         for i in np.arange(len(lens)):
             v1[i] = t_vels[i]

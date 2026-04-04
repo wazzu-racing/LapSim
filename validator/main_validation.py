@@ -931,9 +931,8 @@ class Validation:
 
         # print(f"data nodes in segment: {len(self.segments[0].data_nodes)}")
 
-        val_track = Validation_Track(self.segments, self.racecar, sims_per_arc)
-        self.lapsim_data = val_track.run()
-        val_track.plt_sim_velocity_components(self.segments[2])
+        self.val_track = Validation_Track(self.segments, self.racecar, sims_per_arc)
+        self.lapsim_data = self.val_track.run()
 
         # Lerp sim data to match the position of real data
         for seg_index, segment in enumerate(self.segments):
@@ -941,6 +940,7 @@ class Validation:
             self.lerped_data.append(LapSimData())
             self.lerped_data[-1].initialize(len(segment.data_nodes))
             self.lerped_data[-1].time_array[0] = self.lapsim_data[seg_index].time_array[-1] # Store time var
+            self.lerped_data[-1].velocity[0] = self.lapsim_data[seg_index].velocity[0]
             # print(f"arcs: {len(segment.arcs)}")
             for arc_index, arc in enumerate(segment.arcs):
                 # print(f"data nodes in arc: {arc.data_nodes}")
@@ -961,7 +961,7 @@ class Validation:
                     self.lerped_data[-1].RI_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].RO_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
 
-                    self.lerped_data[-1].velocity[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].velocity[count+1] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     count += 1
 
         # Store all data in arrays suitable for writing to a csv
@@ -1140,3 +1140,4 @@ validator.run_validation(20, get_error=False)
 data_type = validator.DataType.VELOCITY
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
 validator.graph(data_type, True, False)
+validator.val_track.plt_sim_velocity_components(validator.segments[5])
