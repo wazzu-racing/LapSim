@@ -382,6 +382,7 @@ class Validation:
                 end_y = arc.end_y
                 segment = self.Segment(curr_id, start_x, start_y, end_x, end_y, arcs)
                 self.segments.append(segment)
+                continue
 
             arcs.append(arc)
             prev_id = curr_id
@@ -422,7 +423,7 @@ class Validation:
         for segment in self.segments:
             print(f"Segment {segment.segment_id}")
             for arc in segment.arcs:
-                print(f"Arc {arc.arc_id} - {arc.radius}")
+                print(f"Arc {arc.arc_id} - {arc.length}")
 
     def calculate_correlation_coefficient(self, data:DataType):
         mean_sim, mean_real = 0, 0
@@ -532,9 +533,9 @@ class Validation:
     def calculate_forces(self):
 
         # Static values for shock potentiometers
-        static_FL_shock = 1.552
-        static_FR_shock = 1.092
-        static_RL_shock = 0.784
+        static_FL_shock = 0
+        static_FR_shock = 0
+        static_RL_shock = 0
 
         # Motion Ratios for front and rear
         MR_F = 1
@@ -844,10 +845,10 @@ class Validation:
                 data_node.distance_along_segment *= 39.3701
 
     def parse_data(self):
-        validator.parse_arc_data("validator/output/04_arcs.csv")
-        validator.parse_spline_data("validator/output/03_spline_points.csv")
-        validator.parse_velocity_data("validator/output/05_velocities.csv")
-        validator.parse_data_nodes("validator/output/06_arc_points_detailed.csv")
+        validator.parse_arc_data("output/04_arcs.csv")
+        validator.parse_spline_data("output/03_spline_points.csv")
+        validator.parse_velocity_data("output/05_velocities.csv")
+        validator.parse_data_nodes("output/06_arc_points_detailed.csv")
         # validator.parse_acceleration_data("")
 
     def run_validation(self, sims_per_arc=1, get_error=True):
@@ -1065,7 +1066,7 @@ class Validation:
 
     def run_rust_code(self):
         # Paths
-        working_dir = os.path.join(os.getcwd(), "validator")
+        working_dir = os.path.join(os.getcwd())
         rust_exe = os.path.join(working_dir, "target", "release", "gps-data-smoothing-v2")
 
         # Create an executable for the Rust code.
@@ -1080,4 +1081,4 @@ validator.run_validation(20, get_error=False)
 
 data_type = validator.DataType.FL_dis
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
-validator.graph(data_type, False, True)
+validator.graph(data_type, True, False)

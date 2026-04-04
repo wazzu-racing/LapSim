@@ -51,7 +51,7 @@ class Validation_Track():
 
         max_corner = self.car.max_corner * 32.17 * 12 # to in/s^2
 
-        n = len(segment.arcs * self.sims_per_arc)
+        n = len(segment.arcs) * self.sims_per_arc
 
         rads.append(rads[-1])
         lens.append(lens[-1])
@@ -61,8 +61,7 @@ class Validation_Track():
         # Determine the speed if the car deaccelerated for the entire length of the traffic, ending at 0 mph at node n
         v2 = np.zeros(int(n + 1))
         for i in np.arange(len(lens)):
-            v2[int(np.ceil(np.sum(lens[0:i]) / lens[int(i)])):int(np.ceil(np.sum(lens[0:i + 1]) / lens[int(i)]))] = \
-                t_vels[i]
+            v2[i] = t_vels[i]
         v2[-1] = v2[-2]
 
         for i in np.arange(n, -1, -1):
@@ -72,11 +71,9 @@ class Validation_Track():
                 v2[int(i - 1)] = np.sqrt(v2[int(i)] ** 2 - 2 * snippet.AX * lens[int(i)])
             snippet.AX /= (32.17 * 12)
             lapsim_data_storage.AX[int(i)] = snippet.AX
-        # print(v2)
 
         # Determine the speed if the car accelerated for the entire length of the traffic, starting from 0 mph at node 0
         v1 = np.zeros(int(n + 1))
-
         for i in np.arange(len(lens)):
             v1[i] = t_vels[i]
         v1[0] = segment.starting_velocity
@@ -113,6 +110,10 @@ class Validation_Track():
                 snippet.AX /= (32.17 * 12) # convert back to g's
 
                 lapsim_data_storage.append_data_arrays(snippet, int(i)) # Positive AY is turning right, negative AY is turning left.
+
+        segment.v1 = v1
+        segment.v2 = v2
+        segment.t_vel = t_vels
 
         # Determine which value of the two above lists is lowest. This list is the theoretical velocity at each node to satisfy the stated assumptions
         v3 = np.zeros(int(n + 1))
@@ -156,27 +157,51 @@ class Validation_Track():
             count += len(data.velocity)
         tk.mainloop()
 
+    def plt_sim_velocity_components(self, segment):
+        tk = tkinter.Tk()
+        fig = Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, tk)
+        canvas.draw()
+        toolbar = NavigationToolbar2Tk(canvas, tk)
+        canvas.get_tk_widget().pack()
+        toolbar.update()
+
+        line1, = ax.plot(np.linspace(0, len(segment.v1), len(segment.v1)), segment.v1, color="green")
+        line2, = ax.plot(np.linspace(0, len(segment.v2), len(segment.v2)), segment.v2, color="red")
+        line3, = ax.plot(np.linspace(0, len(segment.t_vel), len(segment.t_vel)), segment.t_vel, color="blue")
+
+        ax.set_title("Velocity")
+        ax.set_xlabel("Node")
+        ax.set_ylabel("Velocity (in/s)")
+
+        handles_list = [line1, line2, line3]
+        labels = ["Accelerating", "Decelerating", "Max Velocity"]
+
+        ax.legend(handles=handles_list, labels=labels)
+
+        tk.mainloop()
+
     def plt_track(self, arcs):
         # Does not work; need to fix
-        pass
-        # root = tkinter.Tk()
-        # root.title("Track")
-        #
-        # fig = plt.Figure(figsize=(10, 10))
-        # ax = fig.add_subplot(111)
-        #
-        # # Plot data
-        # for index in range(len(arcs)):
-        #     if arcs[index].bad_data:
-        #         ax.plot(self.arcs[index].x, self.arcs[index].y, color='red')
-        #     else:
-        #         ax.plot(self.arcs[index].x, self.arcs[index].y, color='green')
-        # ax.plot(self.arcs[-1].x, self.arcs[-1].y, color='red') # Last arc is assumed to be bad data
-        #
-        # canvas = FigureCanvasTkAgg(fig, root)
-        # toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=True)
-        # canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
-        # toolbar.update()
-        # canvas.draw()
-        #
-        # root.mainloop()
+        root = tkinter.Tk()
+        root.title("Track")
+
+        fig = plt.Figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+
+        # Plot data
+        for index in range(len(arcs)):
+            if arcs[index].bad_data:
+                ax.plot(self.arcs[index].x, self.arcs[index].y, color='red')
+            else:
+                ax.plot(self.arcs[index].x, self.arcs[index].y, color='green')
+        ax.plot(self.arcs[-1].x, self.arcs[-1].y, color='red') # Last arc is assumed to be bad data
+
+        canvas = FigureCanvasTkAgg(fig, root)
+        toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=True)
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=1)
+        toolbar.update()
+        canvas.draw()
+
+        root.mainloop()

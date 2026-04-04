@@ -26,7 +26,7 @@ class car():
     # length of wheelbase (in)
     l = 60.04
     # vertical center of gravity (in)
-    h = 9
+    h = 14
     # in, roll axis height, front and rear
     z_rf = 2
     z_rr = 3
@@ -611,7 +611,7 @@ class car():
         plt.grid()
         plt.show()
 
-# racecar = car()
+# print(racecar.accel_car_data_snippets[-1].FO_load)
 # snippet100 = racecar.brake_car_data_snippets[-1]
 # print(snippet100.AY)
 # print(f"FO_load: {snippet100.FO_load}\nFI_load: {snippet100.FI_load}\nRO_load: {snippet100.RO_load}\nRI_load: {snippet100.RI_load}\n")

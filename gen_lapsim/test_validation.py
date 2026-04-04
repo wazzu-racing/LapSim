@@ -1,3 +1,5 @@
+import pickle
+
 from matplotlib import pyplot as plt
 
 from gen_lapsim.spline_track import track
@@ -5,6 +7,12 @@ from models.car_model import car
 import numpy as np
 
 class Track_Examine:
+
+    # points_x =  [0, 0, 0, 0]
+    # points_y =  [0, 1500, 3000, 4500]
+    # points_x2 =  [100, 100, 100, 100]
+    # points_y2 =  [0, 1500, 3000, 4500]
+
     def parse_text_to_track_pkl(self, txt_path):
         """
         Parses data from a .rtf text file to create a track object in pickle format.
@@ -52,10 +60,14 @@ class Track_Examine:
         trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, racecar)
         trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
 
-        trk.run_sim(racecar, 10000, 0, 98)
-        # trk.plt_sim()
+        trk.run_sim(racecar, 5000)
+        trk.plt_sim()
 
     def run(self):
+        # with open('/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/skidpad_trk_points.pkl', 'r') as f:
+        #     trk_pik = pickle.load(f)
+        #     trk_pik.points_x
+
         self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf")
         self.run_accel()
 
