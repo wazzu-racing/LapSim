@@ -1140,4 +1140,4 @@ validator.run_validation(20, get_error=False)
 data_type = validator.DataType.VELOCITY
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
 validator.graph(data_type, True, False)
-validator.val_track.plt_sim_velocity_components(validator.segments[5])
+# validator.val_track.plt_sim_velocity_components(validator.segments[5])
