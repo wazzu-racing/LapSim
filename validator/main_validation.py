@@ -858,10 +858,10 @@ class Validation:
                         array_data_real = []
                         for index, data_point in enumerate(segment.data_nodes):
                             array_data_indices.append(data_num)
-                            array_data_sim.append(self.lerped_data[seg_index].velocity[index] if data_point.arc.turn == self.Arc.Turn.RIGHT else self.lerped_data[seg_index].velocity[index])
+                            array_data_sim.append(self.lerped_data[seg_index].velocity[index])
                             array_data_real.append(data_point.segment.starting_velocity - velocity_real_average if center else data_point.segment.starting_velocity)
                             data_num+=1
-                        ax.vlines(x=array_data_indices[-1], ymin=-1, ymax=1, color='silver', linestyle='--')
+                        ax.vlines(x=array_data_indices[-1], ymin=0, ymax=1000, color='silver', linestyle='--')
                         ax.plot(array_data_indices, array_data_sim, color='royalblue')
                         ax.plot(array_data_indices, array_data_real, color='darkorange')
         tk.mainloop()
