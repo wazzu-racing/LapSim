@@ -39,6 +39,7 @@ class Validation:
         RO_load = 14
         RI_load = 15
         RPM = 16
+        VELOCITY = 17
 
     class Data_Node:
         def __init__(self, AX, AY, roll, yaw, front_left_dis, front_right_dis, rear_left_dis, rear_right_dis, rpm, distance):
@@ -55,6 +56,8 @@ class Validation:
             self.rear_right_dis = 0
             self.rpm = rpm
             self.distance_along_segment = distance
+
+            self.segment: Validation.Segment = None
 
         AX: float = 0
         AY: float = 0
@@ -129,6 +132,11 @@ class Validation:
             self.starting_velocity = 0
             self.spline_points = [] # Contains tuples of (x, y)
             self.data_nodes = []
+
+            self.v1: list[float] = []
+            self.v2: list[float] = []
+            self.v3: list[float] = []
+            self.t_vel: list[float] = []
 
             self.compute_arc_segment_distances()
 
@@ -264,13 +272,17 @@ class Validation:
             if index == 0:
                 continue
 
+            seg_index = self.get_segment_index(int(line[0]))
+            arc_index = self.get_arc_index(int(line[1]), int(line[0]))
+
             data_node = Validation.Data_Node(AX=float(line[13]), AY=float(line[14]), roll=float(line[16]), yaw=float(line[17]), front_left_dis=float(line[18]),
                                              front_right_dis=float(line[19]),rear_right_dis=float(line[20]),
                                              rear_left_dis=float(line[21]),rpm=float(line[22]),
                                              distance=float(line[4]))
-            self.segments[self.get_segment_index(int(line[0]))].data_nodes.append(data_node)
-            self.segments[self.get_segment_index(int(line[0]))].arcs[self.get_arc_index(int(line[1]), int(line[0]))].data_nodes.append(data_node)
-            self.segments[self.get_segment_index(int(line[0]))].arcs[self.get_arc_index(int(line[1]), int(line[0]))].time = float(line[3])
+            data_node.segment = self.segments[seg_index]
+            self.segments[seg_index].data_nodes.append(data_node)
+            self.segments[seg_index].arcs[arc_index].data_nodes.append(data_node)
+            self.segments[seg_index].arcs[arc_index].time = float(line[3])
 
         calculate_segment_time()
 
@@ -382,6 +394,7 @@ class Validation:
                 end_y = arc.end_y
                 segment = self.Segment(curr_id, start_x, start_y, end_x, end_y, arcs)
                 self.segments.append(segment)
+                continue
 
             arcs.append(arc)
             prev_id = curr_id
@@ -420,9 +433,9 @@ class Validation:
             self.segments.remove(segment)
         print("Filtered {} segments. {} segments remaining:".format(len(delete_segments), len(self.segments)))
         for segment in self.segments:
-            print(f"Segment {segment.segment_id}")
+            print(f"Segment {segment.segment_id} - {segment.starting_velocity}")
             for arc in segment.arcs:
-                print(f"Arc {arc.arc_id} - {arc.radius}")
+                print(f"Arc {arc.arc_id} - {arc.length}")
 
     def calculate_correlation_coefficient(self, data:DataType):
         mean_sim, mean_real = 0, 0
@@ -532,9 +545,9 @@ class Validation:
     def calculate_forces(self):
 
         # Static values for shock potentiometers
-        static_FL_shock = 1.552
-        static_FR_shock = 1.092
-        static_RL_shock = 0.784
+        static_FL_shock = 0
+        static_FR_shock = 0
+        static_RL_shock = 0
 
         # Motion Ratios for front and rear
         MR_F = 1
@@ -814,6 +827,43 @@ class Validation:
                 ax.set_ylabel("RPM")
                 ax.plot(len_rpm, self.rpm_sim, label='sim')
                 ax.plot(len_rpm_r, self.rpm_real, label='real')
+            case self.DataType.VELOCITY:
+                # Plot both sim and real RO dis
+                if not show_segments:
+                    if center:
+                        velocity_real_average = stats.trim_mean(np.average(self.velocity_real), proportiontocut=0.1)
+                        velocity_real_mod = np.array(self.velocity_real) - velocity_real_average
+                    else:
+                        velocity_real_mod = np.array(self.velocity_real)
+                    len_vel = np.linspace(0, len(self.velocity_sim), len(self.velocity_sim))
+                    len_vel_r = np.linspace(0, len(self.velocity_real), len(self.velocity_real))
+                    ax.set_title("Velocity")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Velocity (in/s)")
+                    ax.plot(len_vel, self.velocity_sim, label='sim')
+                    ax.plot(len_vel_r, velocity_real_mod, label='real')
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                else:
+                    ax.set_title("Velocity")
+                    ax.set_xlabel("Data point")
+                    ax.set_ylabel("Velocity (in/s)")
+                    ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
+                    ax.legend(handles=ps)
+                    data_num = 0
+                    velocity_real_average = stats.trim_mean(np.average(self.velocity_real), proportiontocut=0.1)
+                    for seg_index, segment in enumerate(self.segments):
+                        array_data_indices = []
+                        array_data_sim = []
+                        array_data_real = []
+                        for index, data_point in enumerate(segment.data_nodes):
+                            array_data_indices.append(data_num)
+                            array_data_sim.append(self.lerped_data[seg_index].velocity[index])
+                            array_data_real.append(data_point.segment.starting_velocity - velocity_real_average if center else data_point.segment.starting_velocity)
+                            data_num+=1
+                        ax.vlines(x=array_data_indices[-1], ymin=0, ymax=1000, color='silver', linestyle='--')
+                        ax.plot(array_data_indices, array_data_sim, color='royalblue')
+                        ax.plot(array_data_indices, array_data_real, color='darkorange')
         tk.mainloop()
 
     def convert_units(self):
@@ -881,9 +931,8 @@ class Validation:
 
         # print(f"data nodes in segment: {len(self.segments[0].data_nodes)}")
 
-        val_track = Validation_Track(self.segments, self.racecar, sims_per_arc)
-        self.lapsim_data = val_track.run()
-        val_track.plt_sim()
+        self.val_track = Validation_Track(self.segments, self.racecar, sims_per_arc)
+        self.lapsim_data = self.val_track.run()
 
         # Lerp sim data to match the position of real data
         for seg_index, segment in enumerate(self.segments):
@@ -891,6 +940,7 @@ class Validation:
             self.lerped_data.append(LapSimData())
             self.lerped_data[-1].initialize(len(segment.data_nodes))
             self.lerped_data[-1].time_array[0] = self.lapsim_data[seg_index].time_array[-1] # Store time var
+            self.lerped_data[-1].velocity[0] = self.lapsim_data[seg_index].velocity[0]
             # print(f"arcs: {len(segment.arcs)}")
             for arc_index, arc in enumerate(segment.arcs):
                 # print(f"data nodes in arc: {arc.data_nodes}")
@@ -910,6 +960,8 @@ class Validation:
                     self.lerped_data[-1].FO_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].FO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].FO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].RI_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].RO_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+
+                    self.lerped_data[-1].velocity[count+1] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     count += 1
 
         # Store all data in arrays suitable for writing to a csv
@@ -934,6 +986,8 @@ class Validation:
         self.FO_load_real_temp, self.FI_load_real_temp, self.RO_load_real_temp, self.RI_load_real_temp = self.calculate_forces()
         self.FO_load_real, self.FI_load_real, self.RO_load_real, self.RI_load_real = [], [], [], []
         self.FO_load_error, self.RO_load_error, self.FI_load_error, self.RI_load_error = [], [], [], []
+
+        self.velocity_sim, self.velocity_real, self.velocity_error = [], [], []
         for seg_index, segment in enumerate(self.segments):
             # print(self.lerped_data[seg_index].AX)
             # Store time only once per segment, since only the time from the beginning to the end of the segment is collected.
@@ -1029,6 +1083,11 @@ class Validation:
                 self.rpm_sim.append(self.lerped_data[seg_index].rpm[data_index])
                 self.rpm_real.append(data_node.rpm)
                 self.rpm_error.append(rpm_err)
+                # Velocity
+                vel_err = ((self.lerped_data[seg_index].velocity[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
+                self.velocity_sim.append(self.lerped_data[seg_index].velocity[data_index])
+                self.velocity_real.append(segment.starting_velocity)
+                self.velocity_error.append(rpm_err)
 
         if get_error:
             average_time_error = round(get_average_error(self.time_error), 1) if self.time_error else None
@@ -1065,7 +1124,7 @@ class Validation:
 
     def run_rust_code(self):
         # Paths
-        working_dir = os.path.join(os.getcwd(), "validator")
+        working_dir = os.path.join(os.getcwd())
         rust_exe = os.path.join(working_dir, "target", "release", "gps-data-smoothing-v2")
 
         # Create an executable for the Rust code.
@@ -1078,6 +1137,7 @@ validator = Validation()
 # validator.run_rust_code()
 validator.run_validation(20, get_error=False)
 
-data_type = validator.DataType.FL_dis
+data_type = validator.DataType.VELOCITY
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
-validator.graph(data_type, False, True)
+validator.graph(data_type, True, False)
+# validator.val_track.plt_sim_velocity_components(validator.segments[5])

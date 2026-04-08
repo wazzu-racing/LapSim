@@ -270,7 +270,6 @@ class four_wheel:
         for i in np.arange(len(self.t_len_tot)):
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i]) / self.dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / self.dx))] = \
                 self.t_vel[i]
-
         v1[0] = 0
         v1[-1] = v1[-2]
 
@@ -280,43 +279,43 @@ class four_wheel:
         snippet = None
         for i in np.arange(n):
 
-            # # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
-            # if v2[int(i + 1)] <= v1[int(i)]:
-            #     v1[int(i + 1)] = v2[int(i + 1)]
-            #     gear = self.car.drivetrain.gear_vel[
-            #         int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
-            #     shifting = False  # sets to False so the car doesn't shift when it stops braking
-            #
-            #     snippet = self.car.curve_brake(v2[int(i)], self.nd_rad[int(i)])  # in/s^2
-            #     snippet.AX *= 32.17 * 12
-            #
-            #     # Make sure car does not go backwards when setting v2 for each index.
-            #     if v2[int(i)] ** 2 + 2 * snippet.AX * self.dx >= 0:
-            #         v2[int(i + 1)] = np.sqrt(v2[int(i)] ** 2 + 2 * snippet.AX * self.dx)
-            #     else:
-            #         v2[int(i + 1)] = v2[int(i)]
-            #
-            #     snippet.AX /= (32.17 * 12)  # in g's
-            #     self.lapsim_data_storage.append_data_arrays(snippet, int(i)) # Positive AY is turning right, negative AY is turning left.
+            # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
+            if v2[int(i + 1)] <= v1[int(i)]:
+                v1[int(i + 1)] = v2[int(i + 1)]
+                gear = self.car.drivetrain.gear_vel[
+                    int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
+                shifting = False  # sets to False so the car doesn't shift when it stops braking
 
-            # else:
-            # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
-            if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
-                snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in in/s^2
+                snippet = self.car.curve_brake(v2[int(i)], self.nd_rad[int(i)])  # in/s^2
                 snippet.AX *= 32.17 * 12
+
+                # Make sure car does not go backwards when setting v2 for each index.
+                if v2[int(i)] ** 2 + 2 * snippet.AX * self.dx >= 0:
+                    v2[int(i + 1)] = np.sqrt(v2[int(i)] ** 2 + 2 * snippet.AX * self.dx)
+                else:
+                    v2[int(i + 1)] = v2[int(i)]
+
+                snippet.AX /= (32.17 * 12)  # in g's
+                self.lapsim_data_storage.append_data_arrays(snippet, int(i)) # Positive AY is turning right, negative AY is turning left.
+
             else:
-                snippet = self.car.static_snippet
-                shifting = True
-                shift_time -= self.dx / v1[int(i)]
-                if shift_time <= 0:
-                    gear += 1
-                    shift_time = self.car.drivetrain.shift_time
-                    shifting = False
-            # Figure out if the maximum possible acceleration currently is not enough to satisfy the next velocity.
-            # If it does not satisfy the next velocity, then replace that next velocity with the velocity produced
-            # from the current axial acceleration.
-            if (np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * self.dx) < v1[int(i + 1)]) or (v1[int(i + 1)] == 0.):
-                v1[int(i + 1)] = np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * self.dx)
+                # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
+                if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
+                    snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in in/s^2
+                    snippet.AX *= 32.17 * 12
+                else:
+                    snippet = self.car.static_snippet
+                    shifting = True
+                    shift_time -= self.dx / v1[int(i)]
+                    if shift_time <= 0:
+                        gear += 1
+                        shift_time = self.car.drivetrain.shift_time
+                        shifting = False
+                # Figure out if the maximum possible acceleration currently is not enough to satisfy the next velocity.
+                # If it does not satisfy the next velocity, then replace that next velocity with the velocity produced
+                # from the current axial acceleration.
+                if (np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * self.dx) < v1[int(i + 1)]) or (v1[int(i + 1)] == 0.):
+                    v1[int(i + 1)] = np.sqrt(v1[int(i)] ** 2 + 2 * snippet.AX * self.dx)
 
             # Calculate and record data
             snippet.AX /= (32.17 * 12)  # in g's
@@ -336,6 +335,7 @@ class four_wheel:
             # calculate time between nodes by averaging the velocities of the nodes at the start and end of the selected time frame
             t += self.dx / np.average([v3[i], v3[i + 1]])
             self.lapsim_data_storage.time_array.append(t)
+        print(f"Time: {t}")
         # print(f"Time: {t} seconds")
 
         self.n = n
