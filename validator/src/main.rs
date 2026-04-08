@@ -177,7 +177,7 @@ fn process_step_2_segment_detection(
 }
 
 /// STEP 3: Fit smooth parametric splines to each segment
-fn process_step_3_spline_fitting(segments: &mut [TrackSegment], output_dir: &str, plot_dir: &str) {
+fn process_step_3_spline_fitting(segments: &mut [TrackSegment], output_dir: &str, _plot_dir: &str) {
     print_step(3, "Spline Fitting");
 
     // Fit cosine interpolation splines to each segment's x, y coordinates
@@ -204,7 +204,7 @@ fn process_step_3_spline_fitting(segments: &mut [TrackSegment], output_dir: &str
 }
 
 /// STEP 4: Convert splines to constant-radius circular arcs for racing analysis
-fn process_step_4_arc_conversion(segments: &mut [TrackSegment], output_dir: &str, plot_dir: &str) {
+fn process_step_4_arc_conversion(segments: &mut [TrackSegment], output_dir: &str, _plot_dir: &str) {
     print_step(4, "Arc Conversion");
 
     // Fit circular arcs to splines for constant-radius approximation
@@ -275,7 +275,7 @@ fn process_step_5_velocity_and_exports(
     segments: &[TrackSegment],
     records: &[records::Record],
     output_dir: &str,
-    plot_dir: &str,
+    _plot_dir: &str,
 ) {
     print_step(5, "Velocity Analysis");
 
