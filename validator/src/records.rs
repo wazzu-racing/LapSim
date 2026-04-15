@@ -107,26 +107,37 @@ pub struct TrackSegment {
     pub initial_velocity: f64, // Ground speed at the start of the segment in m/s
 }
 
+/// Represents a base `Record` row directly from the datalogger
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[allow(non_snake_case)]
 #[allow(dead_code)]
 pub struct Record {
+    /// (milliseconds) at record write
     pub write_millis: u32,
+    /// (milliseconds) from the ECU
     pub ecu_millis: u32,
+    /// (milliseconds) from the GPS
     pub gps_millis: u32,
+    /// (milliseconds) from the IMU
     pub imu_millis: u32,
+    /// (milliseconds) from the accelerometer
     pub accel_millis: u32,
     pub analogx1_millis: u32,
     pub analogx2_millis: u32,
     pub analogx3_millis: u32,
+    /// (rpm) from the ecu
     pub rpm: u32,
     pub time: u32,
     pub syncloss_count: u32,
     pub syncloss_code: u32,
+    /// (degrees)
     pub lat: f64,
+    /// (degrees)
     pub lon: f64,
+    /// (feet?)
     pub elev: u32,
     pub unixtime: String,
+    /// (mph)
     pub ground_speed: f64,
     pub afr: f64,
     pub fuelload: f64,
@@ -144,8 +155,11 @@ pub struct Record {
     pub egt: u32,
     pub maf: u32,
     pub in_temp: f64,
+    /// (m/s^2)
     pub ax: f64,
+    /// (m/s^2)
     pub ay: f64,
+    /// (m/s^2)
     pub az: f64,
     pub imu_x: f64,
     pub imu_y: f64,
@@ -275,6 +289,14 @@ pub fn records_to_cartesian(records: &[Record]) -> Vec<CartesianCoords> {
         .iter()
         .map(|record| record.to_cartesian(ref_lat, ref_lon, ref_elev))
         .collect()
+}
+
+/// Conversion factor from miles per hour to meters per second.
+const MPH_TO_MPS: f64 = 0.447_04;
+
+/// Converts the raw `ground_speed` readings (mph) to meters per second.
+fn convert_ground_speed_to_mps(speed_mph: f64) -> f64 {
+    speed_mph * MPH_TO_MPS
 }
 
 /// Reads a CSV file and returns a vector of Records.
@@ -439,7 +461,9 @@ pub fn split_records_into_segments_detailed(
                         spline_x: None,
                         spline_y: None,
                         arcs: Vec::new(),
-                        initial_velocity: records[segment_start].ground_speed,
+                        initial_velocity: convert_ground_speed_to_mps(
+                            records[segment_start].ground_speed,
+                        ),
                     });
                 }
 
@@ -466,7 +490,9 @@ pub fn split_records_into_segments_detailed(
                     spline_x: None,
                     spline_y: None,
                     arcs: Vec::new(),
-                    initial_velocity: records[segment_start].ground_speed,
+                    initial_velocity: convert_ground_speed_to_mps(
+                        records[segment_start].ground_speed,
+                    ),
                 });
             }
 
@@ -494,12 +520,12 @@ pub fn split_records_into_segments_detailed(
             spline_x: None,
             spline_y: None,
             arcs: Vec::new(),
-            initial_velocity: records[segment_start].ground_speed,
+            initial_velocity: convert_ground_speed_to_mps(records[segment_start].ground_speed),
         });
     }
 
     // Post-process: split any segments that still contain jumps within them
-    split_segments_with_jumps(segments, max_jump_distance)
+    split_segments_with_jumps(segments, max_jump_distance, records)
 }
 
 /// Splits segments that contain jumps within their coordinate sequences.
@@ -508,6 +534,7 @@ pub fn split_records_into_segments_detailed(
 fn split_segments_with_jumps(
     segments: Vec<TrackSegment>,
     max_jump_distance: f64,
+    records: &[Record],
 ) -> Vec<TrackSegment> {
     let mut result = Vec::new();
 
@@ -532,6 +559,11 @@ fn split_segments_with_jumps(
                     let start_index = segment.start_index + current_start;
                     let end_index = segment.start_index + i - 1;
 
+                    let initial_velocity = records
+                        .get(start_index)
+                        .map(|record| convert_ground_speed_to_mps(record.ground_speed))
+                        .unwrap_or(segment.initial_velocity);
+
                     result.push(TrackSegment {
                         coords,
                         start_index,
@@ -539,7 +571,7 @@ fn split_segments_with_jumps(
                         spline_x: None,
                         spline_y: None,
                         arcs: Vec::new(),
-                        initial_velocity: segment.initial_velocity, // Keep original velocity for sub-segments
+                        initial_velocity,
                     });
                 }
 
@@ -553,6 +585,11 @@ fn split_segments_with_jumps(
             let start_index = segment.start_index + current_start;
             let end_index = segment.end_index;
 
+            let initial_velocity = records
+                .get(start_index)
+                .map(|record| convert_ground_speed_to_mps(record.ground_speed))
+                .unwrap_or(segment.initial_velocity);
+
             result.push(TrackSegment {
                 coords,
                 start_index,
@@ -560,7 +597,7 @@ fn split_segments_with_jumps(
                 spline_x: None,
                 spline_y: None,
                 arcs: Vec::new(),
-                initial_velocity: segment.initial_velocity,
+                initial_velocity,
             });
         }
     }
@@ -1226,6 +1263,59 @@ mod tests {
     use super::*;
     use std::f64::consts::PI;
 
+    fn make_record(lat: f64, lon: f64, elev: u32, ground_speed: f64) -> Record {
+        Record {
+            write_millis: 0,
+            ecu_millis: 0,
+            gps_millis: 0,
+            imu_millis: 0,
+            accel_millis: 0,
+            analogx1_millis: 0,
+            analogx2_millis: 0,
+            analogx3_millis: 0,
+            rpm: 0,
+            time: 0,
+            syncloss_count: 0,
+            syncloss_code: 0,
+            lat,
+            lon,
+            elev,
+            unixtime: "0".to_string(),
+            ground_speed,
+            afr: 0.0,
+            fuelload: 0.0,
+            spark_advance: 0.0,
+            baro: 0,
+            map: 0.0,
+            mat: 0.0,
+            clnt_temp: 0.0,
+            tps: 0.0,
+            batt: 0.0,
+            oil_press: 0.0,
+            ltcl_timing: 0.0,
+            ve1: 0.0,
+            ve2: 0.0,
+            egt: 0,
+            maf: 0,
+            in_temp: 0.0,
+            ax: 0.0,
+            ay: 0.0,
+            az: 0.0,
+            imu_x: 0.0,
+            imu_y: 0.0,
+            imu_z: 0.0,
+            susp_pot_1_FL: 0.0,
+            susp_pot_2_FR: 0.0,
+            susp_pot_3_RR: 0.0,
+            susp_pot_4_RL: 0.0,
+            rad_in: 0.0,
+            rad_out: 0.0,
+            amb_air_temp: 0,
+            brake1: 0.0,
+            brake2: 0.0,
+        }
+    }
+
     #[test]
     fn test_gps_to_cartesian() {
         // Test with reference point at origin
@@ -1519,6 +1609,67 @@ mod tests {
         let records = Vec::new();
         let segments = split_records_into_segments(&records);
         assert!(segments.is_empty());
+    }
+
+    #[test]
+    fn test_split_segments_with_jumps_updates_initial_velocity() {
+        let mut records = Vec::new();
+
+        for i in 0..12 {
+            let lon_offset = -122.0 - (i as f64 * 0.000001);
+            records.push(make_record(45.0, lon_offset, 0, 10.0));
+        }
+
+        for i in 0..12 {
+            let lon_offset = -122.01 - (i as f64 * 0.000001);
+            records.push(make_record(45.0, lon_offset, 0, 30.0));
+        }
+
+        let ref_record = &records[0];
+        let ref_lat = ref_record.lat;
+        let ref_lon = ref_record.lon;
+        let ref_elev = ref_record.elev as f64;
+
+        let coords: Vec<CartesianCoords> = records
+            .iter()
+            .map(|record| record.to_cartesian(ref_lat, ref_lon, ref_elev))
+            .collect();
+
+        let segment = TrackSegment {
+            coords,
+            start_index: 0,
+            end_index: records.len() - 1,
+            spline_x: None,
+            spline_y: None,
+            arcs: Vec::new(),
+            initial_velocity: records[0].ground_speed,
+        };
+
+        let split_segments = super::split_segments_with_jumps(vec![segment], 5.0, &records);
+
+        assert_eq!(split_segments.len(), 2);
+        assert!(
+            (split_segments[0].initial_velocity - convert_ground_speed_to_mps(10.0)).abs() < 1e-6
+        );
+        assert!(
+            (split_segments[1].initial_velocity - convert_ground_speed_to_mps(30.0)).abs() < 1e-6
+        );
+    }
+
+    #[test]
+    fn test_split_records_sets_initial_velocity_in_mps() {
+        let mut records = Vec::new();
+
+        for i in 0..15 {
+            let lon_offset = -122.0 - (i as f64 * 0.000001);
+            records.push(make_record(45.0, lon_offset, 0, 22.3694));
+        }
+
+        let segments = split_records_into_segments_custom(&records, 10, 20, 0.000001, 50.0);
+
+        assert_eq!(segments.len(), 1);
+        let expected_speed = convert_ground_speed_to_mps(22.3694);
+        assert!((segments[0].initial_velocity - expected_speed).abs() < 1e-6);
     }
 
     #[test]
