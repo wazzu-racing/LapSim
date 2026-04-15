@@ -190,6 +190,115 @@ class LapSimData:
     def get_magnitude(self, vector):
         return np.sqrt(np.sum(np.power(vector, 2)))
 
+    def brake_temp_post_processing(self, turn_dirs, car, graph:bool = False):
+        """
+        This function assumes:
+            - Uniform temp across brake disc
+            - Initial temp of brake disc is equal to the environment temp
+        :return: None
+        """
+        T_ambient = 24 # temp of environment, Celsius (~75 degrees F)
+        T_init = 24 # initial temp of brake discs, Celsius (~75 degrees F)
+        C_heat = 1 # Heat transfer coefficient, dependent upon air flow and velocity
+        C_p = 461 # Specific heat capacity of brakes, J/kg*C
+        C_c = 0.5
+        A_surface = 0.00064516 # surface area of discs, m^2
+        K_E_perc = 0.95
+        M_brake = 0.4445205 # mass of brake discs, kg
+        W_car = self.FO_load_array[0] + self.RO_load_array[0] + self.FI_load_array[0] + self.RI_load_array[0]
+
+        # Brake temp array across entire track
+        FO_brake_temps, FI_brake_temps, RO_brake_temps, RI_brake_temps = [], [], [], []
+        FR_brake_temps, FL_brake_temps, RR_brake_temps, RL_brake_temps = [], [], [], []
+        F_brake_temps, R_brake_temps = [], []
+
+        FO_T_curr, FI_T_curr, RO_T_curr, RI_T_curr = T_init, T_init, T_init, T_init
+        prev_brake_time = 0
+        FO_T_last_brake, FI_T_last_brake, RO_T_last_brake, RI_T_last_brake = T_ambient, T_ambient, T_ambient, T_ambient
+        for index, AX in enumerate(self.AX):
+            # Do not process first node, as there has been no velocity change yet.
+            if index == 0:
+                continue
+
+            # Braking, heating up
+            if self.velocity[index] - self.velocity[index-1] < 0:
+                # Front outer brake
+                FO_T_change = K_E_perc*(0.5*self.FO_load_array[index-1]*0.453592*((self.velocity[index-1]*0.0254)**2 - (self.velocity[index]*0.0254)**2))/(M_brake*C_p) # Kelvin
+                FO_T_curr += FO_T_change
+                FO_brake_temps.append(FO_T_curr)
+
+                # Front inner brake
+                FI_T_change = K_E_perc*(0.5*self.FI_load_array[index-1]*0.453592*((self.velocity[index-1]*0.0254)**2 - (self.velocity[index]*0.0254)**2))/(M_brake*C_p) # Kelvin
+                FI_T_curr += FI_T_change
+                FI_brake_temps.append(FI_T_curr)
+
+                # Rear outer brake
+                RO_T_change = K_E_perc*(0.5*self.RO_load_array[index-1]*0.453592*((self.velocity[index-1]*0.0254)**2 - (self.velocity[index]*0.0254)**2))/(M_brake*C_p) # Kelvin
+                RO_T_curr += RO_T_change
+                RO_brake_temps.append(RO_T_curr)
+
+                # Rear inner brake
+                RI_T_change = K_E_perc*(0.5*self.RI_load_array[index-1]*0.453592*((self.velocity[index-1]*0.0254)**2 - (self.velocity[index]*0.0254)**2))/(M_brake*C_p) # Kelvin
+                RI_T_curr += RI_T_change
+                RI_brake_temps.append(RI_T_curr)
+
+                prev_brake_time = self.time_array[index]
+                FO_T_last_brake = FO_T_curr
+                FI_T_last_brake = FI_T_curr
+                RO_T_last_brake = RO_T_curr
+                RI_T_last_brake = RI_T_curr
+            # Accelerating, cooling down
+            else:
+                FO_T_curr = T_ambient + (FO_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
+                FI_T_curr = T_ambient + (FI_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
+                RO_T_curr = T_ambient + (RO_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
+                RI_T_curr = T_ambient + (RI_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
+
+                FO_brake_temps.append(FO_T_curr)
+                FI_brake_temps.append(FI_T_curr)
+                RO_brake_temps.append(RO_T_curr)
+                RI_brake_temps.append(RI_T_curr)
+
+            # Populate left/right turn direction arrays
+            if turn_dirs[index] == curve.Turn.LEFT:
+                FR_brake_temps.append(FO_T_curr)
+                FL_brake_temps.append(FI_T_curr)
+                RR_brake_temps.append(RO_T_curr)
+                RL_brake_temps.append(RI_T_curr)
+            else:
+                FR_brake_temps.append(FI_T_curr)
+                FL_brake_temps.append(FO_T_curr)
+                RR_brake_temps.append(RI_T_curr)
+                RL_brake_temps.append(RO_T_curr)
+
+            F_brake_temps.append(np.max([FO_T_curr, FI_T_curr]))
+            R_brake_temps.append(np.max([RO_T_curr, RI_T_curr]))
+
+        if graph:
+            tk = tkinter.Tk()
+            fig = Figure(figsize=(10, 10), dpi=100)
+            ax1 = fig.add_subplot(111)
+            canvas = FigureCanvasTkAgg(fig, tk)
+            canvas.draw()
+            toolbar = NavigationToolbar2Tk(canvas, tk)
+            canvas.get_tk_widget().pack()
+            toolbar.update()
+
+            ax1.plot(np.arange(len(F_brake_temps)), np.add(np.multiply(F_brake_temps, 9/5), 32), label="F")
+            ax1.plot(np.arange(len(R_brake_temps)), np.add(np.multiply(R_brake_temps, 9/5), 32), label="R")
+            # ax1.plot(np.arange(len(FR_brake_temps)), np.add(np.multiply(FR_brake_temps, 9/5), 32), label="FR")
+            # ax1.plot(np.arange(len(FL_brake_temps)), np.add(np.multiply(FL_brake_temps, 9/5), 32), label="FL")
+            # ax1.plot(np.arange(len(RR_brake_temps)), np.add(np.multiply(RR_brake_temps, 9/5), 32), label="RR")
+            # ax1.plot(np.arange(len(RL_brake_temps)), np.add(np.multiply(RL_brake_temps, 9/5), 32), label="RL")
+            ax1.legend()
+            ax1.set_xlabel("Node")
+            ax1.set_ylabel("Temperature (F)")
+
+            # ax2 = ax1.twinx()
+            # ax2.plot(np.arange(0, len(self.AX), 1), self.AX, color='b')
+            # ax2.set_ylabel("Braking Acceleration (G's)")
+
+            tk.mainloop()
 
 class four_wheel:
 
@@ -282,6 +391,8 @@ class four_wheel:
             # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i + 1)] <= v1[int(i)]:
                 v1[int(i + 1)] = v2[int(i + 1)]
+                if np.isclose(v2[int(i+1)], 413.32, rtol=0.1):
+                    pass
                 gear = self.car.drivetrain.gear_vel[
                     int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
                 shifting = False  # sets to False so the car doesn't shift when it stops braking
@@ -289,14 +400,10 @@ class four_wheel:
                 snippet = self.car.curve_brake(v2[int(i)], self.nd_rad[int(i)])  # in/s^2
                 snippet.AX *= 32.17 * 12
 
-                # Make sure car does not go backwards when setting v2 for each index.
                 if v2[int(i)] ** 2 + 2 * snippet.AX * self.dx >= 0:
                     v2[int(i + 1)] = np.sqrt(v2[int(i)] ** 2 + 2 * snippet.AX * self.dx)
-                else:
+                else: # Make sure car does not go backwards when setting v2 for each index.
                     v2[int(i + 1)] = v2[int(i)]
-
-                snippet.AX /= (32.17 * 12)  # in g's
-                self.lapsim_data_storage.append_data_arrays(snippet, int(i)) # Positive AY is turning right, negative AY is turning left.
 
             else:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
@@ -328,6 +435,7 @@ class four_wheel:
                 v3[i] = (v1[int(i)])
             else:
                 v3[i] = (v2[int(i)])
+        self.lapsim_data_storage.velocity = v3
 
         # Determining the total time it takes to travel the track by rewriting the equation x = v * t as t = x /v
         t = 0
@@ -337,6 +445,8 @@ class four_wheel:
             self.lapsim_data_storage.time_array.append(t)
         print(f"Time: {t}")
         # print(f"Time: {t} seconds")
+
+        # self.lapsim_data_storage.brake_temp_post_processing(turn_dirs=self.nturn_dirs, car=self.car, graph=True)
 
         self.n = n
         self.nds = nds

@@ -60,8 +60,8 @@ class Track_Examine:
         trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, racecar)
         trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
 
-        trk.run_sim(racecar, 5000)
-        trk.plt_sim()
+        trk.run_sim(racecar, 1000)
+        # trk.plt_sim()
 
     def run(self):
         # with open('/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/skidpad_trk_points.pkl', 'r') as f:

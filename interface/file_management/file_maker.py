@@ -145,3 +145,4 @@ class FileMaker:
 
 
 file_maker = FileMaker()
+# file_maker.create_track_pickle("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf", "")

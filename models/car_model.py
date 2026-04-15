@@ -495,7 +495,7 @@ class car():
 
     # calculates the max axial acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
     # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
-    # set r to zero for a track straight track with no curvature
+    # set r to zero for a straight track with no curvature
     def curve_accel(self, v, r, transmission_gear='optimal'):
         snippet = None
 
