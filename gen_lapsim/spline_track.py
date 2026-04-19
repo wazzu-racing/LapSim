@@ -869,6 +869,24 @@ class track():
         # Grid stuff for graph
         ui_instance.load_track()
 
+    def plot_without_UI(self):
+        for i in self.arcs:
+            plt.plot(i.x, i.y)
+
+        for i in range(len(self.nds)):
+            nd = self.nds[i]
+            match i % 5:
+                case 0: col = 'blue'
+                case 1: col = 'red'
+                case 2: col = 'black'
+                case 3: col = 'magenta'
+                case 4: col = 'orange'
+            plt.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
+            plt.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
+
+        plt.axis('equal')
+        plt.show()
+
     def get_cost(self):
         cost = 0
         for i in self.arcs:

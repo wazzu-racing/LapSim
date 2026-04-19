@@ -23,7 +23,7 @@ class drivetrain:
 
         self.wheel_radius = 10.5/12 # ft # 9/12 for 92
         self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
-        self.shift_time = 0.3 # seconds
+        self.shift_time = 0.5 # seconds
 
         if engine_data == "": pass
 

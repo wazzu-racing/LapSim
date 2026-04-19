@@ -95,8 +95,6 @@ class Validation:
         turn: Turn = Turn.LEFT
 
         def find_data_node_distance_ratio(self, distance_along_arc, sims_per_arc):
-            if distance_along_arc == 118.3858907:
-                pass
             distance = 0
             count = 0
             while distance < distance_along_arc:
@@ -105,7 +103,7 @@ class Validation:
 
             distance_before_len = (self.length / sims_per_arc) * (count-1)
             distance_along_len = distance_along_arc - distance_before_len
-            # print(distance_along_len / (self.length / sims_per_arc))
+
             return distance_along_len / (self.length / sims_per_arc)
 
         # Finds the simulation point that happens BEFORE the data node. Returns the index
@@ -830,18 +828,14 @@ class Validation:
             case self.DataType.VELOCITY:
                 # Plot both sim and real RO dis
                 if not show_segments:
-                    if center:
-                        velocity_real_average = stats.trim_mean(np.average(self.velocity_real), proportiontocut=0.1)
-                        velocity_real_mod = np.array(self.velocity_real) - velocity_real_average
-                    else:
-                        velocity_real_mod = np.array(self.velocity_real)
+                    velocity_real = np.array(self.velocity_real)
                     len_vel = np.linspace(0, len(self.velocity_sim), len(self.velocity_sim))
                     len_vel_r = np.linspace(0, len(self.velocity_real), len(self.velocity_real))
                     ax.set_title("Velocity")
                     ax.set_xlabel("Data point")
                     ax.set_ylabel("Velocity (in/s)")
                     ax.plot(len_vel, self.velocity_sim, label='sim')
-                    ax.plot(len_vel_r, velocity_real_mod, label='real')
+                    ax.plot(len_vel_r, velocity_real, label='real')
                     ps = [patches.Patch(color='royalblue', label='sim'), patches.Patch(color='darkorange', label='real')]
                     ax.legend(handles=ps)
                 else:
@@ -900,7 +894,7 @@ class Validation:
         validator.parse_data_nodes("validator/output/06_arc_points_detailed.csv")
         # validator.parse_acceleration_data("")
 
-    def run_validation(self, sims_per_arc=1, get_error=True):
+    def run_validation(self, sims_per_arc=1, get_error=True, exclude_beginning=0, exclude_end=0):
 
         self.racecar = car()
 
@@ -920,7 +914,11 @@ class Validation:
 
         self.parse_data()
         self.convert_units()
-        self.filter_inaccurate_segments(max_arc_length=500, min_segment_length=2)
+        self.filter_inaccurate_segments(max_arc_length=500, min_segment_length=3)
+
+        # Exclude segments based on percentage set by parameter
+        if exclude_beginning != 0 and exclude_end != 0:
+            self.segments = self.segments[int((exclude_beginning/100)*len(self.segments)):int(len(self.segments)-(exclude_end/100)*len(self.segments))]
 
         # Compute numbers for data nodes (places where actual data is collected by data acq)
         for segment in self.segments:
@@ -961,7 +959,8 @@ class Validation:
                     self.lerped_data[-1].RI_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RI_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].RO_load_array[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].RO_load_array[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
 
-                    self.lerped_data[-1].velocity[count+1] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].velocity[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].velocity[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+
                     count += 1
 
         # Store all data in arrays suitable for writing to a csv
@@ -1084,10 +1083,10 @@ class Validation:
                 self.rpm_real.append(data_node.rpm)
                 self.rpm_error.append(rpm_err)
                 # Velocity
-                vel_err = ((self.lerped_data[seg_index].velocity[data_index] - data_node.rpm) / data_node.rpm) * 100 if data_node.rpm != 0 else None
+                # vel_err = ((self.lerped_data[seg_index].velocity[data_index] - data_node.) / data_node.rpm) * 100 if data_node.rpm != 0 else None
                 self.velocity_sim.append(self.lerped_data[seg_index].velocity[data_index])
                 self.velocity_real.append(segment.starting_velocity)
-                self.velocity_error.append(rpm_err)
+                # self.velocity_error.append(rpm_err)
 
         if get_error:
             average_time_error = round(get_average_error(self.time_error), 1) if self.time_error else None
@@ -1124,7 +1123,8 @@ class Validation:
 
     def run_rust_code(self):
         # Paths
-        working_dir = os.path.join(os.getcwd())
+        working_dir = os.path.join(os.getcwd(), "validator")
+        print(working_dir)
         rust_exe = os.path.join(working_dir, "target", "release", "gps-data-smoothing-v2")
 
         # Create an executable for the Rust code.
@@ -1135,9 +1135,9 @@ class Validation:
 # Acts as a singleton
 validator = Validation()
 # validator.run_rust_code()
-validator.run_validation(20, get_error=False)
+validator.run_validation(1, get_error=False, exclude_beginning=49, exclude_end=49)
 
-data_type = validator.DataType.VELOCITY
+data_type = validator.DataType.FR_dis
 print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
 validator.graph(data_type, True, False)
-# validator.val_track.plt_sim_velocity_components(validator.segments[5])
+# validator.val_track.plt_sim_velocity_components(validator.segments[2])

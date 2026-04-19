@@ -258,7 +258,7 @@ class car():
             # Acceleration & movement
             self.AX = racecar.instant_AX
             self.AY = racecar.instant_AY
-            self.velocity = racecar.velocity
+            self.velocity = 0
             # Tire measurements
             self.front_outer_displacement = racecar.front_outer_displacement
             self.front_inner_displacement = racecar.front_inner_displacement
@@ -293,7 +293,7 @@ class car():
             if curr_snippet.AX > 0: # If car is accelerating
                 snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].AX
                 snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].AY
-                snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].velocity
+                # snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].velocity
                 # Tire measurements
                 snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_outer_displacement
                 snippet.front_inner_displacement = curr_ratio * curr_snippet.front_inner_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_inner_displacement
@@ -319,7 +319,7 @@ class car():
             else: # If car is braking
                 snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].AX
                 snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].AY
-                snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].velocity
+                # snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].velocity
                 # Tire measurements
                 snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_outer_displacement
                 snippet.front_inner_displacement = curr_ratio * curr_snippet.front_inner_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_inner_displacement

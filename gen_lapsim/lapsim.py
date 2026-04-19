@@ -116,7 +116,6 @@ class LapSimData:
         # Collect lateral and axial acceleration of car
         self.AX[index] = snippet.AX
         self.AY[index] = snippet.AY
-        self.velocity[index] = snippet.velocity
 
         # lateral, axial, and vertical forces on tires
         self.FO_load_array[index] = snippet.FO_load
@@ -364,6 +363,7 @@ class four_wheel:
             v2[int(np.ceil(np.sum(self.t_len_tot[0:i]) / self.dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / self.dx))] = \
                 self.t_vel[i]
         v2[-1] = v2[-2]
+        v2[-1] = 300 # in/s
 
         for i in np.arange(n, -1, -1):
             snippet = self.car.curve_brake(v2[int(i)], self.nd_rad[int(i)])
@@ -380,7 +380,7 @@ class four_wheel:
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i]) / self.dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / self.dx))] = \
                 self.t_vel[i]
         v1[0] = 0
-        v1[-1] = v1[-2]
+        v1[-1] = 300 #in/s
 
         gear = 0  # transmission gear
         shift_time = self.car.drivetrain.shift_time  # shifting time (seconds)
@@ -455,21 +455,21 @@ class four_wheel:
         self.v1 = v1
         self.t = t
 
-        # tk = tkinter.Tk()
-        # fig = Figure(figsize=(10, 10), dpi=100)
-        # ax = fig.add_subplot(111)
-        # canvas = FigureCanvasTkAgg(fig, tk)
-        # canvas.draw()
-        # toolbar = NavigationToolbar2Tk(canvas, tk)
-        # canvas.get_tk_widget().pack()
-        # toolbar.update()
-        #
-        # ax.plot(np.linspace(0, len(self.v2), len(self.v2)), v2, color="red")
-        # ax.plot(np.linspace(0, len(self.v3), len(self.v3)), v3, color="blue")
-        # ax.plot(np.linspace(0, len(self.v1), len(self.v1)), v1, color="green")
-        # ax.legend()
-        # ax.grid()
-        # tk.mainloop()
+        tk = tkinter.Tk()
+        fig = Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, tk)
+        canvas.draw()
+        toolbar = NavigationToolbar2Tk(canvas, tk)
+        canvas.get_tk_widget().pack()
+        toolbar.update()
+
+        ax.plot(np.linspace(0, len(self.v2), len(self.v2)), v2, color="red")
+        ax.plot(np.linspace(0, len(self.v3), len(self.v3)), v3, color="blue")
+        ax.plot(np.linspace(0, len(self.v1), len(self.v1)), v1, color="green")
+        ax.legend()
+        ax.grid()
+        tk.mainloop()
 
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
