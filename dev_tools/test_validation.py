@@ -1,3 +1,5 @@
+import os
+
 import math
 import pickle
 
@@ -38,7 +40,7 @@ class Track_Examine:
 
         arr_done_index = 0
 
-        with open(txt_path, "r") as f:
+        with open("/".join(os.getcwd().split("/")[:-1]) + "/" + txt_path, "r") as f:
             content = f.read()
         curr_num = ""
         writing = False
@@ -98,4 +100,4 @@ class Track_Examine:
     #     plt.xlabel("COG (inches)")
     #     plt.show()
 
-examine = Track_Examine("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Endurance.rtf")
+examine = Track_Examine("config_data/track_points/Points for Endurance.rtf")
