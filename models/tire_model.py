@@ -1,23 +1,32 @@
+import pickle
+
 from matplotlib import pyplot as plt
 import scipy
 import numpy as np
 import csv
+import pickle as pkl
 import copy
 
+num = 0
 # tire magic function
 def magic_func(x, B, C, D, E):
     return D * np.sin(C * np.arctan(B*x - E * (B*x - np.arctan(B*x))))
 
 class magic_curve():
-    def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1):
+    def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1, vertical_offset=False, left_side_only=False):
         x = copy.deepcopy(x)
         y = copy.deepcopy(y) * coeff
+
+        # smoothing y data
+        n = 3
+        for i in range(n, len(y)-n):
+            y[i] = np.average(y[i-n : i+n])
 
         if data_cutoff:
             x = x[int(len(x)*0.15) : int(len(x)*0.85)]
             y = y[int(len(y)*0.15) : int(len(y)*0.85)]
 
-        if center_vertical:
+        if center_vertical or vertical_offset:
             # vertically centering the y data around the origin
             offset = (y.min() + y.max()) / 2
             y -= offset
@@ -53,21 +62,64 @@ class magic_curve():
         #y1 = y[center - offset]
         #y2 = y[center + offset]
 
+        # removing datapoints for positive slip
+        # this is for longitudinal data where the right side of the data is not great
+        if left_side_only:
+            indx = 0
+            for i in range(len(x)):
+                if x[i] <= 0:
+                    indx = i
+                    break
+            x = x[indx:-1]
+            y = y[indx:-1]
+
         slope = (y2 - y1) / (x2 - x1)
 
         # creating initial estimates for coeffecients
-        E0 = 0.5
-        D0 = y.max()
-        C0 = -1.5
-        B0 = slope / D0 / C0
+        global num
+        num += 1
 
-        # evaluating coeffecients using curve_fit method from scipy
-        popt, pcov = scipy.optimize.curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
+        # no this is not the epstein list
+        # it is a list of E coeffecients to attempt curve fitting for the tire magic function
+        E_list = [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1]
+        curve_fitted = False
 
-        self.coeff = popt
-        self.max = abs(popt[2])
+        for E0 in E_list:
+            try:
+                D0 = max(y.max(), abs(y.min()))
+                C0 = -1.5
+                B0 = slope / D0 / C0
+
+                # evaluating coeffecients using curve_fit method from scipy
+                popt, pcov = scipy.optimize.curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
+                self.coeff = popt
+                self.max = abs(popt[2])
+            except:
+                pass
+            else:
+                curve_fitted = True
+                break
+        
+        if not curve_fitted:
+            plt.plot(x, y, label='Raw Data')
+            #plt.plot(np.linspace(x.min(), x.max(), 101), magic_func(np.linspace(x.min(), x.max(), 101), *self.coeff), label='Fitted Curve')
+            plt.show()
+            raise(SystemExit(f"\033[91mError: {'Failed to fit magic curve to dataset.'}\033[0m"))
+        
+        self.vertical_offset = vertical_offset
+        self.offset = offset
+        
+        #plt.plot(x, y, label='Raw Data')
+        #plt.plot(np.linspace(x.min(), x.max(), 101), magic_func(np.linspace(x.min(), x.max(), 101), *self.coeff), label='Fitted Curve')
+        #plt.xlabel('Slip Angle (deg)')
+        #plt.ylabel('Aligning Torque (lb-ft)')
+        #plt.grid()
+        #plt.legend()
+        #plt.show()
     
     def eval(self, x):
+        if self.vertical_offset:
+            return magic_func(x, *self.coeff) + self.offset
         return magic_func(x, *self.coeff)
 
 
@@ -93,7 +145,7 @@ class data_section():
 
 
 class curve_set():
-    def __init__(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False, coeff=1):
+    def __init__(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False, coeff=1, vertical_offset=False, left_side_only=False):
         if (data_type == 'corner') or (data_type == 'cornering'):
             titles = parent.corner_titles
             loads = parent.corner_loads
@@ -121,7 +173,7 @@ class curve_set():
 
                 x = section.data[x_index]
                 y = section.data[y_index] * coeff
-                self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
+                self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff, vertical_offset=vertical_offset, left_side_only=left_side_only))
         
         self.loads = loads
         self.cambers = cambers
@@ -192,7 +244,7 @@ class curve_set():
 
 
 class tire():
-    def __init__(self, cornering_data_file, acceleration_data_file = None):
+    def __init__(self, cornering_data_file, acceleration_data_file = None, debug_info = False):
 
         ''' =============================================== '''
         ''' ========== Initiating Cornering Data ========== '''
@@ -235,7 +287,6 @@ class tire():
         ================================================================================================================================='''
 
         indx = corner_titles.index('SA') # finding index for slip angle
-
         # the array arr records sections of data where slip angle values are approximately -12, -4, 0, 4, or 12 deg
         # each row in arr represents a seperate section of data
         # the first value in each row represents the approximate slip angle value of the data within that section, either -12, -4, 0, 4, or 12 deg
@@ -266,6 +317,12 @@ class tire():
                     arr[0].append(4)
                     appending = True
                 
+                if len(arr[0]) > 1:
+                    # if you are wondering why the comment on the next line is so long, it was written by AI
+                    if arr[0][-1] == arr[0][-2]: # if slip angle value is the same as the previous one, this is likely just a continuation of the same section of data and not a new section, so appending is set back to False and the last entry in arr[0] is removed
+                        appending = False
+                        arr[0].pop()
+                
                 # records starting value of new dataset in arr[1] if a new set was created
                 if appending: arr[1].append(i)
             
@@ -289,6 +346,29 @@ class tire():
         self.corner_data_sets = []
         for i in self.corner_set_index:
             self.corner_data_sets.append(data_section(corner_data[0:len(corner_data), i[0]:i[1]]))
+        
+        # creates a plot for debugging
+        if debug_info:
+            plt.plot(corner_data[corner_titles.index('ET')], corner_data[corner_titles.index('SA')], color='black', linewidth = 0.5)
+            #plt.plot(corner_data[corner_titles.index('ET')], corner_data[corner_titles.index('IA')] / 4 * 15, color='orange', linewidth = 0.5)
+            #plt.plot(corner_data[corner_titles.index('ET')], corner_data[corner_titles.index('FZ')] / 350 * 15, color='green', linewidth = 0.5)
+            
+            top = 15
+            bottom = -15
+            indx = corner_titles.index('ET')
+            #for i in range(len(arr[0])-1):
+            #    plt.plot([corner_data[indx, arr[1][i]], corner_data[indx, arr[2][i]]], [arr[0][i], arr[0][i]], color = 'red')
+            
+            for i in self.corner_set_index:
+                plt.plot([corner_data[indx, i[0]], corner_data[indx, i[1]]], [top, top], color = 'blue')
+                plt.plot([corner_data[indx, i[0]], corner_data[indx, i[1]]], [bottom, bottom], color = 'blue')
+                plt.plot([corner_data[indx, i[0]], corner_data[indx, i[0]]], [top, bottom], color = 'blue', linewidth = 0.5)
+                plt.plot([corner_data[indx, i[1]], corner_data[indx, i[1]]], [top, bottom], color = 'blue', linewidth = 0.5)
+
+            #plt.grid()
+            plt.ylabel('Slip Angle (deg)')
+            plt.xlabel('Elapse Time (s)')
+            plt.show()
 
         '''
         finding applied loads used for testing:
@@ -314,7 +394,7 @@ class tire():
         self.corner_loads = corner_loads
         self.corner_camber_angles = [0, 2, 4]
         
-        self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101), coeff=0.5)
+        self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101), coeff=0.5, vertical_offset=True)
         self.aligning_torque = curve_set(self, 'corner', 'SA', 'MZ', np.linspace(-15, 15, 101), center_vertical=True, data_cutoff=True)
 
         self.max_lateral_forces = []
@@ -381,12 +461,18 @@ class tire():
                 if -0.05 < accel_data[indx, i] < 0.03:
                     arr[0].append(0)
                     appending = True
-                elif 0.09 < accel_data[indx, i]:
+                elif 0.07 < accel_data[indx, i]:
                     arr[0].append(0.15)
                     appending = True
                 elif -0.15 > accel_data[indx, i]:
                     arr[0].append(-0.15)
                     appending = True
+                
+                if len(arr[0]) > 1:
+                    # if you are wondering why the comment on the next line is so long, it was written by AI
+                    if arr[0][-1] == arr[0][-2]: # if slip angle value is the same as the previous one, this is likely just a continuation of the same section of data and not a new section, so appending is set back to False and the last entry in arr[0] is removed
+                        appending = False
+                        arr[0].pop()
                 
                 # records starting value of new dataset in arr[1] if a new set was created
                 if appending: arr[1].append(i)
@@ -396,7 +482,8 @@ class tire():
                 arr[2].append(i)  # records the index for the end of the dataset if slip ratio values have changed
                 appending = False # sets appending to False if slip ratio values have changed
 
-        arr[2].append(len(accel_data[indx])) # appending the ending index of the final dataset
+        if appending:
+            arr[2].append(len(accel_data[indx])) # appending the ending index of the final dataset
         #sequence = [0, 0.15, 0, -0.15, 0, 0.15, 0] # the sequence of slip ratios to be searched for
         sequence = [0.15, 0, -0.15, 0, 0.15] # alternative sequence for 18x6-10 R20
         self.accel_set_index = [] # an empty list to store the start and ending indexes of all sections of useful data
@@ -407,10 +494,35 @@ class tire():
             if arr[0][i-half : i+1+half] == sequence:
                 self.accel_set_index.append([int(arr[2][i-2]), int((arr[1][i] + arr[2][i])/2)])
         
+        # creates a plot for debugging
+        if debug_info:
+            plt.plot(accel_data[accel_titles.index('ET')], accel_data[accel_titles.index('SR')], color='black', linewidth = 0.5)
+            #plt.plot(corner_data[corner_titles.index('ET')], corner_data[corner_titles.index('IA')] / 4 * 15, color='orange', linewidth = 0.5)
+            #plt.plot(corner_data[corner_titles.index('ET')], corner_data[corner_titles.index('FZ')] / 350 * 15, color='green', linewidth = 0.5)
+            
+            top = 0.15
+            bottom = -0.15
+            indx = accel_titles.index('ET')
+            #for i in range(len(arr[0])-1):
+            #    plt.plot([accel_data[indx, arr[1][i]], accel_data[indx, arr[2][i]]], [arr[0][i], arr[0][i]], color = 'red')
+            
+            for i in self.accel_set_index:
+                plt.plot([accel_data[indx, i[0]], accel_data[indx, i[1]]], [top, top], color = 'blue')
+                plt.plot([accel_data[indx, i[0]], accel_data[indx, i[1]]], [bottom, bottom], color = 'blue')
+                plt.plot([accel_data[indx, i[0]], accel_data[indx, i[0]]], [top, bottom], color = 'blue', linewidth = 0.5)
+                plt.plot([accel_data[indx, i[1]], accel_data[indx, i[1]]], [top, bottom], color = 'blue', linewidth = 0.5)
+
+            #plt.grid()
+            plt.ylabel('Slip Angle (deg)')
+            plt.xlabel('Elapse Time (s)')
+            plt.show()
+        
         # creating a list of data_section objects for each set of useful data
         self.accel_data_sets = []
         for i in self.accel_set_index:
             self.accel_data_sets.append(data_section(accel_data[0:len(accel_data), i[0]:i[1]]))
+
+        
         
         
         '''
@@ -436,7 +548,7 @@ class tire():
         self.accel_loads = accel_loads
         self.accel_camber_angles = [0, 2, 4]
 
-        self.FX_curves = curve_set(self, 'accel', 'SR', 'FX', np.linspace(-0.3, 0.3, 101), coeff=0.6)
+        self.FX_curves = curve_set(self, 'accel', 'SR', 'FX', np.linspace(-0.3, 0.3, 101), coeff=0.6, left_side_only=True)
 
         self.max_axial_forces = []
         for i in range(len(self.accel_camber_angles)):
@@ -505,7 +617,10 @@ class tire():
         for i in range(1, len(cost)):
             if cost[i] < cost[sect]:
                 sect = i
-        
+
+        for i in equivalent:
+            indx = titles.index(i[0])
+
         return sect
     
     def plot_data(self, set_type, x_axis, y_axis, set_num):
@@ -605,7 +720,7 @@ class tire():
             leg.append(f'Camber = {self.corner_camber_angles[i]}')
         
         plt.xlabel(f'Applied Load ({self.corner_units[self.corner_titles.index('FZ')]})')
-        plt.ylabel(f'Max Lateral Force ({self.corner_units[self.corner_titles.index('FY')]})')
+        plt.ylabel(f'Lateral Force ({self.corner_units[self.corner_titles.index('FY')]})')
         plt.grid()
         plt.legend(leg)
         plt.show()
@@ -685,3 +800,12 @@ class tire():
         plt.grid()
         plt.legend(leg)
         plt.show()
+
+if False:
+    cornering_data = "config_data\\tire_data\\R20_18x6-10_cornering.dat"
+    driveBrake_data = "config_data\\tire_data\\R20_18x6-10_driveBrake.dat"
+    #cornering_data = "config_data\\tire_data\\R25B_20.5x7-13_cornering_variableVelocity.dat"
+    #driveBrake_data = "config_data\\tire_data\\R25B_20.5x7-13_driveBrake.dat"
+    wheel = tire(cornering_data, driveBrake_data, debug_info=False)
+    plt.title("Maximum Lateral force vs applied load at different cambers")
+    wheel.lateral_coeff_plot()
