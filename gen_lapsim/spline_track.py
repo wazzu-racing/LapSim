@@ -609,11 +609,13 @@ class curve():
     def interpolate(self):
         len = []
         rad = []
+        turn_dirs = []
         for i in range(0, self.elem):
             rad.append((self.dx[i]**2 + self.dy[i]**2)**1.5 / abs(self.dx[i] * self.ddy_n[i] - self.dy[i] * self.ddx_n[i]))
             len.append((self.dx[i]**2 + self.dy[i]**2)**0.5 / self.elem)
+            turn_dirs.append(self.turn_dirs[i])
 
-        return(len, rad)
+        return len, rad, turn_dirs
 
     def plot(self):
         track_subplot.plot(self.x, self.y)
@@ -936,25 +938,25 @@ class track():
             arc.determine_turn_dirs()
 
     # Convert all arcs on track into lengths and radii, then run the lapsim using those.
-    def run_sim(self, car, nodes = 5000, start = 0, end = 0):
+    def run_sim(self, car, nodes = 5000, start_nd = 0, end_nd = 0, start_vel = 0, end_vel = 0):
         from gen_lapsim import lapsim
 
         self.car = car
 
-        if end == 0:
-            end = len(self.arcs)
+        if end_nd == 0:
+            end_nd = len(self.arcs)
 
         self.determine_turn_dirs_on_track()
 
-        self.len = []
+        self.lens = []
         self.rad = []
         self.turn_dirs = []
-        for i in self.arcs[start:end]:
-            new_len, new_rad = i.interpolate()
-            self.len += new_len
+        for i in self.arcs[start_nd:end_nd]:
+            new_len, new_rad, new_turns = i.interpolate()
+            self.lens += new_len
             self.rad += new_rad
-            self.turn_dirs += i.turn_dirs
-        self.sim = lapsim.four_wheel(self.len, self.rad, self.turn_dirs, car, nodes)
+            self.turn_dirs += new_turns
+        self.sim = lapsim.four_wheel(self.lens, self.rad, self.turn_dirs, car, nodes, start_vel, end_vel)
         self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
         return self.t
         # print(f'Total Travel Time: {self.t}')

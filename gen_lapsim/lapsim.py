@@ -58,8 +58,8 @@ class LapSimData:
         self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
                                 "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
                                 "max_FO_FX", "max_RI_FX", "max_RO_FX", "max_FI_vector_mag", "max_FO_vector_mag",
-                                "max_RI_vector_mag", "max_RO_vector_mag", "max_D_1_dis", "max_D_2_dis", "max_D_3_dis",
-                                "max_D_4_dis"]
+                                "max_RI_vector_mag", "max_RO_vector_mag", "max_front_outer_dis", "max_front_inner_dis",
+                                "max_rear_outer_dis", "max_rear_inner_dis"]
 
     # Initialize all of the arrays in LapSimData
     def initialize(self, n):
@@ -171,9 +171,9 @@ class LapSimData:
                            "max_RI_FX": np.max(self.RI_FX_array), "max_FI_vector_mag": np.max(self.FI_vector_mag),
                            "max_FO_vector_mag": np.max(self.FO_vector_mag),
                            "max_RI_vector_mag": np.max(self.RI_vector_mag),
-                           "max_RO_vector_mag": np.max(self.RO_vector_mag), "max_D_1_dis": np.max(self.D_1_dis),
-                           "max_D_2_dis": np.max(self.D_2_dis), "max_D_3_dis": np.max(self.D_3_dis),
-                           "max_D_4_dis": np.max(self.D_4_dis)}
+                           "max_RO_vector_mag": np.max(self.RO_vector_mag), "max_front_outer_dis": np.max(self.front_outer_displacement),
+                           "max_front_inner_dis": np.max(self.front_inner_displacement), "max_rear_outer_dis": np.max(self.rear_outer_displacement),
+                           "max_rear_inner_dis": np.max(self.rear_inner_displacement)}
 
         return max_values_dict
 
@@ -200,13 +200,13 @@ class LapSimData:
         T_init = 24 # initial temp of brake discs, Celsius (~75 degrees F)
         C_heat = 1 # Heat transfer coefficient, dependent upon air flow and velocity
         C_p = 461 # Specific heat capacity of brakes, J/kg*C
-        C_c = 0.5
+        C_c = 0.5 # Cooling coefficient
         A_surface = 0.00064516 # surface area of discs, m^2
-        K_E_perc = 0.95
+        K_E_perc = 1 # Assuming all kinetic energy from the wheels turns into heat
         M_brake = 0.4445205 # mass of brake discs, kg
         W_car = self.FO_load_array[0] + self.RO_load_array[0] + self.FI_load_array[0] + self.RI_load_array[0]
 
-        # Brake temp array across entire track
+        # Brake temp arrays per wheel and track
         FO_brake_temps, FI_brake_temps, RO_brake_temps, RI_brake_temps = [], [], [], []
         FR_brake_temps, FL_brake_temps, RR_brake_temps, RL_brake_temps = [], [], [], []
         F_brake_temps, R_brake_temps = [], []
@@ -220,6 +220,7 @@ class LapSimData:
                 continue
 
             # Braking, heating up
+            # Using the specific heat equation to calculate the heat of the brake rotors during braking.
             if self.velocity[index] - self.velocity[index-1] < 0:
                 # Front outer brake
                 FO_T_change = K_E_perc*(0.5*self.FO_load_array[index-1]*0.453592*((self.velocity[index-1]*0.0254)**2 - (self.velocity[index]*0.0254)**2))/(M_brake*C_p) # Kelvin
@@ -247,11 +248,13 @@ class LapSimData:
                 RO_T_last_brake = RO_T_curr
                 RI_T_last_brake = RI_T_curr
             # Accelerating, cooling down
+            # Use the Newton's Law of Cooling equation to calculate the cooling temp of the brake rotors
+            # Relate the coefficient of cooling to the velocity by dividing the current velocity by the max velocity
             else:
-                FO_T_curr = T_ambient + (FO_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
-                FI_T_curr = T_ambient + (FI_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
-                RO_T_curr = T_ambient + (RO_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
-                RI_T_curr = T_ambient + (RI_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/np.max(self.velocity))*(self.time_array[index] - prev_brake_time))
+                FO_T_curr = T_ambient + (FO_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/(80*17.6))*(self.time_array[index] - prev_brake_time))
+                FI_T_curr = T_ambient + (FI_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/(80*17.6))*(self.time_array[index] - prev_brake_time))
+                RO_T_curr = T_ambient + (RO_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/(80*17.6))*(self.time_array[index] - prev_brake_time))
+                RI_T_curr = T_ambient + (RI_T_last_brake - T_ambient)*np.e**(-(C_c*self.velocity[index]/(80*17.6))*(self.time_array[index] - prev_brake_time))
 
                 FO_brake_temps.append(FO_T_curr)
                 FI_brake_temps.append(FI_T_curr)
@@ -273,6 +276,9 @@ class LapSimData:
             F_brake_temps.append(np.max([FO_T_curr, FI_T_curr]))
             R_brake_temps.append(np.max([RO_T_curr, RI_T_curr]))
 
+        print(f"Max temp: {np.max(F_brake_temps)*9/5+32}")
+        print(f"Average front temp: {np.average(F_brake_temps)*9/5+32}")
+
         if graph:
             tk = tkinter.Tk()
             fig = Figure(figsize=(10, 10), dpi=100)
@@ -284,7 +290,7 @@ class LapSimData:
             toolbar.update()
 
             ax1.plot(np.arange(len(F_brake_temps)), np.add(np.multiply(F_brake_temps, 9/5), 32), label="F")
-            ax1.plot(np.arange(len(R_brake_temps)), np.add(np.multiply(R_brake_temps, 9/5), 32), label="R")
+            # ax1.plot(np.arange(len(R_brake_temps)), np.add(np.multiply(R_brake_temps, 9/5), 32), label="R")
             # ax1.plot(np.arange(len(FR_brake_temps)), np.add(np.multiply(FR_brake_temps, 9/5), 32), label="FR")
             # ax1.plot(np.arange(len(FL_brake_temps)), np.add(np.multiply(FL_brake_temps, 9/5), 32), label="FL")
             # ax1.plot(np.arange(len(RR_brake_temps)), np.add(np.multiply(RR_brake_temps, 9/5), 32), label="RR")
@@ -301,7 +307,7 @@ class LapSimData:
 
 class four_wheel:
 
-    def __init__(self, t_len_tot, t_rad, turn_dirs, car, n):
+    def __init__(self, t_len_tot, t_rad, turn_dirs, car, n, start_vel = 0, end_vel = 0):
         # print(min(t_rad))
         x = np.sort(copy.deepcopy(t_rad))
         y = np.linspace(len(x), 0, len(x))
@@ -310,6 +316,8 @@ class four_wheel:
         self.turn_dirs = np.array(turn_dirs)
         self.car = car
         self.n = n
+        self.start_vel = start_vel
+        self.end_vel = end_vel
 
         # Make LapSimData instance to store LAPSIM data.
         self.lapsim_data_storage = LapSimData()
@@ -355,15 +363,13 @@ class four_wheel:
             self.arc_beginning_node.append(int(np.ceil(np.sum(self.t_len_tot[0:i]) / self.dx)))
         self.arc_beginning_node.append(n + 1)
 
-        self.t_rad[-1] = self.t_rad[-2]
-
         # Determine the speed if the car deaccelerated for the entire length of the traffic, ending at 0 mph at node n
         v2 = np.zeros(int(n + 1))
         for i in np.arange(len(self.t_len_tot)):
             v2[int(np.ceil(np.sum(self.t_len_tot[0:i]) / self.dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / self.dx))] = \
                 self.t_vel[i]
-        v2[-1] = v2[-2]
-        v2[-1] = 300 # in/s
+        v2[0] = self.start_vel
+        v2[-1] = self.end_vel
 
         for i in np.arange(n, -1, -1):
             snippet = self.car.curve_brake(v2[int(i)], self.nd_rad[int(i)])
@@ -379,8 +385,8 @@ class four_wheel:
         for i in np.arange(len(self.t_len_tot)):
             v1[int(np.ceil(np.sum(self.t_len_tot[0:i]) / self.dx)):int(np.ceil(np.sum(self.t_len_tot[0:i + 1]) / self.dx))] = \
                 self.t_vel[i]
-        v1[0] = 0
-        v1[-1] = 300 #in/s
+        v1[0] = self.start_vel
+        v1[-1] = self.end_vel
 
         gear = 0  # transmission gear
         shift_time = self.car.drivetrain.shift_time  # shifting time (seconds)
@@ -391,8 +397,6 @@ class four_wheel:
             # checks if car is braking by looking of v2 is smaller than v1 (car is breaking when the if statement is true)
             if v2[int(i + 1)] <= v1[int(i)]:
                 v1[int(i + 1)] = v2[int(i + 1)]
-                if np.isclose(v2[int(i+1)], 413.32, rtol=0.1):
-                    pass
                 gear = self.car.drivetrain.gear_vel[
                     int(v1[int(i)] * 0.0568182 * 10)]  # changes to the optimal gear when braking
                 shifting = False  # sets to False so the car doesn't shift when it stops braking
@@ -408,7 +412,7 @@ class four_wheel:
             else:
                 # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
-                    snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in in/s^2
+                    snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in g's
                     snippet.AX *= 32.17 * 12
                 else:
                     snippet = self.car.static_snippet
@@ -455,21 +459,21 @@ class four_wheel:
         self.v1 = v1
         self.t = t
 
-        tk = tkinter.Tk()
-        fig = Figure(figsize=(10, 10), dpi=100)
-        ax = fig.add_subplot(111)
-        canvas = FigureCanvasTkAgg(fig, tk)
-        canvas.draw()
-        toolbar = NavigationToolbar2Tk(canvas, tk)
-        canvas.get_tk_widget().pack()
-        toolbar.update()
-
-        ax.plot(np.linspace(0, len(self.v2), len(self.v2)), v2, color="red")
-        ax.plot(np.linspace(0, len(self.v3), len(self.v3)), v3, color="blue")
-        ax.plot(np.linspace(0, len(self.v1), len(self.v1)), v1, color="green")
-        ax.legend()
-        ax.grid()
-        tk.mainloop()
+        # tk = tkinter.Tk()
+        # fig = Figure(figsize=(10, 10), dpi=100)
+        # ax = fig.add_subplot(111)
+        # canvas = FigureCanvasTkAgg(fig, tk)
+        # canvas.draw()
+        # toolbar = NavigationToolbar2Tk(canvas, tk)
+        # canvas.get_tk_widget().pack()
+        # toolbar.update()
+        #
+        # ax.plot(np.linspace(0, len(self.v2), len(self.v2)), v2, color="red")
+        # ax.plot(np.linspace(0, len(self.v3), len(self.v3)), v3, color="blue")
+        # ax.plot(np.linspace(0, len(self.v1), len(self.v1)), v1, color="green")
+        # ax.legend()
+        # ax.grid()
+        # tk.mainloop()
 
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
