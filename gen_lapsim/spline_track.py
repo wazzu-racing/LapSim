@@ -651,7 +651,7 @@ class track():
 
     global x_array, y_array
 
-    def __init__(self, p1x, p1y, p2x, p2y, car):
+    def __init__(self, p1x, p1y, p2x, p2y, car, loop=False):
         global x_array, y_array, turn_array
 
         self.car = car
@@ -683,10 +683,13 @@ class track():
 
         self.arcs = []
 
-        for i in self.nds:
-            self.arcs.append(curve(i, i.next_nd))
-            i.next_arc = self.arcs[-1]
-            i.next_nd.prev_arc = self.arcs[-1]
+        for index, nd in enumerate(self.nds):
+            if index == len(self.nds)-1 and not loop:
+                pass
+            else:
+                self.arcs.append(curve(nd, nd.next_nd))
+                nd.next_arc = self.arcs[-1]
+                nd.next_nd.prev_arc = self.arcs[-1]
 
         # Keeps track of locations of data nodes
         x_array = []
@@ -803,7 +806,7 @@ class track():
         points = []
         for index in range(len(x_array)):
             points.append((x_array[index], y_array[index]))
-            # track_subplot.plot(x_array[index], y_array[index], marker='o', color="Green" if turn_array[index] == curve.Turn.RIGHT else "red", markersize=1) # Uncomment to visually see left and right turns along track
+            track_subplot.plot(x_array[index], y_array[index], marker='o', color="Green" if turn_array[index] == curve.Turn.RIGHT else "red", markersize=1) # Uncomment to visually see left and right turns along track
             # track_subplot.plot(x_array[index], y_array[index], marker='o', color="Black", markersize=1) # Uncomment to visually see data nodes along track
 
         # Plot dots on around the track to mark gates
@@ -871,9 +874,27 @@ class track():
         # Grid stuff for graph
         ui_instance.load_track()
 
-    def plot_without_UI(self):
-        for i in self.arcs:
-            plt.plot(i.x, i.y)
+    def plot_without_UI(self, show_turns=False):
+        tk = tkinter.Tk()
+        fig = Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, tk)
+        canvas.draw()
+        toolbar = NavigationToolbar2Tk(canvas, tk)
+        canvas.get_tk_widget().pack()
+        toolbar.update()
+
+        if show_turns:
+            for i in self.arcs:
+                for index, turn in enumerate(i.turn_dirs):
+                    if index % 3:
+                        if turn == curve.Turn.LEFT:
+                            ax.plot(i.x[index], i.y[index], marker='o', color='red', markersize=3)
+                        else:
+                            ax.plot(i.x[index], i.y[index], marker='o', color='green', markersize=3)
+        else:
+            for i in self.arcs:
+                ax.plot(i.x, i.y)
 
         for i in range(len(self.nds)):
             nd = self.nds[i]
@@ -883,11 +904,11 @@ class track():
                 case 2: col = 'black'
                 case 3: col = 'magenta'
                 case 4: col = 'orange'
-            plt.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
-            plt.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
+            ax.plot(self.nds[i].x1, self.nds[i].y1, marker='o', color=col, markersize=3)
+            ax.plot(self.nds[i].x2, self.nds[i].y2, marker='o', color=col, markersize=3)
 
-        plt.axis('equal')
-        plt.show()
+        ax.axis('equal')
+        tk.mainloop()
 
     def get_cost(self):
         cost = 0

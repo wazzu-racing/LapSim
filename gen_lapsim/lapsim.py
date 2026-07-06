@@ -100,6 +100,10 @@ class LapSimData:
         self.front_outer_displacement = np.zeros(int(n + 1))
         self.rear_inner_displacement = np.zeros(int(n + 1))
         self.rear_outer_displacement = np.zeros(int(n + 1))
+        self.FO_C = np.zeros(int(n + 1))
+        self.FI_C = np.zeros(int(n + 1))
+        self.RO_C = np.zeros(int(n + 1))
+        self.RI_C = np.zeros(int(n + 1))
         # rpm
         self.rpm = np.zeros(int(n + 1))
         # theta of force on car
@@ -158,6 +162,11 @@ class LapSimData:
         self.rear_inner_displacement[index] = snippet.rear_inner_displacement
         self.front_outer_displacement[index] = snippet.front_outer_displacement
         self.rear_outer_displacement[index] = snippet.rear_outer_displacement
+        self.FO_C[index] = snippet.FO_camber
+        self.FI_C[index] = snippet.FI_camber
+        self.RO_C[index] = snippet.RO_camber
+        self.RI_C[index] = snippet.RI_camber
+
 
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
@@ -333,7 +342,7 @@ class four_wheel:
         self.dx = track / n
 
         # print(f"nodes n: {n}")
-        # print(f"dx: {self.dx}")
+        print(f"dx: {self.dx}")
 
         # nodespace
         nds = np.linspace(0, track, int(n + 1))
@@ -459,22 +468,6 @@ class four_wheel:
         self.v1 = v1
         self.t = t
 
-        # tk = tkinter.Tk()
-        # fig = Figure(figsize=(10, 10), dpi=100)
-        # ax = fig.add_subplot(111)
-        # canvas = FigureCanvasTkAgg(fig, tk)
-        # canvas.draw()
-        # toolbar = NavigationToolbar2Tk(canvas, tk)
-        # canvas.get_tk_widget().pack()
-        # toolbar.update()
-        #
-        # ax.plot(np.linspace(0, len(self.v2), len(self.v2)), v2, color="red")
-        # ax.plot(np.linspace(0, len(self.v3), len(self.v3)), v3, color="blue")
-        # ax.plot(np.linspace(0, len(self.v1), len(self.v1)), v1, color="green")
-        # ax.legend()
-        # ax.grid()
-        # tk.mainloop()
-
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
 
@@ -487,3 +480,19 @@ class four_wheel:
         #     print(i)
 
         return nds / 12, v1 / 17.6, t
+
+    def plot_velocities(self):
+        tk = tkinter.Tk()
+        fig = Figure(figsize=(10, 10), dpi=100)
+        ax = fig.add_subplot(111)
+        canvas = FigureCanvasTkAgg(fig, tk)
+        canvas.draw()
+        toolbar = NavigationToolbar2Tk(canvas, tk)
+        canvas.get_tk_widget().pack()
+        toolbar.update()
+        ax.plot(np.linspace(0, len(self.v2), len(self.v2)), self.v2, color="red")
+        ax.plot(np.linspace(0, len(self.v3), len(self.v3)), self.v3, color="blue")
+        ax.plot(np.linspace(0, len(self.v1), len(self.v1)), self.v1, color="green")
+        ax.legend()
+        ax.grid()
+        tk.mainloop()

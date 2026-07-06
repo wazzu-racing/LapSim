@@ -34,14 +34,14 @@ class FileMaker:
         os.makedirs(self.tracks_file_path, exist_ok=True)
 
         # Create tire model and put into user's documents folder.
-        cornering_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "cornering_data.dat"))
-        accel_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "acceleration_data.dat"))
+        cornering_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "Hoosier_18_6_R20_corner.dat"))
+        accel_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "Hoosier_18_6_R20_drive.dat"))
         tires = tire_model.tire(cornering_data, accel_data)
         with open(os.path.join(self.models_file_path, "HOOSIER_18(18x6-10_R20).pkl"), 'wb') as f:
             pickle.dump(tires, f)
 
         # Create drivetrain model and put into user's documents folder.
-        engine_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "engine_array.csv"))
+        engine_data = file_manager.get_temp_folder_path(os.path.join(self.project_root_dir, "config_data", "ENG_RPM_DATA_73.csv"))
         drivetrain = drivetrain_model.drivetrain(engine_data=engine_data)
         with open(os.path.join(self.models_file_path, "DEFAULT_DRIVETRAIN(CBR_650).pkl"), 'wb') as f:
             pickle.dump(drivetrain, f)
@@ -135,7 +135,7 @@ class FileMaker:
 
         track = self.points()
 
-        rang = 97 if is_autocross else 129
+        rang = 17 if is_autocross else 129
         for i in range(rang):
             n = node(points_x[i], points_y[i], points_x2[i], points_y2[i])
             track.nds.append(n)
@@ -143,6 +143,5 @@ class FileMaker:
         with open(pkl_path, "wb") as f:
             pickle.dump(track, f)
 
-
 file_maker = FileMaker()
-# file_maker.create_track_pickle("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf", "")
+file_maker.create_track_pickle("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Skidpad.rtf", "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/skidpad_trk_points.pkl", is_autocross=True)

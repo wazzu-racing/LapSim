@@ -12,38 +12,39 @@ import csv
 from models import drivetrain_model
 from models import tire_model
 from interface.file_management.file_manager import file_manager
+from models import aero_model
+
 
 class car():
-
     # weight over front left wheel
-    W_1 = 185.7365
+    W_1 = 173
     # weight over front right wheel
-    W_2 = 185.7365
+    W_2 = 173
     # weight over rear left wheel
-    W_3 = 170.7635
+    W_3 = 157.5
     # weight over rear right wheel
-    W_4 = 170.7635
+    W_4 = 157.5
     # length of wheelbase (in)
-    l = 60.04
+    l = 60
     # vertical center of gravity (in)
-    h = 14
+    h = 11.6
     # in, roll axis height, front and rear
-    z_rf = 2
-    z_rr = 3
+    z_rf = 2.3
+    z_rr = 2.5
     # Track widths, front and rear (in)
-    t_f = 61.3
-    t_r = 59.09
+    t_f = 49
+    t_r = 48
     # lb/in, ride rates, front and rear
-    K_RF = 189.5 # front
-    K_RR = 207.38 # rear
-    # lb*ft/deg, roll rates, front and rear (later converted to lb*ft/rad)
-    K_rollF = 144439.94389901822
-    K_rollR = 142041.8793828892
+    K_RF = 179.72219842152035 # lbs/in
+    K_RR = 163.58335639299756 # lbs/in
+    # lb*in/rad, roll rates, front and rear
+    K_rollF = 215203 # lb*in/rad
+    K_rollR = 195952 # lb*in/rad
     #deg/in, camber rates for front and rear
     CMB_RT_F = 1.5
-    CMB_RT_R = 1.25
+    CMB_RT_R = 1.75
     # deg, static camber rates for front and rear
-    CMB_STC_F = 1
+    CMB_STC_F = 2
     CMB_STC_R = 1
     # in, maximum displacement in jounce for suspension, front and rear
     max_jounce_f = 1
@@ -51,9 +52,42 @@ class car():
     # Rolling resistance coefficient
     C_rr = 0.01
 
-    # Converting roll rates to ft*lb/rad
-    K_rollF *= 180/np.pi
-    K_rollR *= 180/np.pi
+    # # weight over front left wheel
+    # W_1 = 185 # lbm
+    # # weight over front right wheel
+    # W_2 = 165 # lbm
+    # # weight over rear left wheel
+    # W_3 = 145 # lbm
+    # # weight over rear right wheel
+    # W_4 = 145 # lbm
+    # # length of wheelbase (in)
+    # l = 60.5
+    # # vertical center of gravity (in)
+    # h = 11.6
+    # # in, roll axis height, front and rear
+    # z_rf = 9.5
+    # z_rr = 9.7
+    # # Track widths, front and rear (in)
+    # t_f = 49
+    # t_r = 49
+    # # lb/in, ride rates, front and rear
+    # K_RF = 179.72219842152035 # fernt
+    # K_RR = 163.58335639299756 # peir
+    # # lb*ft/deg, roll rates, front and rear (later converted to lb*ft/rad)
+    # K_rollF = 144439.94389901822
+    # K_rollR = 142041.8793828892
+    # #deg/in, camber rates for front and rear
+    # CMB_RT_F = 1.5
+    # CMB_RT_R = 1.75
+    # # deg, static camber rates for front and rear
+    # CMB_STC_F = 2
+    # CMB_STC_R = 1
+    # # in, maximum displacement in jounce for suspension, front and rear
+    # max_jounce_f = 1
+    # max_jounce_r = 1
+    # # Rolling resistance coefficient
+    # C_rr = 0.01
+
     # weight over front track
     W_f = W_1 + W_2
     # weight over rear track
@@ -96,6 +130,13 @@ class car():
 
     velocity = 0
 
+
+    engine_force = []
+    vels = []
+    tires_force = []
+
+
+
     # aero csv file delimiter
     aero_delimiter = ';'
 
@@ -108,20 +149,16 @@ class car():
         self.tire_file_path = ""
         self.drivetrain_file_path = ""
 
-        self.aero_arr = [] # drag force acceleration (G's) emitted on vehicle (index = mph)
-        with open(self.aero_csv_file_path, newline='') as f:
-            reader = csv.reader(f, delimiter=self.aero_delimiter)
-            for line in reader:
-                for i in line:
-                    self.aero_arr.append(float(i)/self.W_car)
+        # Making aero model
+        self.aero_model = aero_model.Aero(self)
 
         # importing tire model
         try:
             with open(self.tire_file_path, 'rb') as f:
                 self.tires = pickle.load(f)
         except Exception:
-            cornering_data = file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data","cornering_data.dat"))
-            accel_data = file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data","acceleration_data.dat"))
+            cornering_data = file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "tire_data", "Hoosier_18_6_R20_corner.dat"))
+            accel_data = file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "tire_data", "Hoosier_18_6_R20_drive.dat"))
             self.tires = tire_model.tire(cornering_data, accel_data)
 
         # importing drivetrain model
@@ -129,11 +166,10 @@ class car():
             with open(self.drivetrain_file_path, 'rb') as f:
                 self.drivetrain = pickle.load(f)
         except Exception:
-            self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "engine_array.csv")))
+            self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "ENG_RPM_DATA_92.csv")))
 
         self.file_location = ""
 
-        self.aero_arr.reverse()
         self.compute_traction()
 
         # future code for accounting for tire orientation
@@ -254,7 +290,7 @@ class car():
         """
         Represents the data that the car model experiences at an instance along the track.
         """
-        def __init__(self, racecar, index):
+        def __init__(self, racecar, index, changing_gears=False):
             # Acceleration & movement
             self.AX = racecar.instant_AX
             self.AY = racecar.instant_AY
@@ -265,9 +301,9 @@ class car():
             self.rear_outer_displacement = racecar.rear_outer_displacement
             self.rear_inner_displacement = racecar.rear_inner_displacement
             self.FO_camber = racecar.C_out_f
-            self.FI_camber = racecar.C_out_f
-            self.RO_camber = racecar.C_out_f
-            self.RI_camber = racecar.C_out_f
+            self.FI_camber = racecar.C_in_f
+            self.RO_camber = racecar.C_out_r
+            self.RI_camber = racecar.C_in_r
             # Tire forces
             self.FO_load = racecar.W_out_f
             self.FI_load = racecar.W_in_f
@@ -277,10 +313,21 @@ class car():
             self.FI_FY = racecar.FY_in_f
             self.RO_FY = racecar.FY_out_r
             self.RI_FY = racecar.FY_in_r
-            self.FO_FX = racecar.FX_out_f
-            self.FI_FX = racecar.FX_in_f
-            self.RO_FX = racecar.FX_out_r
-            self.RI_FX = racecar.FX_in_r
+            self.FO_FX = -racecar.FX_out_f if self.AX < 0 else 0
+            self.FI_FX = -racecar.FX_in_f if self.AX < 0 else 0
+            self.RO_FX = racecar.FX_out_r if self.AX > 0 else -racecar.FX_out_r
+            self.RI_FX = racecar.FX_in_r if self.AX > 0 else -racecar.FX_in_r
+
+            # If changing gears, do not use the maximum possible force
+            if changing_gears:
+                self.FO_FY = 0
+                self.FI_FY = 0
+                self.RO_FY = 0
+                self.RI_FY = 0
+                self.FO_FX = 0
+                self.FI_FX = 0
+                self.RO_FX = 0
+                self.RI_FX = 0
 
             self.racecar = racecar
             self.index = index
@@ -291,8 +338,8 @@ class car():
 
             # Interpolate
             if curr_snippet.AX > 0: # If car is accelerating
-                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].AX
-                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].AY
+                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index - 1].AX
+                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index - 1].AY
                 # snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].velocity
                 # Tire measurements
                 snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_outer_displacement
@@ -317,8 +364,8 @@ class car():
                 snippet.RO_FX = curr_ratio * curr_snippet.RO_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_FX
                 snippet.RI_FX = curr_ratio * curr_snippet.RI_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_FX
             else: # If car is braking
-                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].AX
-                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].AY
+                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index - 1].AX
+                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index - 1].AY
                 # snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].velocity
                 # Tire measurements
                 snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_outer_displacement
@@ -373,7 +420,7 @@ class car():
         self.max_corner -= 0.0001
         # Gear changes
         self.accel(0, 0)
-        self.static_snippet = self.Car_Data_Snippet(self, -1) # Used to describe the state of the car during gear changes
+        self.static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True) # Used to describe the state of the car during gear changes
 
     def recalculate_characteristics(self):
         # weight over front track
@@ -422,9 +469,9 @@ class car():
             if i < 0: return False
 
         self.C_out_f = abs(self.CMB_STC_F + (self.W_out_f-self.W_f/2)/self.K_RF*self.CMB_RT_F) # camber of front outter wheel
-        self.C_in_f = abs(self.CMB_STC_F + (self.W_in_f-self.t_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
-        self.C_out_r = abs(self.CMB_STC_R + (self.W_out_r-self.t_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
-        self.C_in_r = abs(self.CMB_STC_R + (self.W_in_r-self.t_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
+        self.C_in_f = abs(self.CMB_STC_F + (self.W_in_f-self.W_f/2)/self.K_RF*self.CMB_RT_F)   # camber of front inner wheel
+        self.C_out_r = abs(self.CMB_STC_R + (self.W_out_r-self.W_r/2)/self.K_RR*self.CMB_RT_R) # camber of rear outter wheel
+        self.C_in_r = abs(self.CMB_STC_R + (self.W_in_r-self.W_r/2)/self.K_RR*self.CMB_RT_R)   # camber of rear inner wheel
 
         self.FY_out_f = self.tires.traction('corner', self.W_out_f, self.C_out_f) # max possible lateral acceleration from front outter wheel in pounds
         self.FY_in_f = self.tires.traction('corner', self.W_in_f, self.C_in_f)    # max possible lateral acceleration from front inner wheel in pounds
@@ -434,13 +481,11 @@ class car():
         FY_f = AY * self.W_car * self.W_bias # minimum necessary lateral force from front tires
         FY_r = AY * self.W_car * (1-self.W_bias) # minimum necessary lateral force from rear tires
 
-        # checking if the car can generate enough lateral force
+        # checking if the car can generate enough lateral force to make the turn
         if (FY_f > self.FY_out_f+self.FY_in_f) or (FY_r > self.FY_out_r+self.FY_in_r): return False
 
-        if bitch:
-            print((self.W_in_f + self.W_out_f) / (self.W_out_f + self.W_out_r + self.W_in_f +self. W_in_r))
-
-        if AX == 0: return True # returning true if no axial acceleration
+        # returning true if no axial acceleration
+        if AX == 0: return True
 
         f_factor = ((self.FY_out_f + self.FY_in_f)**2 - FY_f**2)**0.5 / (self.FY_out_f + self.FY_in_f)
         r_factor = ((self.FY_out_r + self.FY_in_r)**2 - FY_r**2)**0.5 / (self.FY_out_r + self.FY_in_r)
@@ -505,7 +550,7 @@ class car():
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
 
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
+        drag = self.aero_model.get_drag(v) # finding drag acceleration (lbs)
 
         returned = False
         for i in range(1, len(self.AY)):
@@ -521,12 +566,16 @@ class car():
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
 
+        self.engine_force.append(A_engn*self.W_car)
+        self.tires_force.append(snippet.AX*self.W_car)
+        self.vels.append(v)
+
         # returns either tire or engine acceleration depending on which is the limiting factor
         if A_engn < snippet.AX:
             snippet.AX = A_engn
-            snippet.AX -= drag
+            snippet.AX -= drag/self.W_car
             return snippet
-        snippet.AX -= drag
+        snippet.AX -= drag/self.W_car
         return snippet
 
     # calculates the max braking acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
@@ -541,7 +590,7 @@ class car():
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
 
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
+        drag = self.aero_model.get_drag(v) # finding drag acceleration (lbs)
 
         returned = False
         for i in range(1, len(self.AY)):
@@ -555,27 +604,17 @@ class car():
         if not returned:
             snippet = copy.deepcopy(self.brake_car_data_snippets[-1])
 
-        snippet.AX -= drag # incorporating drag
-        # print(snippet.AX)
+        snippet.AX -= drag/self.W_car # incorporating drag
 
         return snippet
 
     # returns drag acceleration (in/s^2) given vehicle speed
     # v = speed (in/s)
     def curve_idle(self, v):
-        drag = self.get_drag(v * 0.0568182) # finding drag acceleration (G's)
+        drag = self.aero_model.get_drag(v) # finding drag acceleration (lbs)
+        drag /= self.W_car # convert to G's
         drag *= 32.17 * 12 # converting from G's to in/s^2
         return -drag # returns negative because drag slows the car
-
-    # returns drag force in G's (index = speed of car (mph))
-    def get_drag(self, mph):
-        if mph >= len(self.aero_arr)-1: # check if car speed exceeds aero_arr size
-            return self.aero_arr[-1] # return drag accel value for highest speed if max speed is exceeded
-        else:
-            # finding drag by linearly interpolating the aero array
-            ratio = mph % 1
-            return self.aero_arr[int(mph)]*(1-ratio) + self.aero_arr[int(mph)+1]*ratio
-
 
     def adjust_weight(self, w):
         ratio = w / self.W_car
@@ -594,7 +633,6 @@ class car():
 
         self.compute_traction()
 
-
     def adjust_height(self, h):
         ratio = h / self.h
         self.h *= ratio
@@ -611,18 +649,11 @@ class car():
         plt.grid()
         plt.show()
 
-# print(racecar.accel_car_data_snippets[-1].FO_load)
-# snippet100 = racecar.brake_car_data_snippets[-1]
-# print(snippet100.AY)
-# print(f"FO_load: {snippet100.FO_load}\nFI_load: {snippet100.FI_load}\nRO_load: {snippet100.RO_load}\nRI_load: {snippet100.RI_load}\n")
-# snippet66 = racecar.brake_car_data_snippets[66]
-# print(snippet66.AY)
-# print(f"FO_load: {snippet66.FO_load}\nFI_load: {snippet66.FI_load}\nRO_load: {snippet66.RO_load}\nRI_load: {snippet66.RI_load}\n")
-# snippet33 = racecar.brake_car_data_snippets[33]
-# print(snippet33.AY)
-# print(f"FO_load: {snippet33.FO_load}\nFI_load: {snippet33.FI_load}\nRO_load: {snippet33.RO_load}\nRI_load: {snippet33.RI_load}\n")
-# for index, snippet in enumerate(racecar.accel_car_data_snippets):
-#     print(snippet.AX)
-
-# racecar.accel(racecar.AY[-1], racecar.A_brake[-1])
-# print(f"FO: {racecar.FY_out_f}, RO: {racecar.FY_out_r}")
+    def plot_forces(self):
+        plt.plot(self.vels, self.engine_force)
+        plt.plot(self.vels, self.tires_force)
+        plt.xlabel('Velocity (in/s)')
+        plt.ylabel('Force (lbs)')
+        plt.legend(['engine force', 'tire force'])
+        plt.grid()
+        plt.show()

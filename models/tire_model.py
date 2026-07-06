@@ -1,3 +1,4 @@
+import math
 from matplotlib import pyplot as plt
 import scipy
 import numpy as np
@@ -10,17 +11,17 @@ def magic_func(x, B, C, D, E):
 
 class magic_curve():
     def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1):
-        x = copy.deepcopy(x)
-        y = copy.deepcopy(y) * coeff
+        self.x = copy.deepcopy(x)
+        self.y = copy.deepcopy(y) * coeff
 
         if data_cutoff:
-            x = x[int(len(x)*0.15) : int(len(x)*0.85)]
-            y = y[int(len(y)*0.15) : int(len(y)*0.85)]
+            self.x = self.x[int(len(self.x)*0.15) : int(len(self.x)*0.85)]
+            self.y = self.y[int(len(self.y)*0.15) : int(len(self.y)*0.85)]
 
         if center_vertical:
             # vertically centering the y data around the origin
-            offset = (y.min() + y.max()) / 2
-            y -= offset
+            offset = (self.y.min() + self.y.max()) / 2
+            self.y -= offset
         
         # centering the raw data curve horizontally
         center = 0
@@ -31,14 +32,14 @@ class magic_curve():
             j = x0 + i
             if ((y[j] <= 0) and (y0 >= 0)) or ((y[j] >= 0) and (y0 <= 0)): # determines where y crosses the horizontal axis
                 offset = x[j] # determining the horizontal offset from the origin
-                x -= offset # shifting the domain such that the raw data curve intersects the origin
+                self.x -= offset # shifting the domain such that the raw data curve intersects the origin
                 center = j # index of center
                 break
 
             j = x0 - i
             if ((y[j] <= 0) and (y0 >= 0)) or ((y[j] >= 0) and (y0 <= 0)): # determines where y crosses the horizontal axis
                 offset = x[j] # determining the horizontal offset from the origin
-                x -= offset # shifting the domain such that the raw data curve intersects the origin
+                self.x -= offset # shifting the domain such that the raw data curve intersects the origin
                 center = j # index of center
                 break
         
@@ -62,7 +63,7 @@ class magic_curve():
         B0 = slope / D0 / C0
 
         # evaluating coeffecients using curve_fit method from scipy
-        popt, pcov = scipy.optimize.curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]))
+        popt, pcov = scipy.optimize.curve_fit(magic_func, x, y, p0=[B0, C0, D0, E0], bounds=([-np.inf, -np.inf, 0, 0], [np.inf, 0, np.inf, 1]), maxfev=90000)
 
         self.coeff = popt
         self.max = abs(popt[2])
@@ -122,7 +123,7 @@ class curve_set():
                 x = section.data[x_index]
                 y = section.data[y_index] * coeff
                 self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
-        
+
         self.loads = loads
         self.cambers = cambers
         self.curve_domain = curve_domain
@@ -192,7 +193,7 @@ class curve_set():
 
 
 class tire():
-    def __init__(self, cornering_data_file, acceleration_data_file = None):
+    def __init__(self, cornering_data_file, acceleration_data_file = ""):
 
         ''' =============================================== '''
         ''' ========== Initiating Cornering Data ========== '''
@@ -307,7 +308,8 @@ class tire():
         corner_loads = []
         for i in range(5):
             corner_loads.append(50*round((np.average(averages[int(i*len(averages)/5) : int((1+i)*len(averages)/5)]))/50))
-        
+
+        self.tire_name = self.corner_file.split('/')[-1][:-11]
         self.corner_data = corner_data
         self.corner_titles = corner_titles
         self.corner_units = corner_units
@@ -329,7 +331,7 @@ class tire():
         ''' ========== Initiating Acceleration Data ========== '''
         ''' ================================================== '''
 
-        if acceleration_data_file == None: pass # skips the rest of the function if acceleration data is missing
+        if acceleration_data_file == "": return # skips the rest of the function if acceleration data is missing
         
         accel_data = []   # empty array to store acceleration data value
         accel_titles = [] # empty array for the titles of each acceleration dataset
@@ -590,7 +592,7 @@ class tire():
                 # index of the highest camber_arr value less than camber
                 i_c = i
                 # equals zero when camber = camber_arr[i_c]; equals 1 when camber = camber_arr[i_c+1]
-                c_bias = (camber-camber_arr[i])/(camber_arr[i+1]-camber_arr[i]) 
+                c_bias = (camber-camber_arr[i])/(camber_arr[i+1]-camber_arr[i])
                 break
         
         return ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias) + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 1.1
@@ -603,7 +605,8 @@ class tire():
         for i in range(len(self.max_lateral_forces)):
             plt.plot(self.corner_loads, self.max_lateral_forces[i])
             leg.append(f'Camber = {self.corner_camber_angles[i]}')
-        
+
+        plt.title(f"{self.corner_file.split('/')[-1][:-11]}")
         plt.xlabel(f'Applied Load ({self.corner_units[self.corner_titles.index('FZ')]})')
         plt.ylabel(f'Max Lateral Force ({self.corner_units[self.corner_titles.index('FY')]})')
         plt.grid()
@@ -615,7 +618,8 @@ class tire():
         for i in range(len(self.max_lateral_forces)):
             plt.plot(self.corner_loads, np.array(self.max_lateral_forces[i])/np.array(self.corner_loads))
             leg.append(f'Camber = {self.corner_camber_angles[i]}')
-        
+
+        plt.title(f"{self.tire_name}")
         plt.xlabel(f'Applied Load ({self.corner_units[self.corner_titles.index('FZ')]})')
         plt.ylabel(f'Lateral Friction Coeffecient')
         plt.grid()
@@ -627,47 +631,103 @@ class tire():
         for i in self.corner_loads:
             self.FY_curves.plot_curve(i, camber)
             leg.append(f'{i} {self.corner_units[self.corner_titles.index('FZ')]}')
-        
+
+        plt.title(f"{self.corner_file.split('/')[-1][:-11]}, SA vs. FY w/ {camber} degrees of camber")
         plt.xlabel(f'Slip Angle')
-        plt.ylabel(f'FY ({self.accel_units[self.corner_titles.index('FY')]})')
+        plt.ylabel(f'FY')
         plt.grid()
         plt.legend(leg)
         plt.show()
 
     def SA_MZ_plot(self, camber):
         leg = []
-        for i in self.corner_loads:
-            self.aligning_torque.plot_curve(i, camber)
-            leg.append(f'{i} {self.corner_units[self.corner_titles.index('FZ')]}')
-        
-        plt.title(f'Slip Angle vs Alinging Torque')
-        plt.xlabel(f'Slip Angle ({self.accel_units[self.corner_titles.index('SA')]})')
-        plt.ylabel(f'MZ ({self.accel_units[self.corner_titles.index('MZ')]})')
+        # for i in self.corner_loads:
+        self.aligning_torque.plot_curve(100, camber)
+        leg.append(f'{100} {self.corner_units[self.corner_titles.index('FZ')]}')
+
+        plt.title(f"{self.tire_name}, Slip Angle vs Aligning Torque")
+        plt.xlabel(f'Slip Angle (degrees)')
+        plt.ylabel(f'MZ (ft-lb)')
         plt.grid()
         plt.legend(leg)
         plt.show()
-    
+
+    def SA_FY_CA_plot(self):
+        leg = []
+        for index, camber in enumerate(self.FY_curves.cambers):
+            self.FY_curves.plot_curve(self.FY_curves.loads[-1], camber)
+            leg.append(f'Camber = {camber}')
+
+        plt.title(f"{self.tire_name}, Slip angle vs FY vs Camber")
+        plt.xlabel(f'Slip Angle ({self.corner_units[self.corner_titles.index('SA')]})')
+        plt.ylabel(f'Max Lateral Force ({self.corner_units[self.corner_titles.index('FY')]})')
+        plt.grid()
+        plt.legend(leg)
+        plt.show()
+
+    def tire_stiffness_plot(self):
+        FYs, slope = [], []
+        domain = np.linspace(-10, 10, 101)
+        for SA in domain:
+            FYs.append(self.FY_curves.eval(SA, self.FY_curves.loads[-1], self.FY_curves.cambers[0]))
+        for index in range(len(FYs)-1):
+            slope.append((FYs[index+1]-FYs[index]) / (domain[index+1] - domain[index]))
+        slope.append(slope[-1])
+
+        plt.title(f"{self.tire_name}, Cornering Stiffness")
+        plt.plot(domain, slope)
+        plt.xlabel(f'Slip Angle ({self.corner_units[self.corner_titles.index('SA')]})')
+        plt.ylabel(f'C (lbs/deg)')
+        plt.grid()
+        plt.show()
+
+    def compare_tire_stiffness(self, t_other):
+        FYs_1, slope_1 = [], []
+        FYs_2, slope_2 = [], []
+        domain = np.linspace(-10, 10, 101)
+        for SA in domain:
+            FYs_1.append(self.FY_curves.eval(SA, self.FY_curves.loads[-1], self.FY_curves.cambers[0]))
+            FYs_2.append(t_other.FY_curves.eval(SA, self.FY_curves.loads[-1], self.FY_curves.cambers[0]))
+        for index in range(len(FYs_1)-1):
+            slope_1.append((FYs_1[index+1]-FYs_1[index]) / (domain[index+1] - domain[index]))
+            slope_2.append((FYs_2[index+1]-FYs_2[index]) / (domain[index+1] - domain[index]))
+        slope_1.append(slope_1[-1])
+        slope_2.append(slope_2[-1])
+
+        plt.title(f"{self.tire_name} vs {t_other.tire_name}, Cornering Stiffness")
+        plt.plot(domain, slope_1)
+        plt.plot(domain, slope_2)
+        plt.xlabel(f'Slip Angle ({self.corner_units[self.corner_titles.index('SA')]})')
+        plt.ylabel(f'C (lbs/deg)')
+        plt.legend([self.tire_name, t_other.tire_name])
+        plt.grid()
+        plt.show()
+
     ''' ========================================================== '''
     ''' ========== Acceleration Data Graphing Functions ========== '''
     ''' ========================================================== '''
-    def axial_force_plot(self):
-        leg = []
-        for i in range(len(self.max_axial_forces)):
-            plt.plot(self.accel_loads, self.max_axial_forces[i])
-            leg.append(f'Camber = {self.accel_camber_angles[i]}')
-        
-        plt.xlabel(f'Applied Load ({self.accel_units[self.accel_titles.index('FZ')]})')
-        plt.ylabel(f'Max Axial Force ({self.accel_units[self.accel_titles.index('FY')]})')
-        plt.grid()
-        plt.legend(leg)
-        plt.show()
+
+    # TODO: Fix
+    # def axial_force_plot(self):
+    #     leg = []
+    #     for i in range(len(self.max_axial_forces)):
+    #         plt.plot(self.accel_loads, self.max_axial_forces[i])
+    #         leg.append(f'Camber = {self.accel_camber_angles[i]}')
+    #
+    #     plt.title(f"{self.tire_name}, Axial Force vs Load vs Camber")
+    #     plt.xlabel(f'Applied Load ({self.accel_units[self.accel_titles.index('FZ')]})')
+    #     plt.ylabel(f'Max Axial Force ({self.accel_units[self.accel_titles.index('FY')]})')
+    #     plt.grid()
+    #     plt.legend(leg)
+    #     plt.show()
     
     def axial_coeff_plot(self):
         leg = []
         for i in range(len(self.max_axial_forces)):
             plt.plot(self.accel_loads, np.array(self.max_axial_forces[i])/np.array(self.accel_loads))
             leg.append(f'Camber = {self.accel_camber_angles[i]}')
-        
+
+        plt.title(f"{self.tire_name}, Acceleration Coefficient")
         plt.xlabel(f'Applied Load ({self.accel_units[self.accel_titles.index('FZ')]})')
         plt.ylabel(f'Axial Friction Coeffecient')
         plt.grid()
@@ -679,9 +739,97 @@ class tire():
         for i in self.accel_loads:
             self.FX_curves.plot_curve(i, camber)
             leg.append(f'{i} {self.accel_units[self.accel_titles.index('FZ')]}')
-        
+
+        plt.title(f"{self.tire_name}, Axial force vs slip ratio w/ {camber} degrees of camber")
         plt.xlabel(f'Slip Ratio')
         plt.ylabel(f'FX ({self.accel_units[self.accel_titles.index('FX')]})')
         plt.grid()
         plt.legend(leg)
         plt.show()
+
+    def SA_FY_compare(self, t_other):
+        FY_1, FY_2 = [], []
+        FY_1_max, FY_2_max = 0, 0
+        slips = np.linspace(-20, 20, 101)
+        for SA in slips:
+            for i in range(3):
+                if abs(self.FY_curves.eval(SA, self.FY_curves.loads[-1], self.FY_curves.cambers[i])) > abs(FY_1_max):
+                    FY_1_max = self.FY_curves.eval(SA, self.FY_curves.loads[-1], self.FY_curves.cambers[i])
+                if abs(t_other.FY_curves.eval(SA, t_other.FY_curves.loads[-1], t_other.FY_curves.cambers[i])) > abs(FY_2_max):
+                    FY_2_max = t_other.FY_curves.eval(SA, t_other.FY_curves.loads[-1], t_other.FY_curves.cambers[i])
+
+            FY_1.append(FY_1_max)
+            FY_2.append(FY_2_max)
+            FY_1_max, FY_2_max = 0, 0
+
+        plt.title(f"{self.tire_name} vs {t_other.tire_name}, FY vs Slip angle")
+        plt.plot(slips, FY_1)
+        plt.plot(slips, FY_2)
+        plt.xlabel(f'Slip Angle (degrees)')
+        plt.ylabel(f'FY (lbs)')
+        plt.legend([self.tire_name, t_other.tire_name])
+        plt.grid()
+        plt.show()
+
+    def SR_FX_compare(self, t_other):
+        FX_1, FX_2 = [], []
+        FX_1_max, FX_2_max = 0, 0
+        slips = np.linspace(-0.3, 0.3, 101)
+        for SR in slips:
+            for i in range(3):
+                if abs(self.FX_curves.eval(SR, self.FX_curves.loads[-1], self.FX_curves.cambers[i])) > abs(FX_1_max):
+                    FX_1_max = self.FX_curves.eval(SR, self.FX_curves.loads[-1], self.FX_curves.cambers[i])
+                if abs(t_other.FX_curves.eval(SR, t_other.FX_curves.loads[-1], t_other.FX_curves.cambers[i])) > abs(FX_2_max):
+                    FX_2_max = t_other.FX_curves.eval(SR, t_other.FX_curves.loads[-1], t_other.FX_curves.cambers[i])
+
+            FX_1.append(FX_1_max)
+            FX_2.append(FX_2_max)
+            FX_1_max, FX_2_max = 0, 0
+
+        plt.title(f"{self.tire_name} vs {t_other.tire_name}, FX vs Slip ratio")
+        plt.plot(slips, FX_1)
+        plt.plot(slips, FX_2)
+        plt.xlabel(f'Slip Ratio')
+        plt.ylabel(f'FX (lbs)')
+        plt.legend([self.tire_name, t_other.tire_name])
+        plt.grid()
+        plt.show()
+
+# R20_18_6 = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_corner.dat",
+#                  "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_drive.dat")
+# R20_16_6 = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_16_6_R20_corner.dat",
+#                   "")
+#
+# R20_18_6.lateral_force_plot()
+
+# def compare_max_lats(t_16, t_18):
+#     loads = np.linspace(50, 250, 100)
+#     max_lats_16, max_lats_18 = [], []
+#     for load in loads:
+#         max_lat_16, max_lat_18 = 0, 0
+#         for i in range(3):
+#             camber = i * 2
+#             if t_18.FY_curves.get_max(load, camber) > max_lat_18:
+#                 max_lat_18 = t_18.FY_curves.get_max(load, camber)
+#             if t_16.FY_curves.get_max(load, camber) > max_lat_16:
+#                 max_lat_16 = t_16.FY_curves.get_max(load, camber)
+#         max_lats_16.append(max_lat_16)
+#         max_lats_18.append(max_lat_18)
+#
+#     plt.plot(loads, max_lats_16)
+#     plt.plot(loads, max_lats_18)
+#     plt.legend(["Hoosier 16x6-10 R20", "Hoosier 18x6-10 R20"])
+#     plt.xlabel("Load (lbs)")
+#     plt.ylabel("Max Lateral Force (lbs)")
+#     plt.show()
+#
+# compare_max_lats(R20_16_6, R20_18_6)
+
+# t.SA_FY_plot(0)
+# t.SA_FY_plot(2)
+# t.SA_FY_plot(4)
+
+# for index, max_lat in enumerate(t.max_lateral_forces):
+#     print(f"camber {t.corner_camber_angles[index]}: {max_lat}")
+# print(t.corner_loads)
+# print(t.corner_camber_angles)

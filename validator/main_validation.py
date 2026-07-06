@@ -433,7 +433,7 @@ class Validation:
         for segment in self.segments:
             print(f"Segment {segment.segment_id} - {segment.starting_velocity}")
             for arc in segment.arcs:
-                print(f"Arc {arc.arc_id} - {arc.length}")
+                print(f"Arc {arc.arc_id} - {arc.turn}")
 
     def calculate_correlation_coefficient(self, data:DataType):
         mean_sim, mean_real = 0, 0
@@ -543,13 +543,13 @@ class Validation:
     def calculate_forces(self):
 
         # Static values for shock potentiometers
-        static_FL_shock = 0
-        static_FR_shock = 0
-        static_RL_shock = 0
+        static_FL_shock = 1.21
+        static_FR_shock = 0.65
+        static_RL_shock = 0.92
 
-        # Motion Ratios for front and rear
+        # Motion Ratios for front and rear (73)
         MR_F = 1
-        MR_R = 1.1786
+        MR_R = 1
 
         FO_load_real = []
         FI_load_real = []
@@ -894,7 +894,7 @@ class Validation:
         validator.parse_data_nodes("validator/output/06_arc_points_detailed.csv")
         # validator.parse_acceleration_data("")
 
-    def run_validation(self, sims_per_arc=1, get_error=True, exclude_beginning=0, exclude_end=0):
+    def run_validation(self, sims_per_arc=1, get_error=True, exclude_beginning=0, exclude_end=0, export_csv=False):
 
         self.racecar = car()
 
@@ -945,8 +945,8 @@ class Validation:
                 for data_index, data_node in enumerate(arc.data_nodes):
                     # print(f"Arc length: {arc.length}")
                     # print(f"data node distance along arc: {data_node.distance_since_arc_start}")
-                    self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
-                    self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].AX[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AX[arc_index * sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AX[arc_index * sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
+                    self.lerped_data[-1].AY[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].AY[arc_index * sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].AY[arc_index * sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
                     self.lerped_data[-1].rpm[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].rpm[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
 
                     self.lerped_data[-1].front_outer_displacement[count] = lerp(arc.find_data_node_distance_ratio(data_node.distance_since_arc_start, sims_per_arc), 0, 1, self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc)], self.lapsim_data[seg_index].front_outer_displacement[arc_index*sims_per_arc + arc.find_sim_node_index(data_node.distance_since_arc_start, sims_per_arc) + 1])
@@ -999,12 +999,12 @@ class Validation:
                 # Arc ID
                 self.arc_id.append(data_node.arc.arc_id)
                 # AX
-                AX_err = ((self.lerped_data[seg_index].AX[data_index] - data_node.AX)/data_node.AX)*100 if data_node.AX != 0 else None
+                AX_err = ((self.lerped_data[seg_index].AX[data_index] - data_node.AX) / data_node.AX) * 100 if data_node.AX != 0 else None
                 self.AX_sim.append(self.lerped_data[seg_index].AX[data_index])
                 self.AX_real.append(data_node.AX)
                 self.AX_error.append(AX_err)
                 # AY
-                AY_err = ((self.lerped_data[seg_index].AY[data_index] - data_node.AY)/data_node.AY)*100 if data_node.AY != 0 else None
+                AY_err = ((self.lerped_data[seg_index].AY[data_index] - data_node.AY) / data_node.AY) * 100 if data_node.AY != 0 else None
                 self.AY_sim.append(self.lerped_data[seg_index].AY[data_index])
                 self.AY_real.append(data_node.AY)
                 self.AY_error.append(AY_err)
@@ -1104,22 +1104,23 @@ class Validation:
         #         self.rpm_error[index] = None
         # average_rpm_error = round(get_average_error(self.rpm_error), 1) if self.rpm_error else None
 
-        # Write data into csv
-        f = open(os.path.join(os.getcwd(), "validation.csv"), "w")
-        writer = csv.writer(f)
-        writer.writerow(["Segment #", "Arc #", "Time Sim", "Time Real", "Time Error", "FO Sim", "FO Real", "FO Error", "RO Sim", "RO Real", "RO Error", "FI Sim", "FI Real", "FI Error", "RI Sim", "RI Real", "RI Error", "RPM sim", "RPM real", "RPM error"])
-        prev_segment_id = 0
-        time_index = 0
-        for index, AX in enumerate(self.AX_sim):
-            if self.segment_id[index] != prev_segment_id:
-                writer.writerow([f"Segment {self.segment_id[index]}",f"",f"{self.time_sim[time_index]} secs", f"{self.time_real[time_index]} secs", f"{self.time_error[time_index]}%"])
+        if export_csv:
+            # Write data into csv
+            f = open(os.path.join(os.getcwd(), "validation.csv"), "w")
+            writer = csv.writer(f)
+            writer.writerow(["Segment #", "Arc #", "Time Sim", "Time Real", "Time Error", "FO Sim", "FO Real", "FO Error", "RO Sim", "RO Real", "RO Error", "FI Sim", "FI Real", "FI Error", "RI Sim", "RI Real", "RI Error", "RPM sim", "RPM real", "RPM error"])
+            prev_segment_id = 0
+            time_index = 0
+            for index, AX in enumerate(self.AX_sim):
+                if self.segment_id[index] != prev_segment_id:
+                    writer.writerow([f"Segment {self.segment_id[index]}",f"",f"{self.time_sim[time_index]} secs", f"{self.time_real[time_index]} secs", f"{self.time_error[time_index]}%"])
 
-                time_index+=1
-                prev_segment_id = self.segment_id[index]
+                    time_index+=1
+                    prev_segment_id = self.segment_id[index]
 
-            writer.writerow([f"Segment {self.segment_id[index]}", f"Arc {self.arc_id[index]}", None, None, None,  f"{self.FO_dis_sim[index]} in", f"{self.FO_dis_real[index]} in", f"{self.FO_dis_error[index]}%", f"{self.RO_dis_sim[index]} in", f"{self.RO_dis_real[index]} in", f"{self.RO_dis_error[index]}%", f"{self.FI_dis_sim[index]} in", f"{self.FI_dis_real[index]} in", f"{self.FI_dis_error[index]}%", f"{self.RI_dis_sim[index]} in", f"{self.RI_dis_real[index]} in", f"{self.RI_dis_error[index]}%", f"{self.rpm_sim[index]}", f"{self.rpm_real[index]}", f"{self.rpm_error[index]}%"])
+                writer.writerow([f"Segment {self.segment_id[index]}", f"Arc {self.arc_id[index]}", None, None, None,  f"{self.FO_dis_sim[index]} in", f"{self.FO_dis_real[index]} in", f"{self.FO_dis_error[index]}%", f"{self.RO_dis_sim[index]} in", f"{self.RO_dis_real[index]} in", f"{self.RO_dis_error[index]}%", f"{self.FI_dis_sim[index]} in", f"{self.FI_dis_real[index]} in", f"{self.FI_dis_error[index]}%", f"{self.RI_dis_sim[index]} in", f"{self.RI_dis_real[index]} in", f"{self.RI_dis_error[index]}%", f"{self.rpm_sim[index]}", f"{self.rpm_real[index]}", f"{self.rpm_error[index]}%"])
 
-        f.close()
+            f.close()
 
     def run_rust_code(self):
         # Paths
@@ -1134,10 +1135,10 @@ class Validation:
 
 # Acts as a singleton
 validator = Validation()
-# validator.run_rust_code()
-validator.run_validation(1, get_error=False, exclude_beginning=49, exclude_end=49)
-
-data_type = validator.DataType.FR_dis
-print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
-validator.graph(data_type, True, False)
+validator.run_rust_code()
+# validator.run_validation(1, get_error=False, exclude_beginning=0, exclude_end=0)
+#
+# data_type = validator.DataType.RL_dis
+# print(f"\nCorrelation coefficient: {validator.calculate_correlation_coefficient(data_type)}")
+# validator.graph(data_type, False, False)
 # validator.val_track.plt_sim_velocity_components(validator.segments[2])

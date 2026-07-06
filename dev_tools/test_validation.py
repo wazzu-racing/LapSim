@@ -1,25 +1,24 @@
+import csv
 import os
+import tkinter
 
 import math
 import pickle
 
 from matplotlib import pyplot as plt
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
-from gen_lapsim.spline_track import track
+from gen_lapsim.spline_track import track, curve
 from models.car_model import car
 import numpy as np
 
+
 class Track_Examine:
 
-    def __init__(self, track_txt_path):
-        self.times = []
+    def __init__(self, track_txt_path=""):
         self.racecar = car()
-
-        self.parse_text_to_track_pkl(track_txt_path)
-        self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, self.racecar)
-        self.trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
-        self.trk.run_sim(self.racecar)
-        self.trk.plot_without_UI()
 
     def parse_text_to_track_pkl(self, txt_path):
         """
@@ -40,7 +39,7 @@ class Track_Examine:
 
         arr_done_index = 0
 
-        with open("/".join(os.getcwd().split("/")[:-1]) + "/" + txt_path, "r") as f:
+        with open(txt_path, "r") as f:
             content = f.read()
         curr_num = ""
         writing = False
@@ -75,6 +74,24 @@ class Track_Examine:
     # points_x2 = [216, 216, 108, 324, 756, 1188, 1620, 2052, 1728, 1296, 1512, 2484, 1512, 1188, 540]
     # points_y2 = [0, -384, -768, -1368, -1368, -1584, -2016, -1584, -1152, -960, -744, -312, 0, 648, 648]
 
+    def run_accel(self, car, node_count):
+        self.points_x = [0, 0]
+        self.points_y = [0, 2952.76]
+        self.points_x2 = [100, 100]
+        self.points_y2 = [0, 2952.76]
+
+        self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=False)
+
+        return self.trk.run_sim(car, nodes=node_count)
+
+    def run_endurance(self, car, node_count):
+        self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Endurance.rtf")
+
+        self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
+        self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
+
+        return self.trk.run_sim(car, nodes=node_count)
+
     def run_constant_velocity_skidpad(self):
         # Find max velocity
         max_vel = math.sqrt(self.racecar.max_corner * 386.09 * 359)
@@ -100,4 +117,4 @@ class Track_Examine:
     #     plt.xlabel("COG (inches)")
     #     plt.show()
 
-examine = Track_Examine("config_data/track_points/Points for Endurance.rtf")
+examine = Track_Examine()

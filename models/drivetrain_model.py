@@ -4,7 +4,7 @@ import csv
 
 class drivetrain:
     
-    def __init__(self, final_drive = 4, engine_data = ""):
+    def __init__(self, final_drive = 3.81818182, engine_data = ""):
         self.engn_rpm = [] # engine crankshaft rpm
         self.hp = [] # horsepower
         self.engn_T = [] # Torque supplied from engine (ft*lb)
@@ -15,21 +15,22 @@ class drivetrain:
         self.full_ratios = [] # full drivetrain ratio (index = gear)
         self.gear_vel = [] # the gear which produces the most torque (index = mph*10)
         self.gear_T = [[], [], [], [], [], []] # 2D array; gives torque supplied to axle; first index = transmission gear :: second index = mph*10
+        self.raw_engine_power = []
 
         # Gear ratios
         self.gear_ratios = [3.071, 2.235, 1.777, 1.520, 1.333, 1.214]
         self.final_drive = final_drive
         self.primary_drive = 1.69
 
-        self.wheel_radius = 10.5/12 # ft # 9/12 for 92
+        self.wheel_radius = 9/12 # ft # 9/12 for 92
         self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
-        self.shift_time = 0.5 # seconds
+        self.shift_time = 0.1 # seconds
 
         if engine_data == "": pass
 
         # importing engine data
         engine_data = engine_data
-        delim = '\t' # csv delimiter
+        delim = ',' # csv delimiter
 
         with open(engine_data, newline='') as dat_file:
             reader = csv.reader(dat_file, delimiter=delim)
@@ -70,6 +71,7 @@ class drivetrain:
                     previous_gear = j
                     best_rpm = rpm
             
+            self.raw_engine_power.append(max_pwr) # index = mph*10
             self.gear_vel.append(best_gear) # most effecient gear at index (index = mph*10)
             self.axl_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
             self.axl_pwr.append(self.get_engn_pwr(best_rpm)) # power delivered to axel with most effecient gear (index = mph*10)
@@ -86,7 +88,7 @@ class drivetrain:
                 indx = i # index of lowest rpm value greater than inputted rpm
                 ratio = (rpm - self.engn_rpm[i-1]) / (self.engn_rpm[i] - self.engn_rpm[i-1]) # equals 1 if rpm = self.engn_rpm[indx]
                 break                                                                        # equals 0 if rpm = self.engn_rpm[indx-1]
-        
+
         return (1-ratio) * self.hp[indx-1] + ratio * self.hp[indx]
     
     def get_engn_T(self, rpm):
@@ -106,7 +108,7 @@ class drivetrain:
     def get_F_accel(self, mph, gear='optimal'):
         indx = int(mph*10)
         ratio = (mph*10) % 1
-        
+
         if gear == 'optimal':
             return (self.axl_T[indx]*(1-ratio) + self.axl_T[indx+1]*ratio) / self.wheel_radius
         else:
@@ -123,7 +125,7 @@ class drivetrain:
         plt.grid()
         plt.show()
 
-# train = drivetrain(engine_data="/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/engine_array.csv")
+# train = drivetrain(engine_data="/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/ENG_RPM_DATA_73.csv")
 # x = train.engn_rpm
 # y = []
 # for i in x:
