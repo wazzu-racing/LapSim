@@ -335,8 +335,6 @@ class four_wheel:
         # Finding total length of track
         track = np.sum(self.t_len_tot)
 
-        max_corner = self.car.max_corner * 32.2 * 12
-
         # discretizing track
         n = self.n
         self.dx = track / n
@@ -347,8 +345,31 @@ class four_wheel:
         # nodespace
         nds = np.linspace(0, track, int(n + 1))
 
-        # Determining maximum tangential velocity for every turn given maximum lateral acceleration; length = # of arcs in track
-        self.t_vel = np.sqrt(max_corner * self.t_rad)
+        # tk = tkinter.Tk()
+        # fig = Figure(figsize=(10, 10), dpi=100)
+        # ax = fig.add_subplot(111)
+        # canvas = FigureCanvasTkAgg(fig, tk)
+        # canvas.draw()
+        # toolbar = NavigationToolbar2Tk(canvas, tk)
+        # canvas.get_tk_widget().pack()
+        # toolbar.update()
+        #
+        # self.old_t_vel = np.sqrt(self.car.max_corner*386.1*self.t_rad)
+
+        self.t_vel = np.zeros(len(self.t_rad))
+        for index, v in enumerate(self.t_vel):
+            output_v, prev_v = 5000, 0 # in/s
+            while abs(output_v - prev_v) > 0.0001 and self.t_rad[index] < 10000000:
+                prev_v = output_v
+                AY = self.car.compute_maximum_AY(output_v) # in/s^2
+                output_v = math.sqrt(AY*self.t_rad[index])
+            self.t_vel[index] = output_v
+
+        # ax.plot(np.linspace(0, len(self.old_t_vel), len(self.old_t_vel)), self.old_t_vel)
+        # ax.plot(np.linspace(0, len(self.t_vel), len(self.t_vel)), self.t_vel, color="red")
+        # ax.legend()
+        # ax.grid()
+        # tk.mainloop()
 
         # List showing radius at every node. Used to calculate maximum tangential acceleration
         self.nd_rad = np.zeros(int(n + 1))
@@ -424,7 +445,7 @@ class four_wheel:
                     snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in g's
                     snippet.AX *= 32.17 * 12
                 else:
-                    snippet = self.car.static_snippet
+                    snippet = self.car.curve_idle(v1[int(i)])
                     shifting = True
                     shift_time -= self.dx / v1[int(i)]
                     if shift_time <= 0:
@@ -468,6 +489,8 @@ class four_wheel:
         self.v1 = v1
         self.t = t
 
+        self.plot_velocities()
+
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
 
@@ -491,8 +514,8 @@ class four_wheel:
         canvas.get_tk_widget().pack()
         toolbar.update()
         ax.plot(np.linspace(0, len(self.v2), len(self.v2)), self.v2, color="red")
-        ax.plot(np.linspace(0, len(self.v3), len(self.v3)), self.v3, color="blue")
         ax.plot(np.linspace(0, len(self.v1), len(self.v1)), self.v1, color="green")
+        ax.plot(np.linspace(0, len(self.v3), len(self.v3)), self.v3, color="blue")
         ax.legend()
         ax.grid()
         tk.mainloop()

@@ -4,6 +4,7 @@ import os
 import pickle
 from dataclasses import dataclass
 
+import matplotlib.colors
 from matplotlib import pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -41,8 +42,8 @@ class car():
     K_rollF = 215203 # lb*in/rad
     K_rollR = 195952 # lb*in/rad
     #deg/in, camber rates for front and rear
-    CMB_RT_F = 1.5
-    CMB_RT_R = 1.75
+    CMB_RT_F = 1
+    CMB_RT_R = 1
     # deg, static camber rates for front and rear
     CMB_STC_F = 2
     CMB_STC_R = 1
@@ -130,12 +131,9 @@ class car():
 
     velocity = 0
 
-
     engine_force = []
     vels = []
     tires_force = []
-
-
 
     # aero csv file delimiter
     aero_delimiter = ';'
@@ -290,10 +288,14 @@ class car():
         """
         Represents the data that the car model experiences at an instance along the track.
         """
-        def __init__(self, racecar, index, changing_gears=False):
+        def __init__(self, racecar, index, changing_gears=False, speed = 0):
             # Acceleration & movement
-            self.AX = racecar.instant_AX
-            self.AY = racecar.instant_AY
+            if not changing_gears:
+                self.AX = racecar.instant_AX
+                self.AY = racecar.instant_AY
+            else:
+                self.AX = racecar.instant_AX - racecar.aero_model.get_drag(speed)/racecar.W_car
+                self.AY = racecar.instant_AY
             self.velocity = 0
             # Tire measurements
             self.front_outer_displacement = racecar.front_outer_displacement
@@ -333,94 +335,108 @@ class car():
             self.index = index
 
         @classmethod
-        def get_interpolated_copy(cls, curr_snippet, curr_ratio, prev_ratio):
-            snippet = cls(curr_snippet.racecar, -1)
+        def get_interpolated_copy(cls, prev_snippet, next_snippet, prev_ratio, next_ratio):
+            snippet = cls(next_snippet.racecar, -1)
 
             # Interpolate
-            if curr_snippet.AX > 0: # If car is accelerating
-                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index - 1].AX
-                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index - 1].AY
+            if next_snippet.AX > 0: # If car is accelerating
+                snippet.AX = next_ratio * next_snippet.AX + prev_ratio * prev_snippet.AX
+                snippet.AY = next_ratio * next_snippet.AY + prev_ratio * prev_snippet.AY
                 # snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].velocity
                 # Tire measurements
-                snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_outer_displacement
-                snippet.front_inner_displacement = curr_ratio * curr_snippet.front_inner_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].front_inner_displacement
-                snippet.rear_outer_displacement = curr_ratio * curr_snippet.rear_outer_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].rear_outer_displacement
-                snippet.rear_inner_displacement = curr_ratio * curr_snippet.rear_inner_displacement + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].rear_inner_displacement
-                snippet.FO_camber = curr_ratio * curr_snippet.FO_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_camber
-                snippet.FI_camber = curr_ratio * curr_snippet.FI_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_camber
-                snippet.RO_camber = curr_ratio * curr_snippet.RO_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_camber
-                snippet.RI_camber = curr_ratio * curr_snippet.RI_camber + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_camber
+                snippet.front_outer_displacement = next_ratio * next_snippet.front_outer_displacement + prev_ratio * prev_snippet.front_outer_displacement
+                snippet.front_inner_displacement = next_ratio * next_snippet.front_inner_displacement + prev_ratio * prev_snippet.front_inner_displacement
+                snippet.rear_outer_displacement = next_ratio * next_snippet.rear_outer_displacement + prev_ratio * prev_snippet.rear_outer_displacement
+                snippet.rear_inner_displacement = next_ratio * next_snippet.rear_inner_displacement + prev_ratio * prev_snippet.rear_inner_displacement
+                snippet.FO_camber = next_ratio * next_snippet.FO_camber + prev_ratio * prev_snippet.FO_camber
+                snippet.FI_camber = next_ratio * next_snippet.FI_camber + prev_ratio * prev_snippet.FI_camber
+                snippet.RO_camber = next_ratio * next_snippet.RO_camber + prev_ratio * prev_snippet.RO_camber
+                snippet.RI_camber = next_ratio * next_snippet.RI_camber + prev_ratio * prev_snippet.RI_camber
                 # Tire forces
-                snippet.FO_load = curr_ratio * curr_snippet.FO_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_load
-                snippet.FI_load = curr_ratio * curr_snippet.FI_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_load
-                snippet.RO_load = curr_ratio * curr_snippet.RO_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_load
-                snippet.RI_load = curr_ratio * curr_snippet.RI_load + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_load
-                snippet.FO_FY = curr_ratio * curr_snippet.FO_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_FY
-                snippet.FI_FY = curr_ratio * curr_snippet.FI_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_FY
-                snippet.RO_FY = curr_ratio * curr_snippet.RO_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_FY
-                snippet.RI_FY = curr_ratio * curr_snippet.RI_FY + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_FY
-                snippet.FO_FX = curr_ratio * curr_snippet.FO_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FO_FX
-                snippet.FI_FX = curr_ratio * curr_snippet.FI_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].FI_FX
-                snippet.RO_FX = curr_ratio * curr_snippet.RO_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RO_FX
-                snippet.RI_FX = curr_ratio * curr_snippet.RI_FX + prev_ratio * snippet.racecar.accel_car_data_snippets[curr_snippet.index-1].RI_FX
+                snippet.FO_load = next_ratio * next_snippet.FO_load + prev_ratio * prev_snippet.FO_load
+                snippet.FI_load = next_ratio * next_snippet.FI_load + prev_ratio * prev_snippet.FI_load
+                snippet.RO_load = next_ratio * next_snippet.RO_load + prev_ratio * prev_snippet.RO_load
+                snippet.RI_load = next_ratio * next_snippet.RI_load + prev_ratio * prev_snippet.RI_load
+                snippet.FO_FY = next_ratio * next_snippet.FO_FY + prev_ratio * prev_snippet.FO_FY
+                snippet.FI_FY = next_ratio * next_snippet.FI_FY + prev_ratio * prev_snippet.FI_FY
+                snippet.RO_FY = next_ratio * next_snippet.RO_FY + prev_ratio * prev_snippet.RO_FY
+                snippet.RI_FY = next_ratio * next_snippet.RI_FY + prev_ratio * prev_snippet.RI_FY
+                snippet.FO_FX = next_ratio * next_snippet.FO_FX + prev_ratio * prev_snippet.FO_FX
+                snippet.FI_FX = next_ratio * next_snippet.FI_FX + prev_ratio * prev_snippet.FI_FX
+                snippet.RO_FX = next_ratio * next_snippet.RO_FX + prev_ratio * prev_snippet.RO_FX
+                snippet.RI_FX = next_ratio * next_snippet.RI_FX + prev_ratio * prev_snippet.RI_FX
             else: # If car is braking
-                snippet.AX = curr_ratio * curr_snippet.AX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index - 1].AX
-                snippet.AY = curr_ratio * curr_snippet.AY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index - 1].AY
+                snippet.AX = next_ratio * next_snippet.AX + prev_ratio * prev_snippet.AX
+                snippet.AY = next_ratio * next_snippet.AY + prev_ratio * prev_snippet.AY
                 # snippet.velocity = curr_ratio * snippet.velocity + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].velocity
                 # Tire measurements
-                snippet.front_outer_displacement = curr_ratio * curr_snippet.front_outer_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_outer_displacement
-                snippet.front_inner_displacement = curr_ratio * curr_snippet.front_inner_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].front_inner_displacement
-                snippet.rear_outer_displacement = curr_ratio * curr_snippet.rear_outer_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].rear_outer_displacement
-                snippet.rear_inner_displacement = curr_ratio * curr_snippet.rear_inner_displacement + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].rear_inner_displacement
-                snippet.FO_camber = curr_ratio * curr_snippet.FO_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_camber
-                snippet.FI_camber = curr_ratio * curr_snippet.FI_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_camber
-                snippet.RO_camber = curr_ratio * curr_snippet.RO_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_camber
-                snippet.RI_camber = curr_ratio * curr_snippet.RI_camber + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_camber
+                snippet.front_outer_displacement = next_ratio * next_snippet.front_outer_displacement + prev_ratio * prev_snippet.front_outer_displacement
+                snippet.front_inner_displacement = next_ratio * next_snippet.front_inner_displacement + prev_ratio * prev_snippet.front_inner_displacement
+                snippet.rear_outer_displacement = next_ratio * next_snippet.rear_outer_displacement + prev_ratio * prev_snippet.rear_outer_displacement
+                snippet.rear_inner_displacement = next_ratio * next_snippet.rear_inner_displacement + prev_ratio * prev_snippet.rear_inner_displacement
+                snippet.FO_camber = next_ratio * next_snippet.FO_camber + prev_ratio * prev_snippet.FO_camber
+                snippet.FI_camber = next_ratio * next_snippet.FI_camber + prev_ratio * prev_snippet.FI_camber
+                snippet.RO_camber = next_ratio * next_snippet.RO_camber + prev_ratio * prev_snippet.RO_camber
+                snippet.RI_camber = next_ratio * next_snippet.RI_camber + prev_ratio * prev_snippet.RI_camber
                 # Tire forces
-                snippet.FO_load = curr_ratio * curr_snippet.FO_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_load
-                snippet.FI_load = curr_ratio * curr_snippet.FI_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_load
-                snippet.RO_load = curr_ratio * curr_snippet.RO_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_load
-                snippet.RI_load = curr_ratio * curr_snippet.RI_load + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_load
-                snippet.FO_FY = curr_ratio * curr_snippet.FO_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_FY
-                snippet.FI_FY = curr_ratio * curr_snippet.FI_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_FY
-                snippet.RO_FY = curr_ratio * curr_snippet.RO_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_FY
-                snippet.RI_FY = curr_ratio * curr_snippet.RI_FY + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_FY
-                snippet.FO_FX = curr_ratio * curr_snippet.FO_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FO_FX
-                snippet.FI_FX = curr_ratio * curr_snippet.FI_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].FI_FX
-                snippet.RO_FX = curr_ratio * curr_snippet.RO_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RO_FX
-                snippet.RI_FX = curr_ratio * curr_snippet.RI_FX + prev_ratio * snippet.racecar.brake_car_data_snippets[curr_snippet.index-1].RI_FX
+                snippet.FO_load = next_ratio * next_snippet.FO_load + prev_ratio * prev_snippet.FO_load
+                snippet.FI_load = next_ratio * next_snippet.FI_load + prev_ratio * prev_snippet.FI_load
+                snippet.RO_load = next_ratio * next_snippet.RO_load + prev_ratio * prev_snippet.RO_load
+                snippet.RI_load = next_ratio * next_snippet.RI_load + prev_ratio * prev_snippet.RI_load
+                snippet.FO_FY = next_ratio * next_snippet.FO_FY + prev_ratio * prev_snippet.FO_FY
+                snippet.FI_FY = next_ratio * next_snippet.FI_FY + prev_ratio * prev_snippet.FI_FY
+                snippet.RO_FY = next_ratio * next_snippet.RO_FY + prev_ratio * prev_snippet.RO_FY
+                snippet.RI_FY = next_ratio * next_snippet.RI_FY + prev_ratio * prev_snippet.RI_FY
+                snippet.FO_FX = next_ratio * next_snippet.FO_FX + prev_ratio * prev_snippet.FO_FX
+                snippet.FI_FX = next_ratio * next_snippet.FI_FX + prev_ratio * prev_snippet.FI_FX
+                snippet.RO_FX = next_ratio * next_snippet.RO_FX + prev_ratio * prev_snippet.RO_FX
+                snippet.RI_FX = next_ratio * next_snippet.RI_FX + prev_ratio * prev_snippet.RI_FX
 
             return snippet
 
+    class TractionCurve:
+        def __init__(self, speed):
+            self.speed = speed
+            self.AY = []
+            self.A_accel = []
+            self.A_brake = []
+            self.accel_car_snippets = []
+            self.brake_car_snippets = []
+            self.static_snippet = []
+
     def compute_traction(self):
-        # finding max cornering (lateral) acceleration
-        low_guess = 0 # low estimate for max cornering (lateral) acceleration (g)
-        high_guess = 3 # high estimate for max cornering (lateral) acceleration (g)
 
-        # when the low and high estimates converge, the converging value is recorded as the max cornering (lateral) acceleration
-        while high_guess - low_guess > 0.00001:
-            guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering (lateral) acceleration
-            out = self.accel(guess, 0)
-            if out: # sets low estimate to the guess value if the car can handle cornering (lateral) acceleration equal to the guess value
-                low_guess = guess
-            else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
-                high_guess = guess
+        speed_arr = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900] # in/s
+        self.curves = []
 
-        self.max_corner = guess # max cornering (lateral) acceleration (g)
-        self.AY = np.linspace(0, self.max_corner, 100)
-        self.A_accel = []
-        self.A_brake = []
-        self.accel_car_data_snippets = []
-        self.brake_car_data_snippets = []
-        for index, i in enumerate(self.AY):
-            self.A_accel.append(self.max_accel(i))
-            self.accel_car_data_snippets.append(self.Car_Data_Snippet(self, index))
-            self.A_brake.append(self.max_brake(i))
-            self.brake_car_data_snippets.append(self.Car_Data_Snippet(self, index))
-        self.max_corner -= 0.0001
-        # Gear changes
-        self.accel(0, 0)
-        self.static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True) # Used to describe the state of the car during gear changes
+        for index, speed in enumerate(speed_arr):
+
+            self.curves.append(self.TractionCurve(speed))
+
+            # finding max cornering (lateral) acceleration
+            low_guess = 0 # low estimate for max cornering (lateral) acceleration (g)
+            high_guess = 3 # high estimate for max cornering (lateral) acceleration (g)
+
+            # when the low and high estimates converge, the converging value is recorded as the max cornering (lateral) acceleration
+            while high_guess - low_guess > 0.00001:
+                guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering (lateral) acceleration
+                out = self.accel(AY=guess, AX=0, speed=speed)
+                if out: # sets low estimate to the guess value if the car can handle cornering (lateral) acceleration equal to the guess value
+                    low_guess = guess
+                else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
+                    high_guess = guess
+
+            self.max_corner = guess # max cornering (lateral) acceleration (g)
+            self.curves[-1].AY = np.linspace(0, self.max_corner, 100)
+            for index, i in enumerate(self.curves[-1].AY):
+                self.curves[-1].A_accel.append(self.max_accel(AY=i, speed=speed))
+                self.curves[-1].accel_car_snippets.append(self.Car_Data_Snippet(self, index))
+                self.curves[-1].A_brake.append(self.max_brake(AY=i, speed=speed))
+                self.curves[-1].brake_car_snippets.append(self.Car_Data_Snippet(self, index))
+            self.max_corner -= 0.0001
+            # Gear changes
+            self.accel(0, 0)
+            self.curves[-1].static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True, speed=speed) # Used to describe the state of the car during gear changes
 
     def recalculate_characteristics(self):
         # weight over front track
@@ -442,13 +458,27 @@ class car():
 
         self.compute_traction()
 
+    def find_closest_curve(self, speed, lower):
+        for index, curve in enumerate(self.curves):
+            if self.curves[index-1].speed <= speed <= self.curves[index].speed:
+                if lower:
+                    return self.curves[index-1]
+                else:
+                    return self.curves[index]
+        if lower:
+            return self.curves[-2]
+        else:
+            return self.curves[-1]
+
     # Returns true if the car can generate the axial traction based on AY and AX. Returns false otherwise.
     # AY is magnitude of lateral acceleration, AX is magnitude of axial acceleration, both are measured in g's
-    def accel(self, AY, AX, bitch = False):
+    def accel(self, AY, AX, speed=0):
         self.instant_AY, self.instant_AX = AY, AX
 
-        W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
-        W_r = self.W_r + self.h*self.W_car*AX/self.l # Vertical force on rear track (lb)
+        D_f, D_r = self.aero_model.get_down(speed)
+
+        W_f = self.W_f - self.h*self.W_car*AX/self.l + D_f # Vertical force on front track (lb)
+        W_r = self.W_r + self.h*self.W_car*AX/self.l + D_r # Vertical force on rear track (lb)
 
         roll = (W_f*self.z_rf + W_r*self.z_rr)*AY / (self.K_rollF+self.K_rollR) # roll of car (rad)
         W_shift_x = roll * self.H # lateral shift in center of mass (in)
@@ -497,124 +527,185 @@ class car():
 
         self.theta_accel = math.atan2(abs(AY), AX) * 180/math.pi
 
-        # Calculating max lateral acceleration from tire traction
+        # Calculating max axial acceleration from tire traction
         if AX > 0:
             FX = self.FX_out_r + self.FX_in_r
         else:
             FX = self.FX_out_f + self.FX_in_f + self.FX_out_r + self.FX_in_r
-
-        if bitch:
-            print(self.FX_out_f / self.W_out_f)
-            print(self.FX_in_f / self.W_in_f)
-            print(self.FX_out_r / self.W_out_r)
-            print(self.FX_in_r / self.W_in_r)
 
         # Checking if the car can generate the necessary axial tire traction
         if abs(FX/self.W_car) < abs(AX):return False
         else: return True
 
     # recursive function to find the max axial acceleration; AY is lateral acceleration in g's
-    def max_accel(self, AY, low_guess = 0, high_guess = 2):
+    def max_accel(self, AY, low_guess = 0, high_guess = 2, speed=0):
         guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
 
         # returns the guess value if high and low estimates have converged
         if high_guess - low_guess < 0.0000000001:
             return guess
 
-        if self.accel(AY, guess): # sets low estimate to the guess value if the car can handle cornering acceleration equal to the guess value
-            return self.max_accel(AY, guess, high_guess)
+        if self.accel(AY, guess, speed=speed): # sets low estimate to the guess value if the car can handle cornering acceleration equal to the guess value
+            return self.max_accel(AY, guess, high_guess, speed=speed)
         else: # sets high estimate to the guess value if the car cannot handle cornering acceleration equal to the guess value
-            return self.max_accel(AY, low_guess, guess)
+            return self.max_accel(AY, low_guess, guess, speed=speed)
 
-    def max_brake(self, AY, low_guess = -3, high_guess = 0):
+    def max_brake(self, AY, low_guess = -3, high_guess = 0, speed=0):
         guess = (low_guess + high_guess)/2 # using the average of the low and high estimates as a guess for the max cornering acceleration
 
         # returns the guess value if high and low estimates have converged
         if high_guess - low_guess < 0.0000000001:
             return guess
 
-        if self.accel(AY, guess): # sets high estimate to the guess value if the car can handle breaking acceleration equal to the guess value
-            return self.max_brake(AY, low_guess, guess)
+        if self.accel(AY, guess, speed=speed): # sets high estimate to the guess value if the car can handle breaking acceleration equal to the guess value
+            return self.max_brake(AY, low_guess, guess, speed=speed)
         else: # sets low estimate to the guess value if the car cannot handle breaking acceleration equal to the guess value
-            return self.max_brake(AY, guess, high_guess)
+            return self.max_brake(AY, guess, high_guess, speed=speed)
 
     # calculates the max axial acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
     # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
     # set r to zero for a straight track with no curvature
     def curve_accel(self, v, r, transmission_gear='optimal'):
-        snippet = None
-
         AY = 0
         if r > 0:
             AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
 
-        drag = self.aero_model.get_drag(v) # finding drag acceleration (lbs)
+        drag = self.aero_model.get_drag(v) # finding drag (lbs)
 
-        returned = False
-        for i in range(1, len(self.AY)):
-            if self.AY[i] >= AY: # If max AY along a turn is more than or equal to the current AY
-                # linearly interpolating self.A_accel to find the max acceleration at lateral acceleration AY
-                curr_ratio = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])
-                prev_ratio = (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])
-                snippet = self.Car_Data_Snippet.get_interpolated_copy(self.accel_car_data_snippets[i], curr_ratio, prev_ratio)
-                returned = True
+        low_index, high_index = 0, 0
+        low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
+
+        for i, ay_curve in enumerate(low_curve.AY):
+            if ay_curve > AY:
+                low_index = i
                 break
-        if not returned:
-            snippet = copy.deepcopy(self.accel_car_data_snippets[-1])
+
+        low_snippet = (
+            self.Car_Data_Snippet.get_interpolated_copy(
+                prev_snippet=low_curve.accel_car_snippets[low_index-1],
+                next_snippet=low_curve.accel_car_snippets[low_index],
+                prev_ratio=(low_curve.AY[low_index]-AY)/(low_curve.AY[low_index]-low_curve.AY[low_index-1]),
+                next_ratio=(AY-low_curve.AY[low_index-1])/(low_curve.AY[low_index]-low_curve.AY[low_index-1]))
+        )
+
+        for i, ay_curve in enumerate(high_curve.AY):
+            if ay_curve > low_snippet.AY:
+                high_index = i
+                break
+
+        high_snippet = (
+            self.Car_Data_Snippet.get_interpolated_copy(
+                prev_snippet=high_curve.accel_car_snippets[high_index-1],
+                next_snippet=high_curve.accel_car_snippets[high_index],
+                prev_ratio=(high_curve.AY[high_index]-AY)/(high_curve.AY[high_index]-high_curve.AY[high_index-1]),
+                next_ratio=(AY-high_curve.AY[high_index-1])/(high_curve.AY[high_index]-high_curve.AY[high_index-1]))
+        )
+
+        distance_from_next = high_curve.speed - v
+        next_ratio = 1 - distance_from_next / (high_curve.speed - low_curve.speed)
+        prev_ratio = 1 - next_ratio
+        interpolated_snippet = self.Car_Data_Snippet.get_interpolated_copy(
+            prev_snippet=low_snippet,
+            next_snippet=high_snippet,
+            next_ratio=next_ratio,
+            prev_ratio=prev_ratio
+        )
+        interpolated_snippet.AX -= drag/self.W_car # incorporate drag
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
+        A_engn -= drag/self.W_car # incorporate drag
 
         self.engine_force.append(A_engn*self.W_car)
-        self.tires_force.append(snippet.AX*self.W_car)
+        self.tires_force.append(interpolated_snippet.AX*self.W_car)
         self.vels.append(v)
 
         # returns either tire or engine acceleration depending on which is the limiting factor
-        if A_engn < snippet.AX:
-            snippet.AX = A_engn
-            snippet.AX -= drag/self.W_car
-            return snippet
-        snippet.AX -= drag/self.W_car
-        return snippet
+        if A_engn < interpolated_snippet.AX:
+            interpolated_snippet.AX = A_engn
+            return interpolated_snippet
+        return interpolated_snippet
 
     # calculates the max braking acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
     # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
     # set r to zero for a track straight track with no curvature
     def curve_brake(self, v, r):
-        snippet = None
-
         AY = 0
         if r > 0:
             AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
 
-        drag = self.aero_model.get_drag(v) # finding drag acceleration (lbs)
+        drag = self.aero_model.get_drag(v) # finding drag (lbs)
 
-        returned = False
-        for i in range(1, len(self.AY)):
-            if self.AY[i] >= AY:
-                # linearly interpolating self.A_accel to find the max acceleration at lateral acceleration AY
-                curr_ratio = (AY-self.AY[i-1])/(self.AY[i]-self.AY[i-1])
-                prev_ratio = (self.AY[i]-AY)/(self.AY[i]-self.AY[i-1])
-                snippet = self.Car_Data_Snippet.get_interpolated_copy(self.brake_car_data_snippets[i], curr_ratio, prev_ratio)
-                returned = True
+        low_index, high_index = 0, 0
+        low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
+
+        for i, ay_curve in enumerate(low_curve.AY):
+            if ay_curve > AY:
+                low_index = i
                 break
-        if not returned:
-            snippet = copy.deepcopy(self.brake_car_data_snippets[-1])
 
-        snippet.AX -= drag/self.W_car # incorporating drag
+        low_snippet = (
+            self.Car_Data_Snippet.get_interpolated_copy(
+                prev_snippet=low_curve.brake_car_snippets[low_index-1],
+                next_snippet=low_curve.brake_car_snippets[low_index],
+                prev_ratio=(low_curve.AY[low_index]-AY)/(low_curve.AY[low_index]-low_curve.AY[low_index-1]),
+                next_ratio=(AY-low_curve.AY[low_index-1])/(low_curve.AY[low_index]-low_curve.AY[low_index-1]))
+        )
 
-        return snippet
+        for i, ay_curve in enumerate(high_curve.AY):
+            if ay_curve > low_snippet.AY:
+                high_index = i
+                break
+
+        high_snippet = (
+            self.Car_Data_Snippet.get_interpolated_copy(
+                prev_snippet=high_curve.brake_car_snippets[high_index-1],
+                next_snippet=high_curve.brake_car_snippets[high_index],
+                prev_ratio=(high_curve.AY[high_index]-AY)/(high_curve.AY[high_index]-high_curve.AY[high_index-1]),
+                next_ratio=(AY-high_curve.AY[high_index-1])/(high_curve.AY[high_index]-high_curve.AY[high_index-1]))
+        )
+
+        distance_from_next = high_curve.speed - v
+        next_ratio = 1 - distance_from_next / (high_curve.speed - low_curve.speed)
+        prev_ratio = 1 - next_ratio
+        interpolated_snippet = self.Car_Data_Snippet.get_interpolated_copy(
+            prev_snippet=low_snippet,
+            next_snippet=high_snippet,
+            next_ratio=next_ratio,
+            prev_ratio=prev_ratio
+        )
+        interpolated_snippet.AX -= drag/self.W_car # incorporate drag
+
+        return interpolated_snippet
+
+    # Returns maximum AY at v (velocity) in in/s^2
+    def compute_maximum_AY(self, v):
+        low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
+
+        next_ratio = 1 - (high_curve.speed - v) / (high_curve.speed - low_curve.speed)
+        prev_ratio = 1 - next_ratio
+
+        AY = high_curve.AY[-1] * next_ratio + low_curve.AY[-1] * prev_ratio
+        return AY * 386.1
 
     # returns drag acceleration (in/s^2) given vehicle speed
     # v = speed (in/s)
     def curve_idle(self, v):
-        drag = self.aero_model.get_drag(v) # finding drag acceleration (lbs)
-        drag /= self.W_car # convert to G's
-        drag *= 32.17 * 12 # converting from G's to in/s^2
-        return -drag # returns negative because drag slows the car
+        low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
+
+        next_ratio = 1 - (high_curve.speed - v) / (high_curve.speed - low_curve.speed)
+        prev_ratio = 1 - next_ratio
+
+        static_snippet = self.Car_Data_Snippet.get_interpolated_copy(
+            next_snippet=high_curve.static_snippet,
+            prev_snippet=low_curve.static_snippet,
+            next_ratio=next_ratio,
+            prev_ratio=prev_ratio
+        )
+        return static_snippet
 
     def adjust_weight(self, w):
         ratio = w / self.W_car
@@ -649,6 +740,20 @@ class car():
         plt.grid()
         plt.show()
 
+    def traction_curves(self):
+        colors = []
+        for color in matplotlib.colors.BASE_COLORS.values():
+            colors.append(color)
+        colors*=100
+
+        for index, curve in enumerate(self.curves):
+            plt.plot(curve.AY, curve.A_accel, color=colors[index])
+            plt.plot(curve.AY, curve.A_brake, color=colors[index])
+        plt.grid()
+        plt.xlabel('Lateral Acceleration (g\'s)')
+        plt.ylabel('Axial Acceleration (g\'s)')
+        plt.show()
+
     def plot_forces(self):
         plt.plot(self.vels, self.engine_force)
         plt.plot(self.vels, self.tires_force)
@@ -657,3 +762,8 @@ class car():
         plt.legend(['engine force', 'tire force'])
         plt.grid()
         plt.show()
+
+# racecar = car()
+# # racecar.traction_curves()
+# racecar.compute_maximum_AY(350)
+# racecar.curve_brake(1000, 5169.294)

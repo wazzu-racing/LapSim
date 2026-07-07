@@ -22,7 +22,7 @@ class drivetrain:
         self.final_drive = final_drive
         self.primary_drive = 1.69
 
-        self.wheel_radius = 9/12 # ft # 9/12 for 92
+        self.wheel_radius = 9/12 # 9/12 for 92
         self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
         self.shift_time = 0.1 # seconds
 

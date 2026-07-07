@@ -3,22 +3,18 @@ import os
 import tkinter
 
 import math
-import pickle
-
-from matplotlib import pyplot as plt
-from matplotlib.backends._backend_tk import NavigationToolbar2Tk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
-
-from gen_lapsim.spline_track import track, curve
-from models.car_model import car
 import numpy as np
+
+from gen_lapsim.spline_track import track
+from models.car_model import car
 
 
 class Track_Examine:
 
     def __init__(self, track_txt_path=""):
         self.racecar = car()
+
+        self.run_endurance(self.racecar, 10000)
 
     def parse_text_to_track_pkl(self, txt_path):
         """
@@ -82,7 +78,8 @@ class Track_Examine:
 
         self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=False)
 
-        return self.trk.run_sim(car, nodes=node_count)
+        print("Ran Accel")
+        return self.trk.run_sim(car, nodes=node_count, start_vel=0, end_vel=2000)
 
     def run_endurance(self, car, node_count):
         self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Endurance.rtf")
@@ -90,6 +87,15 @@ class Track_Examine:
         self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
         self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
+        return self.trk.run_sim(car, nodes=node_count)
+
+    def run_autocross(self, car, node_count):
+        self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf")
+
+        self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
+        self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
+
+        # self.trk.plot_without_UI()
         return self.trk.run_sim(car, nodes=node_count)
 
     def run_constant_velocity_skidpad(self):
