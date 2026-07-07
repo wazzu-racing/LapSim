@@ -3,6 +3,7 @@
 This version of the LapSim (based off of the LapSimV1) incorporates downforce and drag from the aero package.
 
 This LapSim uses multiple GG diagrams that are produced from various velocities in order to simulate the effects of downforce.
+
 <img width="637" height="477" alt="image" src="https://github.com/user-attachments/assets/f74e5dc2-aea3-48ab-9d8a-f8518a600e3e" />
 
 *Each color is a different velocity.
