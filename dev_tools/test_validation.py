@@ -1,14 +1,5 @@
-import csv
-import os
-import tkinter
 
 import math
-import pickle
-
-from matplotlib import pyplot as plt
-from matplotlib.backends._backend_tk import NavigationToolbar2Tk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
 
 from gen_lapsim.spline_track import track, curve
 from models.car_model import car
@@ -19,6 +10,12 @@ class Track_Examine:
 
     def __init__(self, track_txt_path=""):
         self.racecar = car()
+
+        # self.run_accel(self.racecar, 5000, False)
+        # self.racecar.plot_forces()
+        # self.run_endurance(self.racecar, 5000)
+        # self.racecar.calculate_RPM_percentage()
+        # self.racecar.drivetrain.engn_rpm_pwr_plot()
 
     def parse_text_to_track_pkl(self, txt_path):
         """
@@ -74,22 +71,33 @@ class Track_Examine:
     # points_x2 = [216, 216, 108, 324, 756, 1188, 1620, 2052, 1728, 1296, 1512, 2484, 1512, 1188, 540]
     # points_y2 = [0, -384, -768, -1368, -1368, -1584, -2016, -1584, -1152, -960, -744, -312, 0, 648, 648]
 
-    def run_accel(self, car, node_count):
-        self.points_x = [0, 0]
-        self.points_y = [0, 2952.76]
-        self.points_x2 = [100, 100]
-        self.points_y2 = [0, 2952.76]
+    def run_accel(self, car, node_count, again=False):
+        if not again:
+            self.points_x = [0, 0]
+            self.points_y = [0, 2952]
+            self.points_x2 = [100, 100]
+            self.points_y2 = [0, 2952]
 
-        self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=False)
+            self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=False)
+
+        return self.trk.run_sim(car, nodes=node_count, end_vel=2000)
+
+    def run_endurance(self, car, node_count, again=False):
+        if not again:
+            self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Endurance.rtf")
+
+            self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
+            self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
         return self.trk.run_sim(car, nodes=node_count)
 
-    def run_endurance(self, car, node_count):
-        self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Endurance.rtf")
+    def run_autocross(self, car, node_count):
+        self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf")
 
         self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
         self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
+        # self.trk.plot_without_UI()
         return self.trk.run_sim(car, nodes=node_count)
 
     def run_constant_velocity_skidpad(self):
