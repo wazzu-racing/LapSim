@@ -2,9 +2,9 @@
 
 This version of the LapSim (based off of the LapSimV1) incorporates downforce and drag from the aero package.
 
-This LapSim uses multiple GG diagrams that are produced from various velocities in order to simulate the effects of downforce.
+This LapSim uses multiple GG diagrams that are produced from various velocities in order to simulate the effects of downforce. After this, the maxmimum AX is capped for curves where the velocity is higher than 0. Essentially, this is mimicking the affect of drag overpowering downforce, which we cannot simulate currently because we do not have data on how downforce and drag change via pitch.
 
-<img width="637" height="477" alt="image" src="https://github.com/user-attachments/assets/f74e5dc2-aea3-48ab-9d8a-f8518a600e3e" />
+<img width="596" height="445" alt="Screenshot 2026-07-14 at 3 27 45 PM" src="https://github.com/user-attachments/assets/6a7821de-c0f9-41b2-813f-06e13da7ec7a" />
 
 *Each color is a different velocity.
 
