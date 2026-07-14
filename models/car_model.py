@@ -18,23 +18,23 @@ from models import aero_model
 
 class car():
     # weight over front left wheel
-    W_1 = 173
+    W_1 = 165
     # weight over front right wheel
-    W_2 = 173
+    W_2 = 165
     # weight over rear left wheel
-    W_3 = 157.5
+    W_3 = 165
     # weight over rear right wheel
-    W_4 = 157.5
+    W_4 = 165
     # length of wheelbase (in)
     l = 60
     # vertical center of gravity (in)
-    h = 11.6
+    h = 12.4
     # in, roll axis height, front and rear
-    z_rf = 2.3
-    z_rr = 2.5
+    z_rf = 3.1
+    z_rr = 3.3
     # Track widths, front and rear (in)
-    t_f = 49
-    t_r = 48
+    t_f = 47
+    t_r = 46
     # lb/in, ride rates, front and rear
     K_RF = 179.72219842152035 # lbs/in
     K_RR = 163.58335639299756 # lbs/in
@@ -42,10 +42,10 @@ class car():
     K_rollF = 215203 # lb*in/rad
     K_rollR = 195952 # lb*in/rad
     #deg/in, camber rates for front and rear
-    CMB_RT_F = 1
-    CMB_RT_R = 1
+    CMB_RT_F = 1.3
+    CMB_RT_R = 1.15
     # deg, static camber rates for front and rear
-    CMB_STC_F = 2
+    CMB_STC_F = 1
     CMB_STC_R = 1
     # in, maximum displacement in jounce for suspension, front and rear
     max_jounce_f = 1
@@ -438,6 +438,8 @@ class car():
             self.accel(0, 0)
             self.curves[-1].static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True, speed=speed) # Used to describe the state of the car during gear changes
 
+        self.drag_goon()
+
     def recalculate_characteristics(self):
         # weight over front track
         self.W_f = self.W_1 + self.W_2
@@ -457,18 +459,6 @@ class car():
         self.a_rr = -(self.C_rr * self.W_1 + self.C_rr * self.W_2 + self.C_rr * self.W_3 + self.C_rr * self.W_4)/self.W_car * 386.089
 
         self.compute_traction()
-
-    def find_closest_curve(self, speed, lower):
-        for index, curve in enumerate(self.curves):
-            if self.curves[index-1].speed <= speed <= self.curves[index].speed:
-                if lower:
-                    return self.curves[index-1]
-                else:
-                    return self.curves[index]
-        if lower:
-            return self.curves[-2]
-        else:
-            return self.curves[-1]
 
     # Returns true if the car can generate the axial traction based on AY and AX. Returns false otherwise.
     # AY is magnitude of lateral acceleration, AX is magnitude of axial acceleration, both are measured in g's
@@ -530,8 +520,10 @@ class car():
         # Calculating max axial acceleration from tire traction
         if AX > 0:
             FX = self.FX_out_r + self.FX_in_r
+            FX -= self.aero_model.get_drag(speed)
         else:
             FX = self.FX_out_f + self.FX_in_f + self.FX_out_r + self.FX_in_r
+            FX += self.aero_model.get_drag(speed)
 
         # Checking if the car can generate the necessary axial tire traction
         if abs(FX/self.W_car) < abs(AX):return False
@@ -572,8 +564,6 @@ class car():
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
 
-        drag = self.aero_model.get_drag(v) # finding drag (lbs)
-
         low_index, high_index = 0, 0
         low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
 
@@ -612,10 +602,9 @@ class car():
             next_ratio=next_ratio,
             prev_ratio=prev_ratio
         )
-        interpolated_snippet.AX -= drag/self.W_car # incorporate drag
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
-        A_engn -= drag/self.W_car # incorporate drag
+        A_engn -= self.aero_model.get_drag(v)/self.W_car # incorporate drag
 
         self.engine_force.append(A_engn*self.W_car)
         self.tires_force.append(interpolated_snippet.AX*self.W_car)
@@ -636,8 +625,6 @@ class car():
             AY = v**2/r / 12 / 32.17 # finding lateral acceleration using a = v^2/r and coverting from in/s^2 to G's
         else:
             AY = 0 # set AY to zero if curve radius is zero as this represents a straight track
-
-        drag = self.aero_model.get_drag(v) # finding drag (lbs)
 
         low_index, high_index = 0, 0
         low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
@@ -677,9 +664,48 @@ class car():
             next_ratio=next_ratio,
             prev_ratio=prev_ratio
         )
-        interpolated_snippet.AX -= drag/self.W_car # incorporate drag
 
         return interpolated_snippet
+
+    # Reduces AXs that are higher than self.curves[0].A_accel[0] to that same value.
+    def drag_goon(self):
+        for outer_index, curve in enumerate(self.curves):
+            if outer_index == 0:
+                continue
+
+            # Increase drag for every higher curve until AX is low enough.
+
+            first_valid_index = 0
+            for index, AX in enumerate(curve.A_accel):
+                if AX < self.curves[0].A_accel[0]:
+                    first_valid_index = index
+                    break
+
+            for index, AX in enumerate(curve.A_accel):
+                if index >= first_valid_index:
+                    break
+                if index == 0:
+                    curve.A_accel[0] = self.curves[0].A_accel[0]
+                    curve.accel_car_snippets[0].AX = self.curves[0].A_accel[0]
+                    continue
+
+                next_ratio = curve.AY[index] / curve.AY[first_valid_index]
+                prev_ratio = 1 - next_ratio
+                new_AX = curve.A_accel[first_valid_index] * next_ratio + curve.A_accel[0] * prev_ratio
+                curve.A_accel[index] = new_AX
+                curve.accel_car_snippets[index].AX = new_AX
+
+    def find_closest_curve(self, speed, lower):
+        for index, curve in enumerate(self.curves):
+            if self.curves[index-1].speed <= speed <= self.curves[index].speed:
+                if lower:
+                    return self.curves[index-1]
+                else:
+                    return self.curves[index]
+        if lower:
+            return self.curves[-2]
+        else:
+            return self.curves[-1]
 
     # Returns maximum AY at v (velocity) in in/s^2
     def compute_maximum_AY(self, v):
@@ -747,8 +773,8 @@ class car():
         colors*=100
 
         for index, curve in enumerate(self.curves):
-            plt.plot(curve.AY, curve.A_accel, color=colors[index])
-            plt.plot(curve.AY, curve.A_brake, color=colors[index])
+            plt.plot(self.curves[index].AY, self.curves[index].A_accel, color=colors[index])
+            plt.plot(self.curves[index].AY, self.curves[index].A_brake, color=colors[index])
         plt.grid()
         plt.xlabel('Lateral Acceleration (g\'s)')
         plt.ylabel('Axial Acceleration (g\'s)')
@@ -763,7 +789,7 @@ class car():
         plt.grid()
         plt.show()
 
-# racecar = car()
-# # racecar.traction_curves()
+racecar = car()
+racecar.traction_curves()
 # racecar.compute_maximum_AY(350)
 # racecar.curve_brake(1000, 5169.294)

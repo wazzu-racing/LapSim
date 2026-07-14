@@ -1,3 +1,5 @@
+import csv
+
 import numpy as np
 
 from dev_tools.run_lapsim import Track_Examine
@@ -8,10 +10,10 @@ from models.drivetrain_model import drivetrain
 
 racecar = car()
 track_ex = Track_Examine()
-track_ex.run_accel(racecar, 5000)
+# track_ex.run_accel(racecar, 5000)
 
-eng_data = "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/ENG_RPM_DATA_92.csv"
-final_drives = np.linspace(3, 4, 51)
+eng_data = "/Users/jacobmckee/Documents/Wazzu Racing/Vehicle Dynamics/Repos/LapSimV1_Aero/config_data/ENG_RPM_DATA_92.csv"
+final_drives = np.linspace(1, 5, 51)
 times = []
 
 for ratio in final_drives:
