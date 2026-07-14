@@ -15,3 +15,7 @@ This LapSim uses multiple GG diagrams that are produced from various velocities 
 - Drag and downforce do not change with pitch or roll
 - No car body angle (drag only affects the car longitudinally)
 - No heave
+
+## Issues
+- Pitch
+  - The AX from the longitudinal force from the tires AND from drag are accounted for when determining the displacement of the tires. This is incorrect becasue the CoD (Center of Drag) is unknown and we do not know exactly how the force of drag is affecting pitch. In fact, drag is most likely tilting the car back (similar to when weight is shifting to the rear) because of the angle of the aero components (aero components are tilting up when the car is accelerating due to pitch, so drag would most likely create an upward vertical force vector from those aero components).
