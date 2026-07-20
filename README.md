@@ -73,6 +73,16 @@ Without getting too deep into the math, a `node` class essentially finds the spo
 
 ### Velocity Calculations
 
+The overall velocity calculations are described by 4 arrays of velocities, which are each represented here on graphs.
+
+**Maximum Velocity Array**
+
+The first array of velocities is described very simply. By re-writing the equation v^2/r = AY (velocity^2/radius=lateral acceleration) as v = sqrt(r*AY), with AY being the absolute maximum lateral acceleration achievable (found using the GG diagram), then you can get the absolute maximum velocity anywhere along the car's path.
+
+<img width="940" height="697" alt="image" src="https://github.com/user-attachments/assets/0f245a78-03c0-4b8e-8ade-4c07bd2fee98" />
+
+**Braking Velocity**
+
 
 
 
