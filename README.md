@@ -47,6 +47,8 @@ Now that we have velocity, we simply perform the equation distance/velocity=time
 
 The GG diagram models the combined maximum lateral and axial acceleration the car's tires can generate. It is generated in `car_model.py` using the `compute_traction()` function.
 
+The purpose of the GG diagram is to be able to get the resulting axial acceleration (AX) from any lateral acceleration (AY). You can think of it as a kind of lookup table. You can also think of it as a dictionary in Python, where the AY is the key and the AX is the item.
+
 <img width="597" height="448" alt="image" src="https://github.com/user-attachments/assets/5f346b8e-f414-4e67-918c-999aff0dc9ef" />
 
 As an exmaple, say the car is experiencing 0.5 G's of lateral acceleration. You can figure out the maximum axial acceleration at 0.5 G's of lateral acceleration by simply looking at the GG diagram. At the 0.5 mark on the horizontal axis, the maximum forward axial acceleration is roughly 1.05 G's and the maximum backward (braking) axial acceleration is roughly -1.3 G's.
