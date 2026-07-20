@@ -51,6 +51,20 @@ The GG diagram models the combined maximum lateral and axial acceleration the ca
 
 As an exmaple, say the car is experiencing 0.5 G's of lateral acceleration. You can figure out the maximum axial acceleration at 0.5 G's of lateral acceleration by simply looking at the GG diagram. At the 0.5 mark on the horizontal axis, the maximum forward axial acceleration is roughly 1.05 G's and the maximum backward (braking) axial acceleration is roughly -1.3 G's.
 
+**How it Works**
+
+The `compute_traction()` function, located in `car_model.py`, generates a GG diagram for the vehicle. The function begins by determining the maximum lateral acceleration the car can achieve with zero axial acceleration. It accomplishes this through binary search, starting with estimates between 0 and 3 g's and repeatedly calling `accel(guess, 0)` to test whether the car can handle each candidate lateral acceleration value until the lateral acceleration converges. To assess whether or not the car can handle each lateral acceleration, the load on all 4 tires resulting from the weight transfer of the lateral acceleration is first computed. Then, using the `tire_model.py` script, the lateral acceleration of the most optimal slip angle (the slip angle that gives the highest value lateral force) is used to compute the overall lateral acceleration the car experiences. If the car cannot generate enough to meet the demanded lateral acceleration, `accel(guess, 0)` returns `false`. Else, it returns `true`.
+
+Once the maximum cornering acceleration is established, the function constructs the complete GG diagram by creating 100 (or any other number) of evenly-spaced points along the lateral acceleration axis, ranging from 0 to `max_corner`. At each of these 100 lateral acceleration values, the function calculates two things: the maximum acceleration (AX) achievable at that lateral acceleration and stored in `A_accel`, and the maximum braking deceleration (negative AX) achievable at that same lateral acceleration and stored in `A_brake`. It does this by calling `max_accel` and `max_brake`, respectively. These two functions use binary search recursively until the maximum axial acceleration achievable at a lateral acceleration is found. They use the exact same concepts as `accel(guess, 0)`.
+
+In parallel, `compute_traction()` creates detailed snapshots of the car's state for each point, stored as `Car_Data_Snippet` objects in the `accel_car_data_snippets` array and the `brake_car_data_snippets` array. These snapshots capture comprehensive tire data including forces, vertical displacements, camber angles, and load distributions across all four wheels.
+
+### Track Generation
+
+
+
+### Velocity Calculations
+
 
 In progress...
 
