@@ -33,9 +33,9 @@ The generation of a track is determined entirely by the placement of points (or 
 
 The outputs from the generation of a track are 2 arrays: one array that contains radii, and one array that contains lengths. These essentially represent many small curves of the path the car takes, with each curve having a unique radius and length.
 
-**3 - Calculating Velocity**
+**3 - Calculating the Velocity**
 
-This section is difficult to understand without visuals. Please go to the specific section that explains this to get a better understanding.
+This section is difficult to understand without visuals. Please go to the [specific section](#velocity-calculations) that explains this to get a better understanding.
 
 First, maximum velocity at every point along the car's path is calculated from the maximum lateral acceleration gathered from the *GG diagram*. 
 
