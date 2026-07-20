@@ -63,9 +63,17 @@ In parallel, `compute_traction()` creates detailed snapshots of the car's state 
 
 ### Track Generation
 
+<img width="949" height="720" alt="image" src="https://github.com/user-attachments/assets/9775ca08-c7e4-4038-903b-c82923b7b781" />
 
+Track generation occurs in the `track` class in the `spline_track.py` file. The main parameters for the `track` class are the `p1x`, `p1y`, `p2x`, and `p2y` arrays. These arrays represent the positions of the points/cones on the track, where the car must go between. The first thing the `track` class does is create `node` and `curve` instances with the points given to it. A `node` class is a position that the car must go through. It is situated between two points/cones. A `curve` class is the curve between two `node` instances.
+
+Without getting too deep into the math, a `node` class essentially finds the spot between two cones which gives its corresponding `curve` instances the straightest shape. A `curve` class builds its own position, position derivative, and 2nd position derivative arrays to describe itself. The most important function in the `curve` class is the `interpolate` function. This function takes its curve instance and essentially turns it into many small segments of the curve, represented as two arrays, one of radii and one of lengths. These `rad` and `len` arrays allow for easy integration into the LapSim.
+
+**This logic will soon be replaced by splines using some kind of Python library to simplify the process.**
 
 ### Velocity Calculations
+
+
 
 
 In progress...
