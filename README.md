@@ -1,9 +1,58 @@
-# LapSim
+# LapSimV1
 
-This is the Wazzu Racing lap simulator. It's goal is to simulate the car
-driving around the track as accurately as possible, in order to provide
-ncecessary data to other subteams.
+This README explains what the LapSim is and how it functions.
 
+Please direct any questions to **@jacobtherooster** on the Wazzu Racing Discord server or to jacob.m.mckee@wsu.edu.
+
+### Overview
+
+This software simulates a steady state car moving around a track using several vehicle dynamics, mathematics, physics, and data analysis concepts. The main purposes of this software are to
+- Determine the most optimal parameters of the car (final drive ratio, etc.)
+- Collect data for other sub teams to use
+
+### Developers
+- **Maxwell Baerman** - Vehicle Dynamics Lead WR25
+- **Nikolai Bogdev** - Vehicle Dynamics Lead WR26
+- **Jacob McKee** - Vehicle Dynamics Lead WR27
+
+## Functionality
+
+### Overview
+
+The overall logic of the LapSim is actually relatively simple. In this section I will go through (very broadly) the process that the LapSim executes to compute a lap time, from the very beginning to the end.
+
+**1 - Generating the Car Model**
+
+Generating the car model means generating a *GG diagram*, a graph of the combined maximum lateral and axial acceleration the car's tires can generate. In the LapSim, this is a recursive process handled by the `car_model.py` script which utilizes weight transfer and the `tire_model.py` script to determine the forces produced by the tires, and therefore the acceleration the car experiences.
+
+This gives us a way to get axial acceleration (AX) directly from lateral acceleration (AY), with no other caveats.
+
+**2 - Generating the Track**
+
+The generation of a track is determined entirely by the placement of points (or cones, if you will) on the track. The path the car takes is the smoothest and straightest path between these points. This is achievable with many different mathematical concepts, but we use *Cubic Bezier Curves*. These Cubic Bezier Curves find the straightest path between the points.
+
+The outputs from the generation of a track are 2 arrays: one array that contains radii, and one array that contains lengths. These essentially represent many small curves of the path the car takes, with each curve having a unique radius and length.
+
+**3 - Calculating Velocity**
+
+This section is difficult to understand without visuals. Please go to the specific section that explains this to get a better understanding.
+
+First, maximum velocity at every point along the car's path is calculated from the maximum lateral acceleration gathered from the *GG diagram*. 
+
+Then, both maximum braking and maximum forward acceleration at every point are calculated given the lateral acceleration that the car must produce at that specific point. The lateral acceleration required at a specific point is calculated via velocity^2/radius. There is always a point where the maximum braking velocity and maximum forward accelerating velocity intersect, and that is where the switch from braking to accelerating occurs.
+
+Now that we have velocity, we simply perform the equation distance/velocity=time to calculate the lap time.
+
+### GG Diagram
+
+The GG diagram models the combined maximum lateral and axial acceleration the car's tires can generate. It is generated in `car_model.py` using the `compute_traction()` function.
+
+<img width="597" height="448" alt="image" src="https://github.com/user-attachments/assets/5f346b8e-f414-4e67-918c-999aff0dc9ef" />
+
+As an exmaple, say the car is experiencing 0.5 G's of lateral acceleration. You can figure out the maximum axial acceleration at 0.5 G's of lateral acceleration by simply looking at the GG diagram. At the 0.5 mark on the horizontal axis, the maximum forward axial acceleration is roughly 1.05 G's and the maximum backward (braking) axial acceleration is roughly -1.3 G's.
+
+
+In progress...
 
 
 **car_model:**
