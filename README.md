@@ -104,88 +104,171 @@ The final velocity is simply calculated by using the smallest velocity from the 
 <img width="938" height="712" alt="image" src="https://github.com/user-attachments/assets/c67f74f2-04f1-44e8-bd82-5409c29bd2fc" />
 
 
-**car_model:**
+## Functions
 
-Class: car()
-Arguments: none
-Methods:
-  curve_accel(v, r, transmission_gear='optimal')
-  Returns the maximum possible forward acceleration in g’s that the vehicle can provide while traveling on a curve of given radius at a given speed.
-  Arguments:
-  	v – (float) the velocity of the vehicle (in/s)
-    r – (float) radius of curve the vehicle is travelling along in inches
-    transmission_gear – (int) set as 'optimal' by default, this will automatically assume the car is utilizing whichever transmission gear maximizes the power delivered to the axle. May also be set as an       integer between 0 and 5 inclusive to select a different gear with 0 being the largest gear and 5 being the smallest gear.
+### car_model.py
+
+**`accel(AY, AX)`**
+
+Returns true if the car can generate the axial traction (AX) based on AY. Returns false otherwise.
+
+Arguments:
+- AY – (float) magnitude of lateral acceleration in g's
+- AX – (float) magnitude of axial acceleration in g's
+
+**`curve_accel(v, r, transmission_gear='optimal')`**
+
+Returns the maximum possible forward acceleration in g’s that the vehicle can provide while traveling on a curve of given radius at a given speed.
+
+Arguments:
+- v – (float) the velocity of the vehicle (in/s)
+- r – (float) radius of curve the vehicle is travelling along in inches
+- transmission_gear – (int) set as 'optimal' by default, this will automatically assume the car is utilizing whichever transmission gear maximizes the power delivered to the axle. May also be set as an       integer between 0 and 5 inclusive to select a different gear with 0 being the largest gear and 5 being the smallest gear.
   
-  curve_brake(v, r)
-  Returns the maximum possible braking deceleration in g’s that the vehicle can provide while traveling on a curve of given radius at a given speed.
-  Arguments:
-  	v – (float) the velocity of the vehicle (in/s)
-    r – (float) radius of curve the vehicle is travelling in inches
+**`curve_brake(AY, low_guess = -3, high_guess = 0)`**
+
+Returns the maximum possible braking deceleration in g’s that the vehicle can provide while traveling on a curve of given radius at a given speed.
+
+Arguments: 
+- v – (float) the velocity of the vehicle (in/s)
+- r – (float) radius of curve the vehicle is travelling in inches
+
+**`max_accel(AY, low_guess = 0, high_guess = 2)`**
+
+Returns the maximum possible forward axial acceleration at a certain AY.
+
+Arguments:
+- AY – (float) lateral acceleration in g's
+- low_guess – (float) low estimate for max forward acceleration in g's (default: 0)
+- high_guess – (float) high estimate for max forward acceleration in g's (default: 2)
+
+**`max_brake(AY, low_guess = -3, high_guess = 0)`**
+
+Returns the maximum possible braking axial acceleration at a certain AY.
+
+Arguments:
+- AY – (float) lateral acceleration in g's
+- low_guess – (float) low estimate for max braking acceleration in g's (default: -3)
+- high_guess – (float) high estimate for max braking acceleration in g's (default: 0)
+
+**`curve_idle(v)`**
+
+Returns the deceleration due to drag in g’s for the vehicle traveling at a given speed
+
+Arguments: 
+- v – (float) Velocity of vehicle in in/s
+
+**`adjust_weight(w)`**
+
+Alters the weight of the car to a specified value. Accordingly adjusts all weight sensitive values.
+
+Arguments: 
+- w – The new weight of the car in lb
+
+**`adjust_height(h)`**
+
+Alters the height of the center of mass of the car to a specified value. Accordingly adjusts all additional values sensitive to center of mass height
+
+Arguments: 
+- h – The new height of the car’s center of mass in inches
+
+**`traction_curve()`**
+
+Plots a friction ellipse for the entire vehicle. This displays the max forward and braking accelerations for every possible cornering acceleration the car can handle
+
+Arguments: None
 
  
-curve_idle(v)
-  Returns the deceleration due to drag in g’s for the vehicle traveling at a given speed
-  Arguments:  v – (float) Velocity of vehicle in in/s
+### tire_model.py
 
-adjust_weight(w)
-  Alters the weight of the car to a specified value. Accordingly adjusts all weight sensitive values.
-  Arguments: w – The new weight of the car in lb
+**`tire(self, cornering_data_file, acceleration_data_file = None)`**
 
-adjust_height(h)
-  Alters the height of the center of mass of the car to a specified value. Accordingly adjusts all additional values sensitive to center of mass height
-  Arguments: h – The new height of the car’s center of mass in inches
+A tire instance contains all of the data for a tire. The bulk of this data is stored in `FY_curves` and `FX_curves`. These are instances of the `curve_set` class.
 
-traction_curve()
-  Plots a friction ellipse for the entire vehicle. This displays the max forward and braking accelerations for every possible cornering acceleration the car can handle
-  Arguments: None
+Arguments: 
+- cornering_data_file – Raw cornering (AY) data from TTC database
+- acceleration_data_file – Raw acceleration (AX) data from TTC database. Set to None by default.
 
+**`curve_set(self, parent, data_type, x_data, y_data, curve_domain, center_vertical=False, data_cutoff=False, coeff=1)`**
 
- 
-**tire_model:**
+This class loads data from the TTC data of the tire class (loads different data depending on the data_type parameter), and smooths it using the `magic_curve` class.
 
-  Class: tire(self, cornering_data_file, acceleration_data_file = None)
-  Arguments: 
-    cornering_data_file – Raw cornering data from TTC database
-    acceleration_data_file – Raw acceleration data from TTC database. Set to None by default. Must input TTC data to analyze acceleration in x direction or to use tire object for lapsim.
-    Methods:
-    	traction(set_type, load, camber)
-      Returns either max possible cornering force or max longitudinal force of tires in lb given applied load and camber.
-    	Arguments:
-        set_type – (string) Set as 'corner' or 'cornering' to return max cornering force from tire. Set as 'accel' or 'acceleration' to return max longitudinal force from tire
-    		load – (float) Applied vertical load on tire
-    		camber – (float) inclination angle/camber of tire
-  	
-  lateral_force_plot()
-    Generates a plot displaying the maximum lateral force which may be provided by the tire at different cambers and applied loads
-    Arguments: None
+There are several functions within this class that allow the analyzation of data, such as `eval`, `get_max`, and `plot_curve`.
+
+Arguments:
+- parent – (object) parent tire model object containing data titles, loads, cambers, and data sets
+- data_type – (str) type of tire data, either 'corner'/'cornering' or 'accel'/'acceleration'
+- x_data – (str) name of the x-axis data variable from parent
+- y_data – (str) name of the y-axis data variable from parent
+- curve_domain – (array) domain values for the curve fitting (for FY_curves, this is slip angle; for FX_curves, this is slip ratio)
+- center_vertical – (bool) whether to vertically center the curve data around the origin (default: False)
+- data_cutoff – (bool) whether to trim the outer 15% of data points (default: False)
+- coeff – (float) coefficient to multiply y data by. This essentially simulates the forces on asphalt. (default: 1; FY_curves: 0.5; FX_curves: 0.6)
+
+**`data_section(self, data)`**
+
+Stores sections of 'useful' tire data. These sections are made up of forces found where slip angle is at or between *0, 4, 12, 4, 0, -4, -12, -4, 0* and where slip ratio is at or between *0.15, 0, -0.15, 0, 0.15*. This specific data is taken because these ranges indicate that actual testing is being conducted and 'warm up' testing is has been completed.
+
+Arguemnts:
+- data – (list) a list of data lists for which to calculate averages and standard deviations
+
+**`magic_curve(self, x, y, center_vertical=False, data_cutoff=False, coeff=1)`**
+
+Uses the `magic_func` function to smooth an instance of the `data_section` class.  
+
+Arguments: 
+- x – (array) x-axis data points for curve fitting
+- y – (array) y-axis data points for curve fitting
+- center_vertical – (bool) whether to vertically center the y data around the origin (default: False)
+- data_cutoff – (bool) whether to trim the outer 15% of data points (default: False)
+- coeff – (float) coefficient to multiply y data by (default: 1)
+
+*Note: These arguments all come from the `curve_set` init function.*
+
+**`lateral_force_plot()`**
+
+Generates a plot displaying the maximum lateral force which may be provided by the tire at different cambers and applied loads
+
+Arguments: None
   
-  lateral_coeff_plot()
-    Generates a plot displaying coefficient of friction in the lateral direction at different cambers and applied loads
-    Arguments: None
+**`lateral_coeff_plot()`**
+
+Generates a plot displaying coefficient of friction in the lateral direction at different cambers and applied loads
+
+Arguments: None
   
-  SA_FY_plot(camber)
-  Generates a plot of slip angle vs lateral force curves across all the different applied loads which were tested in the TTC data at a specified camber
-  Arguments: 
-    camber – either 0, 2, or 4. Represents camber/inclination angle of tire
+**`SA_FY_plot(camber)`**
+
+Generates a plot of slip angle vs lateral force curves across all the different applied loads which were tested in the TTC data at a specified camber
+
+Arguments: 
+- camber – either 0, 2, or 4. Represents camber/inclination angle of tire
   
-  SA_MZ_plot(camber)
-  Generates a plot of slip angle vs aligning torque curves across all the different applied loads which were tested in the TTC data at a specified camber
-  Arguments: 
-    camber – (int) either 0, 2, or 4. Represents camber/inclination angle of tire
+**`SA_MZ_plot(camber)`**
+
+Generates a plot of slip angle vs aligning torque curves across all the different applied loads which were tested in the TTC data at a specified camber
+
+Arguments: 
+- camber – (int) either 0, 2, or 4. Represents camber/inclination angle of tire
   
-  axial_force_plot()
-  Generates a plot displaying the maximum axial force which may be provided by the tire at different cambers and applied loads
-  Arguments: None
+**`axial_force_plot()`**
+
+Generates a plot displaying the maximum axial force which may be provided by the tire at different cambers and applied loads
+
+Arguments: None
   
-  axial_coeff_plot()
-  Generates a plot displaying coefficient of friction in the axial direction at different cambers and applied loads
-  Arguments: None
-  
+**`axial_coeff_plot()`**
+
+Generates a plot displaying coefficient of friction in the axial direction at different cambers and applied loads
+
+Arguments: None
    
-  SR_FX_plot(camber)
-  Generates a plot of slip ratio vs axial force curves across all the different applied loads which were tested in the TTC data at a specified camber
-  Arguments: 
-    camber – (int) either 0, 2, or 4. Represents camber/inclination angle of tire
+**`SR_FX_plot(camber)`**
+
+Generates a plot of slip ratio vs axial force curves across all the different applied loads which were tested in the TTC data at a specified camber
+
+Arguments: 
+- camber – (int) either 0, 2, or 4. Represents camber/inclination angle of tire
 
 
  
