@@ -83,10 +83,25 @@ The first array of velocities is described very simply. By re-writing the equati
 
 **Braking Velocity**
 
+The second array of velocities is created by repeatedly calling the `curve_brake` function. This essentially looks at the GG diagram and determines the maximum amount of braking acceleration the car can produce while still maintaining the necessary lateral acceleration from the current velocity and radius via v^2/r=AY. 
 
+However, it does this process *backwards*. Instead of starting from the beginning and braking, the code starts at the end and brakes backward. It does this so that when the car can no longer brake, it can hug the side of the maximum velocity curve (seen in the graph below). After it is done hugging the maximum velocity curve and has some room, it returns back to braking.
 
+<img width="926" height="697" alt="image" src="https://github.com/user-attachments/assets/dfff9f0d-8532-4b71-aa6a-4ee69c37a4c0" />
 
-In progress...
+**Forward Velocity**
+
+The third array of velocities is created by repeatedly calling the `curve_accel` function. This works the same way as the braking velocity curve, except it does not perform this process backwards and instead does it forwards, from beginning to end.
+
+When the forward accelerating curve intersects a braking curve, the forward accelerating curve hugs the braking curve, matching its value. This intersection is the point at which the car switches from forward accelerating to braking.
+
+<img width="917" height="723" alt="Screenshot 2026-07-20 at 6 33 38 PM" src="https://github.com/user-attachments/assets/9884c386-bbef-4934-a7de-4e6995ccd4c0" />
+
+**Final Velocity**
+
+The final velocity is simply calculated by using the smallest velocity from the braking and forward accelerating velocities.
+
+<img width="938" height="712" alt="image" src="https://github.com/user-attachments/assets/c67f74f2-04f1-44e8-bd82-5409c29bd2fc" />
 
 
 **car_model:**
