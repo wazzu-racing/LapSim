@@ -262,7 +262,7 @@ Arguments: None
 Generates a plot displaying coefficient of friction in the axial direction at different cambers and applied loads
 
 Arguments: None
-   
+
 **`SR_FX_plot(camber)`**
 
 Generates a plot of slip ratio vs axial force curves across all the different applied loads which were tested in the TTC data at a specified camber
