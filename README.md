@@ -272,84 +272,115 @@ Arguments:
 
 
  
-**spline_track:**
+### spline_track.py
 
-  class: track(p1x, p1y, p2x, p2y)
-    Generates a track from a series of gates. Gates are defined as a set of two points the car must travel between. The initial track is typically not very good but can be refined using the adjust() method.
-    Variables:
-      All variables are only defined after the lapsim is run using the track with either the run_sim() or plt_sim() methods.
-      t – (float) The total travel time of the car from the last sim which was run
-      nds – (list) The nodespace of the last sim which was run. Contains a list of values. This nodespace is comprised of a list of floats where each float represents a location on the track. Each index of the list corresponds to a specific node. The value of the list at that index represents how far the car must travel from the start of the track to reach that node.
-      v3 – (list) The velocities of the car at each individual node within the node space.
-    Arguments:
-    	p1x – A list of x coordinates for the first point of each gate
-    	p1y – A list of y coordinates for the first point of each gate
-    	p2x – A list of x coordinates for the second point of each gate
-    	p2y - A list of y coordinates for the second point of each gate
+**`track(p1x, p1y, p2x, p2y)`**
+
+Generates a track from a series of gates. Gates are defined as a set of two points the car must travel between. The initial track is typically not very good but can be refined using the `adjust()` method.
+
+Arguments:
+- p1x – A list of x coordinates for the first point of each gate
+- p1y – A list of y coordinates for the first point of each gate
+- p2x – A list of x coordinates for the second point of each gate
+- p2y - A list of y coordinates for the second point of each gate
+
+Important variables:
+- t – (float) The total travel time of the car from the last sim which was run
+- nds – (list) The nodespace of the last sim which was run. Contains a list of values. This nodespace is comprised of a list of floats where each float represents a location on the track. Each index of the list corresponds to a specific node. The value of the list at that index represents how far the car must travel from the start of the track to reach that node.
+- v3 – (list) The velocities of the car at each individual node within the node space.
+
+*Note: All variables are only defined after the lapsim is run with the `run_sim()` function.*
+
+**`run_sim(car, nodes=5000, start_nd = 0, end_nd = 0, start_vel = 0, end_vel = 0)`**
+
+Runs a lapsim simulation for the track. Updates nds, t, and v3 variables in accordance to simulation results 
+
+Arguments:
+- car – any car object from the car_model program
+- nodes – (int) set to 5000 by default. The number of nodes the track is discretized into for the lapsim simulation. More nodes allow for greater simulation precision but requires longer computational time
+- start_nd – (int) the starting curve of the simulation. Set to 0 by default. Set to zero to run sim from beginning of track. Set to 1 to start at end of first curve. Set to 2 to start at end of second curve and so on.
+- end_nd – (int) the final curve of the simulation. Setting to 5 will end the end of the track before the fifth curve. Setting to 6 will set the end of the track before the sixth curve and so on. Set to zero by default. This will set the end of the track to be after the final curve.
+- start_vel - (float) The velocity that the car starts at on the track in inches/second.
+- end_vel - (float) The velocity that the car end at on the track in inches/second.
+
+**`adjust_track(itterations, step)`**
   
-  Methods:
-  	adjust_track(itterations, step)
-    An iterative function that slightly improves the track with each iteration.
+An iterative function that slightly improves (smooths and straightens) the track with each iteration.
    
-  Arguments:
-  	itterations – the number of iterations the function will run
-    step – Increasing step increases the amount the track will be altered with each iteration. Increasing this value will allow the track to be adjusted faster but will also reduce the precision of the adjustments being made. When the track is far from optimal and hasn’t been adjusted much, its typically better to start with a high step value and decrease to a lower value as the track becomes more refined
-    Additional Notes: Running this method for 40 iterations with a step size of 100, and then again for 30 iterations with a step size of 30, and finally for another 30 iterations with a step size of 10 is typically enough to get near ideal track.
-  	
-  run_sim(car, nodes=5000, start=0, end=0)
-    Runs a lapsim simulation for the track. Updates nds, t, and v3 variables in accordance to simulation results 
-    Arguments:
-    	car – any car object from the car_model program
-      nodes – (int) set to 5000 by default. The number of nodes the track is discretized into for the lapsim simulation. More nodes allow for greater simulation precision but requires longer computational time
-      start – (int) the starting curve of the simulation. Set to 0 by default. Set to zero to run sim from beginning of track. Set to 1 to start at end of first curve. Set to 2 to start at end of second curve and so on.
-      end – (int) the final curve of the simulation. Setting to 5 will end the end of the track before the fifth curve. Setting to 6 will set the end of the track before the sixth curve and so on. Set to zero by default. This will set the end of the track to be after the final curve.
-    	
-  plt_sim(car, nodes=5000, start=0, end=0)
-    Exactly the same as run_sim() but also displays a position vs velocity plot after running the sim.
-    Arguments:
-    	car – any car object from the car_model program
-      nodes – (int) set to 5000 by default. The number of nodes the track is discretized into for the lapsim simulation. More nodes allow for greater simulation precision and accuracy but requires longer computational time
-      start – (int) the starting curve of the simulation. Set to 0 by default. Set to zero to run sim from beginning of track. Set to 1 to start at end of first curve. Set to 2 to start at end of second curve and so on.
-      end – (int) the final curve of the simulation. Setting to 5 will set the end of the track before the fifth curve. Setting to 6 will set the end of the track before the sixth curve and so on. Set to zero by default. This will set the end of the track to be after the final curve.
+Arguments:
+- itterations – the number of iterations the function will run
+- step – Increasing step increases the amount the track will be altered with each iteration. Increasing this value will allow the track to be adjusted faster but will also reduce the precision of the adjustments being made. When the track is far from optimal and hasn’t been adjusted much, its typically better to start with a high step value and decrease to a lower value as the track becomes more refined
 
- 
-**Lapsim:**
+*Additional Notes*: Running this method for 40 iterations with a step size of 100, and then again for 30 iterations with a step size of 30, and finally for another 30 iterations with a step size of 10 is typically enough to get near ideal track.
 
-  Class: four_wheel(t_len_tot, t_rad, car, n)
-    A four-wheel-model simulation of a vehicle traveling across a track as fast as possible. Tracks are defined as a series of arcs with constant radii with each arc defined as a radius and an arc length.
-    Arguments:
-      t_len_tot – A list of float values containing the lengths of each constant radius arc that comprises the track. Index 0 corresponds to the first arc, index 1 corresponds to the second arc and so on.
-      t_rad – A list of float values containing the radii of each constant radius arc that comprises the track. Index 0 corresponds to the first arc, index 1 corresponds to the second arc and so on.
-      car – must be a car object from the car_model program
-      n – (int) the number of nodes used to discretize the track for the lapsim. Increasing this value will yield higher precision and accuracy for simulation results but will also increase computational time.
-    Methods:
-    	run()
-      Runs the sim.
-      Arguments: None
-      Returns:
-        t – (float) The total travel time of the car
-        nds – (list) The nodespace developed to discretize the track. This nodespace is comprised of a list of floats where each float represents a location on the track. Each index of the list corresponds to a specific node. The value of the list at that index represents how far along the track, in ft, the node is located.
-        v3 – (list) The velocities of the car at each individual node within the node space. Creating an nds vs v3 plot will result in a velocity vs distance traveled plot displaying the vehicle’s speed at different parts of the track
-           
-  **Drivetrain Model:**
+**`plot_without_UI(show_turns=False)`**
+
+Plots the track with matplotlib.
+
+Arguments:
+- show_turns - (boolean) Still plots the track with matplotlib but shows left turns as red along the track and right turns as green.
+
+**`plt_sim(car, nodes=5000, start=0, end=0)`**
   
-  Class: drivetrain(final_drive = 4.8)
-    Models the drivetrain of the vehicle
-    Arguments:
-      final_drive – (float) set to 4.8 by default. Final drive of drivetrain. This represents the ratio between the gear reduction ratio across the two sprockets connecting the transmission and the rear axle
-    Methods:
-      get_engn_pwr(rpm)
-      returns the power provided by the engine in horsepower at a specified rpm.
-      Arguments: rpm – (float) rpm of the engine
+Displays a position vs velocity plot after running the sim.
+    
+Arguments: None.
+ 
+### lapsim.py
+
+**`four_wheel(t_len_tot, t_rad, turn_dirs, car, n, start_vel = 0, end_vel = 0)`**
+
+A four-wheel-model simulation of a vehicle traveling across a track as fast as possible. Tracks are defined as a series of arcs with constant radii with each arc defined as a radius and an arc length.
+
+Arguments:
+- t_len_tot – A list of float values containing the lengths of each constant radius arc that comprises the track. Index 0 corresponds to the first arc, index 1 corresponds to the second arc and so on.
+- t_rad – A list of float values containing the radii of each constant radius arc that comprises the track. Index 0 corresponds to the first arc, index 1 corresponds to the second arc and so on.
+- turn_dirs - The direction that the car is turning. Matches the indices of t_len_tot and t_rad.
+- car – must be a car object from the car_model program
+- n – (int) the number of nodes used to discretize the track for the lapsim. Increasing this value will yield higher precision and accuracy for simulation results but will also increase computational time.
+- start_vel - (float) The starting velocity of the car.
+- end_vel - (float) The ending velocity of the car.
+
+**`run()`**
+
+Runs the sim.
+
+Arguments: None
+
+Returns:
+- t – (float) The total travel time of the car
+- nds – (list) The nodespace developed to discretize the track. This nodespace is comprised of a list of floats where each float represents a location on the track. Each index of the list corresponds to a specific node. The value of the list at that index represents how far along the track, in ft, the node is located.
+- v3 – (list) The velocities of the car at each individual node within the node space. Creating an nds vs v3 plot will result in a velocity vs distance traveled plot displaying the vehicle’s speed at different parts of the track
+
+*Note: returns all of these in a tuple.*
+
+### drivetrain_model.py
+  
+**`drivetrain(final_drive = 3.8)`**
+
+Models the drivetrain of the vehicle.
+
+Arguments:
+- final_drive – (float) set to 3.8 by default. Final drive of drivetrain. This represents the ratio between the gear reduction ratio across the two sprockets connecting the transmission and the rear axle
+
+**`get_engn_pwr(rpm)`**
+
+returns the power provided by the engine in horsepower at a specified rpm.
+
+Arguments: rpm – (float) rpm of the engine
       
-      get_engn_T(rpm)
-      returns the torque provided by the engine in ft-lb at a specified rpm.
-      Arguments: rpm – (float) rpm of the engine
+**`get_engn_T(rpm)`**
+
+Returns the torque provided by the engine in ft-lb at a specified rpm.
+
+Arguments: rpm – (float) rpm of the engine
       
-      get_F_accel(self, mph, gear='optimal')
-      Returns the maximum possible acceleratory force the engine can provide at a specified travel speed and transmission gear.
-      Arguments:
-        mph – (float) travel speed of vehicle in 
-        gear – (int) set as 'optimal' by default, this will automatically assume the car is utilizing whichever transmission gear maximizes the power delivered to the axle. May also be set as an integer between 0 and 5 inclusive to select a different gear with 0 being the largest gear and 5 being the smallest gear.
+**`get_F_accel(self, mph, gear='optimal')`**
+
+Returns the maximum possible acceleratory force the engine can provide at a specified travel speed and transmission gear.
+
+Arguments:
+- mph – (float) travel speed of vehicle in 
+- gear – (int) set as 'optimal' by default, this will automatically assume the car is utilizing whichever transmission gear maximizes the power delivered to the axle. May also be set as an integer between 0 and 5 inclusive to select a different gear with 0 being the largest gear and 5 being the smallest gear.
       
 
