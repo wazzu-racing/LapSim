@@ -17,6 +17,9 @@ from interface.loading_window import LoadingWindow
 from interface.max_values_window import MaxValuesWindow
 from interface.report_window import ReportWindow
 
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 # Create UI global vars
 track_root = None
 track_fig = None
@@ -564,7 +567,6 @@ class curve():
 
             self.c += num/dom * 1000/self.elem
 
-
             # H = 1
             # if self.dx[i] * self.ddy[i] - self.dy[i] * self.ddx[i] < 0:
             #     H = -1
@@ -959,7 +961,7 @@ class track():
             arc.determine_turn_dirs()
 
     # Convert all arcs on track into lengths and radii, then run the lapsim using those.
-    def run_sim(self, car, nodes = 5000, start_nd = 0, end_nd = 0, start_vel = 0, end_vel = 0):
+    def run_sim(self, car, nodes = 5000, start_nd = 0, end_nd = 0, start_vel = 0, end_vel = 0, clear_arrs=True):
         from gen_lapsim import lapsim
 
         self.car = car
@@ -969,9 +971,10 @@ class track():
 
         self.determine_turn_dirs_on_track()
 
-        self.lens = []
-        self.rad = []
-        self.turn_dirs = []
+        if clear_arrs:
+            self.lens = []
+            self.rad = []
+            self.turn_dirs = []
         for i in self.arcs[start_nd:end_nd]:
             new_len, new_rad, new_turns = i.interpolate()
             self.lens += new_len

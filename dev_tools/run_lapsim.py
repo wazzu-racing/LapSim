@@ -1,4 +1,3 @@
-
 import math
 
 from gen_lapsim.spline_track import track, curve
@@ -11,11 +10,10 @@ class Track_Examine:
     def __init__(self, track_txt_path=""):
         self.racecar = car()
 
-        # self.run_accel(self.racecar, 5000, False)
+        # self.run_skidpad(self.racecar, 1000)
+        # self.run_autocross(self.racecar, 1000)
+        # self.run_accel(self.racecar, 100)
         # self.racecar.plot_forces()
-        # self.run_endurance(self.racecar, 5000)
-        # self.racecar.calculate_RPM_percentage()
-        # self.racecar.drivetrain.engn_rpm_pwr_plot()
 
     def parse_text_to_track_pkl(self, txt_path):
         """
@@ -91,28 +89,28 @@ class Track_Examine:
 
         return self.trk.run_sim(car, nodes=node_count)
 
-    def run_autocross(self, car, node_count):
-        self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf")
+    def run_autocross(self, car, node_count, again=False):
+        if not again:
+            self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Auto_Points_25.rtf")
 
-        self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
-        self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
+            self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
+            self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
         # self.trk.plot_without_UI()
         return self.trk.run_sim(car, nodes=node_count)
 
-    def run_constant_velocity_skidpad(self):
-        # Find max velocity
-        max_vel = math.sqrt(self.racecar.max_corner * 386.09 * 359)
-        AX = -1
-        while AX < 0:
-            max_vel -= 0.001 # decrement by in/s
-            AX = self.racecar.curve_accel(max_vel, 359).AX
+    def run_skidpad(self, car, node_count, again=False):
+        if not again:
+            self.points_x, self.points_y, self.points_x2, self.points_y2 = [], [], [], []
 
-        print(f"max_vel: {max_vel}")
-        self.times.append(self.trk.run_sim(self.racecar, 100, start_vel=max_vel, end_vel=max_vel))
+            self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
 
-    def run_track(self):
-        self.times.append(self.trk.run_sim(self.racecar, 100))
+            self.trk.rad = [300.23622+self.racecar.t_f/2]
+            self.trk.lens = [2 * math.pi * self.trk.rad[0]]
+            self.trk.turn_dirs = [curve.Turn.RIGHT]
+
+        max_vel = math.sqrt(self.racecar.max_corner*0.99*386.0886*self.trk.rad[0])
+        return self.trk.run_sim(car, nodes=1000, start_vel=max_vel, end_vel=max_vel, clear_arrs=False)
 
     # def run(self):
     #     for i in np.linspace(6, 16, 11):
