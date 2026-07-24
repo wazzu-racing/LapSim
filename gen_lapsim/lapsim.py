@@ -222,6 +222,7 @@ class four_wheel:
         # discretizing track
         n = self.n
         self.dx = track / n
+        self.car.brake_model.dx = self.dx
 
         # print(f"nodes n: {n}")
         print(f"dx: {self.dx}")
@@ -362,9 +363,18 @@ class four_wheel:
             t += self.dx / np.average([v3[i], v3[i + 1]])
             self.lapsim_data_storage.time_array.append(t)
         print(f"Time: {t}")
-        # print(f"Time: {t} seconds")
+        # print(f"Time: {t} seconds"
 
-        # self.lapsim_data_storage.brake_temp_post_processing(turn_dirs=self.nturn_dirs, car=self.car, graph=True)
+        # Brake shit
+        # AX_FX = []
+        # for index in range(len(self.lapsim_data_storage.FO_FX_array)):
+        #     AX_FX.append(self.lapsim_data_storage.FO_FX_array[index]+self.lapsim_data_storage.FI_FX_array[index]
+        #                   +self.lapsim_data_storage.RO_FX_array[index]+self.lapsim_data_storage.RI_FX_array[index])
+        # self.car.brake_model.calculate_brake_temps(AX_FX, self.lapsim_data_storage.velocity,
+        #                                            self.lapsim_data_storage.time_array)
+        # self.car.brake_model.get_max_temp(front=True)
+        # self.car.brake_model.get_average_temp(front=True)
+        # self.car.brake_model.graph_brake_data(True)
 
         self.n = n
         self.nds = nds

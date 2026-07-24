@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 import csv
 
-from models import drivetrain_model
+from models import drivetrain_model, brake_model
 from models import tire_model
 from interface.file_management.file_manager import file_manager
 from models import aero_model
@@ -165,6 +165,9 @@ class car():
                 self.drivetrain = pickle.load(f)
         except Exception:
             self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "ENG_RPM_DATA_92.csv")))
+
+        # Make brake model
+        self.brake_model = brake_model.Brakes(self)
 
         self.file_location = ""
 
@@ -604,11 +607,13 @@ class car():
         )
 
         A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
-        A_engn -= self.aero_model.get_drag(v)/self.W_car # incorporate drag
 
         self.engine_force.append(A_engn*self.W_car)
-        self.tires_force.append(interpolated_snippet.AX*self.W_car)
+        self.tires_force.append(interpolated_snippet.FO_FX+interpolated_snippet.FI_FX
+                                 +interpolated_snippet.RO_FX+interpolated_snippet.RI_FX)
         self.vels.append(v)
+
+        A_engn -= self.aero_model.get_drag(v)/self.W_car # incorporate drag
 
         # returns either tire or engine acceleration depending on which is the limiting factor
         if A_engn < interpolated_snippet.AX:
@@ -789,7 +794,7 @@ class car():
         plt.grid()
         plt.show()
 
-racecar = car()
-racecar.traction_curves()
+# racecar = car()
+# racecar.traction_curves()
 # racecar.compute_maximum_AY(350)
 # racecar.curve_brake(1000, 5169.294)
