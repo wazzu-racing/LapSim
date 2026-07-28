@@ -33,7 +33,7 @@ class Brakes:
         self.Pr = 0.71 # unitless, prandtl number of air
         self.K_air = 0.0261 # W/(m*K), thermal conductivity of air at 75 degrees Fahrenheit
         # COOLING COEFFICIENT
-        self.C_C = 0.21 # unitless
+        self.C_C = 0.5 # unitless
 
         self.last_time = 0
 
@@ -54,13 +54,13 @@ class Brakes:
     def add_brake_data(self, F_B, v, t):
 
         def calculate_cooling_coefficient():
-            # Re_U = self.P_air * v*0.0254 * self.D_rotor / self.dynamic_viscity_air # Reynolds number
-            # Re_R = self.P_air * v*0.0254/0.2286 * ((self.D_rotor/2)**2) / self.dynamic_viscity_air
-            # Nu = math.sqrt((0.036*Re_U**0.8)**2 + (0.556*Re_R**0.5)**2) # Nusselt number
-            # h = Nu * self.K_air / self.D_rotor # convection coefficient
-            # k = h * self.A_rotor / (self.M_brake * self.C_p) # cooling coefficient
+            Re_U = self.P_air * v*0.0254 * self.D_rotor / self.dynamic_viscity_air # Reynolds number
+            Re_R = self.P_air * v*0.0254/0.2286 * ((self.D_rotor/2)**2) / self.dynamic_viscity_air
+            Nu = math.sqrt((0.036*Re_U**0.8)**2 + (0.556*Re_R**0.5)**2) # Nusselt number
+            h = Nu * self.K_air / self.D_rotor # convection coefficient
+            k = h * self.A_rotor / (self.M_brake * self.C_p) # cooling coefficient
 
-            k = self.C_C * v / self.max_speed
+            k = self.C_C * (v / self.max_speed)**2
 
             return k
 
@@ -69,8 +69,8 @@ class Brakes:
             K_E_R = F_B*4.44822 * (1 - self.brake_balance) * self.dx*0.0254 # Joules
 
             # Calculate the heat gained from the kinetic energy absorbed by the rotors.
-            F_T_C = -K_E_F * 0.9 / (self.M_brake*2 * self.C_p) # Change in temperature, Celsius
-            R_T_C = -K_E_R * 0.9 / (self.M_brake*2 * self.C_p) # Change in temperature, Celsius
+            F_T_C = -K_E_F * 0.95 / (self.M_brake*2 * self.C_p) # Change in temperature, Celsius
+            R_T_C = -K_E_R * 0.95 / (self.M_brake*2 * self.C_p) # Change in temperature, Celsius
 
             k_c = calculate_cooling_coefficient()
             F_T = self.front_brake_temps[-1] + F_T_C - k_c * (self.front_brake_temps[-1] - self.ambient_temp) * (t - self.last_time)
