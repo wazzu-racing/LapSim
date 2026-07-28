@@ -12,7 +12,7 @@ Please direct any questions to **@jacobtherooster** on the Wazzu Racing Discord 
   - [Track Generation](#track-generation)
   - [Velocity Calculations](#velocity-calculations)
 - [Functions](#functions)
-  - [car_model.py](#car_model.py)
+  - [car_model.py](#carmodelpy)
   - tire_model.py
   - spline_track.py
   - lapsim.py
