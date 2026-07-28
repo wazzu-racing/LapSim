@@ -12,11 +12,11 @@ Please direct any questions to **@jacobtherooster** on the Wazzu Racing Discord 
   - [Track Generation](#track-generation)
   - [Velocity Calculations](#velocity-calculations)
 - [Functions](#functions)
-  - [car_model.py](#carmodelpy)
-  - tire_model.py
-  - spline_track.py
-  - lapsim.py
-  - drivetrain_model.py
+  - [car_model.py](#car_modelpy)
+  - [tire_model.py](tire_modelpy)
+  - [spline_track.py](spline_trackpy)
+  - [lapsim.py](lapsimpy)
+  - [drivetrain_model.py](drivetrain_modelpy)
 
 ### Broad Overview
 
