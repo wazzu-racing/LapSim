@@ -7,18 +7,18 @@ Please direct any questions to **@jacobtherooster** on the Wazzu Racing Discord 
 ### Table of Contents
 
 - [Process](#process)
-  - Overview
-  - GG Diagram
-  - Track Generation
-  - Velocity Calculations
-- Functions
-  - car_model.py
+  - [Overview](#overview)
+  - [GG Diagram](#gg-diagram)
+  - [Track Generation](#track-generation)
+  - [Velocity Calculations](#velocity-calculations)
+- [Functions](#functions)
+  - [car_model.py](#car_model.py)
   - tire_model.py
   - spline_track.py
   - lapsim.py
   - drivetrain_model.py
 
-### Overview
+### Broad Overview
 
 This software simulates a steady state car moving around a track using several vehicle dynamics, mathematics, physics, and data analysis concepts. The main purposes of this software are to
 - Determine the most optimal parameters of the car (final drive ratio, etc.)
