@@ -4,6 +4,20 @@ This README explains what the LapSim is and how it functions.
 
 Please direct any questions to **@jacobtherooster** on the Wazzu Racing Discord server or to jacob.m.mckee@wsu.edu.
 
+### Table of Contents
+
+- [Process](#process)
+  - Overview
+  - GG Diagram
+  - Track Generation
+  - Velocity Calculations
+- Functions
+  - car_model.py
+  - tire_model.py
+  - spline_track.py
+  - lapsim.py
+  - drivetrain_model.py
+
 ### Overview
 
 This software simulates a steady state car moving around a track using several vehicle dynamics, mathematics, physics, and data analysis concepts. The main purposes of this software are to
@@ -15,11 +29,11 @@ This software simulates a steady state car moving around a track using several v
 - **Nikolai Bogdev** - Vehicle Dynamics Lead WR26
 - **Jacob McKee** - Vehicle Dynamics Lead WR27
 
-## Functionality
+## Process
 
 ### Overview
 
-The overall logic of the LapSim is actually relatively simple. In this section I will go through (very broadly) the process that the LapSim executes to compute a lap time, from the very beginning to the end.
+The overall logic of the LapSim is actually relatively simple. In this overview section I will go through (very broadly) the process that the LapSim executes to compute a lap time, from the very beginning to the end.
 
 **1 - Generating the Car Model**
 
@@ -178,6 +192,7 @@ Plots a friction ellipse for the entire vehicle. This displays the max forward a
 
 Arguments: None
 
+
  
 ### tire_model.py
 
@@ -325,6 +340,8 @@ Arguments:
 Displays a position vs velocity plot after running the sim.
     
 Arguments: None.
+
+
  
 ### lapsim.py
 
@@ -353,6 +370,8 @@ Returns:
 - v3 – (list) The velocities of the car at each individual node within the node space. Creating an nds vs v3 plot will result in a velocity vs distance traveled plot displaying the vehicle’s speed at different parts of the track
 
 *Note: returns all of these in a tuple.*
+
+
 
 ### drivetrain_model.py
   
