@@ -325,10 +325,6 @@ class car():
 
             # If changing gears, do not use the maximum possible force
             if changing_gears:
-                self.FO_FY = 0
-                self.FI_FY = 0
-                self.RO_FY = 0
-                self.RI_FY = 0
                 self.FO_FX = 0
                 self.FI_FX = 0
                 self.RO_FX = 0
@@ -672,6 +668,14 @@ class car():
 
         return interpolated_snippet
 
+    # returns snippet (in/s^2) given vehicle speed of the car changing gears
+    # v = speed (in/s)
+    def curve_idle(self, v, r):
+        self.accel(v**2/r*0.00259007918, 0)
+        static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True, speed=v)
+
+        return static_snippet
+
     # Reduces AXs that are higher than self.curves[0].A_accel[0] to that same value.
     def drag_goon(self):
         for outer_index, curve in enumerate(self.curves):
@@ -721,22 +725,6 @@ class car():
 
         AY = high_curve.AY[-1] * next_ratio + low_curve.AY[-1] * prev_ratio
         return AY * 386.1
-
-    # returns drag acceleration (in/s^2) given vehicle speed
-    # v = speed (in/s)
-    def curve_idle(self, v):
-        low_curve, high_curve = self.find_closest_curve(v, True), self.find_closest_curve(v, False)
-
-        next_ratio = 1 - (high_curve.speed - v) / (high_curve.speed - low_curve.speed)
-        prev_ratio = 1 - next_ratio
-
-        static_snippet = self.Car_Data_Snippet.get_interpolated_copy(
-            next_snippet=high_curve.static_snippet,
-            prev_snippet=low_curve.static_snippet,
-            next_ratio=next_ratio,
-            prev_ratio=prev_ratio
-        )
-        return static_snippet
 
     def adjust_weight(self, w):
         ratio = w / self.W_car

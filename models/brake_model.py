@@ -33,7 +33,7 @@ class Brakes:
         self.Pr = 0.71 # unitless, prandtl number of air
         self.K_air = 0.0261 # W/(m*K), thermal conductivity of air at 75 degrees Fahrenheit
         # COOLING COEFFICIENT
-        self.C_C = 0.5 # unitless
+        self.C_C = 0.2 # unitless
 
         self.last_time = 0
 

@@ -54,6 +54,8 @@ class LapSimData:
         self.rpm = []
         # Angle of accel force of car
         self.theta_accel = []
+        # records the nodes at which the car is changing gears
+        self.changing_gears = []
 
         self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
                                 "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
@@ -108,6 +110,8 @@ class LapSimData:
         self.rpm = np.zeros(int(n + 1))
         # theta of force on car
         self.theta_accel = np.zeros(int(n + 1))
+        # records the nodes at which the car is changing gears
+        self.changing_gears = np.zeros(int(n + 1))
 
     # Append a data point to all arrays.
     def append_data_arrays(self, snippet, index):
@@ -167,7 +171,6 @@ class LapSimData:
         self.RO_C[index] = snippet.RO_camber
         self.RI_C[index] = snippet.RI_camber
 
-
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
         max_values_dict = {"max_time": self.time_array[-1], "max_AY": np.max(self.AY),
@@ -197,6 +200,7 @@ class LapSimData:
     # Get the magnitude of the argument vector provided.
     def get_magnitude(self, vector):
         return np.sqrt(np.sum(np.power(vector, 2)))
+
 
 class four_wheel:
 
@@ -330,13 +334,14 @@ class four_wheel:
                     snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in g's
                     snippet.AX *= 32.17 * 12
                 else:
-                    snippet = self.car.curve_idle(v1[int(i)])
+                    snippet = self.car.curve_idle(v1[int(i)], self.nd_rad[int(i)])
                     shifting = True
                     shift_time -= self.dx / v1[int(i)]
                     if shift_time <= 0:
                         gear += 1
                         shift_time = self.car.drivetrain.shift_time
                         shifting = False
+                    self.lapsim_data_storage.changing_gears[int(i)] = 1 # Record shift
                 # Figure out if the maximum possible acceleration currently is not enough to satisfy the next velocity.
                 # If it does not satisfy the next velocity, then replace that next velocity with the velocity produced
                 # from the current axial acceleration.

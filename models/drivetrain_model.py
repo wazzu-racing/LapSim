@@ -1,10 +1,11 @@
+import math
 from matplotlib import pyplot as plt
 import numpy as np
 import csv
 
 class drivetrain:
-    
-    def __init__(self, final_drive = 3.81818182, engine_data = ""):
+
+    def __init__(self, final_drive = 3.1, engine_data = "", limiter=1500, shift=100):
         self.engn_rpm = [] # engine crankshaft rpm
         self.hp = [] # horsepower
         self.engn_T = [] # Torque supplied from engine (ft*lb)
@@ -22,9 +23,9 @@ class drivetrain:
         self.final_drive = final_drive
         self.primary_drive = 1.69
 
-        self.wheel_radius = 9/12 # 9/12 for 92
-        self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
-        self.shift_time = 0.1 # seconds
+        self.tire_radius = 9 / 12 # ft
+        self.circumfrence = 2 * self.tire_radius * np.pi # wheel circumference (ft)
+        self.shift_time = 0.2 # seconds
 
         if engine_data == "": pass
 
@@ -47,10 +48,10 @@ class drivetrain:
         # creating a list of full drive train ratios for each gear
         for i in self.gear_ratios:
             self.full_ratios.append(i * self.primary_drive * self.final_drive)
-        
+
         self.speed = []
         previous_gear = 0
-        for i in range(0, 2000):
+        for i in range(0, 800):
             self.speed.append(i/10) # mph
             wheel_rpm = self.speed[-1] * 88 / self.circumfrence # multiplies speed by 88 to convert from mph to ft/min
             best_gear = previous_gear
@@ -61,28 +62,36 @@ class drivetrain:
             # cycling through the different ratios to find the best 1
             for j in range(0, len(self.full_ratios)):
                 rpm = wheel_rpm * self.full_ratios[j] # engine rpm
-                pwr = self.get_engn_pwr(rpm) # power output of engine
-                engn_T = self.get_engn_T(rpm) # torque output of engine
+                pwr = round(self.get_engn_pwr(rpm), 2) # power output of engine. If this is not rounded bad things happen.
+                engn_T = round(self.get_engn_T(rpm), 2) # torque output of engine
                 axl_T = engn_T * self.full_ratios[j] # torque delivered to axle
                 self.gear_T[j].append(axl_T)
-                if (pwr > max_pwr) and (j >= previous_gear):
+                if i/10*17.6 > limiter and j == previous_gear:
+                    max_pwr = pwr
+                    best_gear = j
+                    best_rpm = rpm
+                    break
+                if pwr > max_pwr and j >= previous_gear:
                     max_pwr = pwr
                     best_gear = j
                     previous_gear = j
                     best_rpm = rpm
-            
-            self.raw_engine_power.append(max_pwr) # index = mph*10
+
             self.gear_vel.append(best_gear) # most effecient gear at index (index = mph*10)
             self.axl_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
             self.axl_pwr.append(self.get_engn_pwr(best_rpm)) # power delivered to axel with most effecient gear (index = mph*10)
             self.rpm.append(rpm)
 
+        # Calculate maximum speed in mph
+        self.max_speed = ((11500 * self.tire_radius * 12 * 2) / (self.gear_ratios[-1] * self.primary_drive * self.final_drive * 336))
+
+    # Interpolates the horsepower from the engine using the rpm provided.
     def get_engn_pwr(self, rpm):
         if rpm <= self.engn_rpm[0]:
             return self.hp[0]
         if rpm >= self.engn_rpm[-1]:
             return 0
-        
+
         for i in range(1, len(self.engn_rpm)):
             if self.engn_rpm[i] >= rpm:
                 indx = i # index of lowest rpm value greater than inputted rpm
@@ -90,29 +99,30 @@ class drivetrain:
                 break                                                                        # equals 0 if rpm = self.engn_rpm[indx-1]
 
         return (1-ratio) * self.hp[indx-1] + ratio * self.hp[indx]
-    
+
     def get_engn_T(self, rpm):
         if rpm <= self.engn_rpm[0]:
             return self.engn_T[0]
         if rpm >= self.engn_rpm[-1]:
             return 0
-        
+
         for i in range(1, len(self.engn_rpm)):
             if self.engn_rpm[i] >= rpm:
                 indx = i # index of lowest rpm value greater than inputted rpm
                 ratio = (rpm - self.engn_rpm[i-1]) / (self.engn_rpm[i] - self.engn_rpm[i-1]) # equals 1 if rpm = self.engn_rpm[indx]
                 break                                                                        # equals 0 if rpm = self.engn_rpm[indx-1]
-        
+
         return (1-ratio) * self.engn_T[indx-1] + ratio * self.engn_T[indx]
-    
+
+    # Interpolates torque and divides by the tire radius to get the resulting force from the engine.
     def get_F_accel(self, mph, gear='optimal'):
-        indx = int(mph*10)
+        indx = math.floor(mph*10)
         ratio = (mph*10) % 1
 
         if gear == 'optimal':
-            return (self.axl_T[indx]*(1-ratio) + self.axl_T[indx+1]*ratio) / self.wheel_radius
+            return (self.axl_T[indx]*(1-ratio) + self.axl_T[indx+1]*ratio) / self.tire_radius
         else:
-            return (self.gear_T[gear][indx]*(1-ratio) + self.gear_T[gear][indx+1]*ratio) / self.wheel_radius
+            return (self.gear_T[gear][indx]*(1-ratio) + self.gear_T[gear][indx+1]*ratio) / self.tire_radius
 
     # Plotting engine rpm vs engine power
     def engn_rpm_pwr_plot(self):
