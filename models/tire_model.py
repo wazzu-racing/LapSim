@@ -740,9 +740,22 @@ class tire():
             self.FX_curves.plot_curve(i, camber)
             leg.append(f'{i} {self.accel_units[self.accel_titles.index('FZ')]}')
 
-        plt.title(f"{self.tire_name}, Axial force vs slip ratio w/ {camber} degrees of camber")
+        plt.title(f"Slip Ratio vs. Axial Force")
         plt.xlabel(f'Slip Ratio')
         plt.ylabel(f'FX ({self.accel_units[self.accel_titles.index('FX')]})')
+        plt.grid()
+        plt.legend(leg)
+        plt.show()
+
+    def SA_FY_camber_plot(self, load):
+        leg = []
+        for i in range(3):
+            self.FY_curves.plot_curve(load, i*2)
+            leg.append(f'-{i*2}° camber')
+
+        plt.title(f"Slip Angle vs. Lateral Force")
+        plt.xlabel(f'Slip Angle')
+        plt.ylabel(f'FY ({self.corner_units[self.corner_titles.index('FY')]})')
         plt.grid()
         plt.legend(leg)
         plt.show()
@@ -794,13 +807,17 @@ class tire():
         plt.legend([self.tire_name, t_other.tire_name])
         plt.grid()
         plt.show()
+#
+# t = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_corner.dat",
+#         "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_drive.dat")
+# t.SA_FY_camber_plot(200)
 
 # R20_18_6 = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_corner.dat",
 #                  "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_drive.dat")
 # R20_16_6 = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_16_6_R20_corner.dat",
 #                   "")
 #
-# R20_18_6.lateral_force_plot()
+# R20_18_6.compare_tire_stiffness(R20_16_6)
 
 # def compare_max_lats(t_16, t_18):
 #     loads = np.linspace(50, 250, 100)

@@ -1124,7 +1124,7 @@ class Validation:
 
     def run_rust_code(self):
         # Paths
-        working_dir = os.path.join(os.getcwd(), "validator")
+        working_dir = os.path.join(os.getcwd())
         print(working_dir)
         rust_exe = os.path.join(working_dir, "target", "release", "gps-data-smoothing-v2")
 

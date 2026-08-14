@@ -5,7 +5,7 @@ import csv
 
 class drivetrain:
     
-    def __init__(self, final_drive = 2.38, engine_data = ""):
+    def __init__(self, final_drive = 4, engine_data = "", limiter=1500):
         self.engn_rpm = [] # engine crankshaft rpm
         self.hp = [] # horsepower
         self.engn_T = [] # Torque supplied from engine (ft*lb)
@@ -25,7 +25,7 @@ class drivetrain:
 
         self.wheel_radius = 9/12 # ft
         self.circumfrence = 2 * self.wheel_radius * np.pi # wheel circumference (ft)
-        self.shift_time = 0.1 # seconds
+        self.shift_time = 0.2 # seconds
 
         if engine_data == "": pass
 
@@ -40,7 +40,7 @@ class drivetrain:
             i = 0
             for line in reader:
                 if i >= 1: # skipping first line
-                    self.engn_rpm.append(int(line[0]))
+                    self.engn_rpm.append(int(float(line[0])))
                     self.hp.append(float(line[1]))
                     self.engn_T.append(float(line[2]))
                 i += 1
@@ -66,12 +66,17 @@ class drivetrain:
                 engn_T = self.get_engn_T(rpm) # torque output of engine
                 axl_T = engn_T * self.full_ratios[j] # torque delivered to axle
                 self.gear_T[j].append(axl_T)
-                if (pwr > max_pwr) and (j >= previous_gear):
+                if i/10*17.6 > limiter and j == previous_gear:
+                    max_pwr = pwr
+                    best_gear = j
+                    best_rpm = rpm
+                    break
+                if pwr > max_pwr and j >= previous_gear:
                     max_pwr = pwr
                     best_gear = j
                     previous_gear = j
                     best_rpm = rpm
-            
+
             self.gear_vel.append(best_gear) # most effecient gear at index (index = mph*10)
             self.axl_T.append(self.get_engn_T(best_rpm) * self.full_ratios[best_gear]) # axel torque with most effecient gear (index = mph*10)
             self.axl_pwr.append(self.get_engn_pwr(best_rpm)) # power delivered to axel with most effecient gear (index = mph*10)

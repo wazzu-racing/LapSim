@@ -9,7 +9,7 @@ import numpy as np
 from pathlib import Path
 import csv
 
-from models import drivetrain_model
+from models import drivetrain_model, brake_model
 from models import tire_model
 from interface.file_management.file_manager import file_manager
 from models import aero_model
@@ -17,23 +17,23 @@ from models import aero_model
 
 class car():
     # weight over front left wheel
-    W_1 = 173
+    W_1 = 165
     # weight over front right wheel
-    W_2 = 173
+    W_2 = 165
     # weight over rear left wheel
-    W_3 = 157.5
+    W_3 = 165
     # weight over rear right wheel
-    W_4 = 157.5
+    W_4 = 165
     # length of wheelbase (in)
     l = 60
     # vertical center of gravity (in)
-    h = 11.6
+    h = 12.4
     # in, roll axis height, front and rear
-    z_rf = 2.3
-    z_rr = 2.5
+    z_rf = 3.1
+    z_rr = 3.3
     # Track widths, front and rear (in)
-    t_f = 49
-    t_r = 48
+    t_f = 47
+    t_r = 46
     # lb/in, ride rates, front and rear
     K_RF = 179.72219842152035 # lbs/in
     K_RR = 163.58335639299756 # lbs/in
@@ -41,10 +41,10 @@ class car():
     K_rollF = 215203 # lb*in/rad
     K_rollR = 195952 # lb*in/rad
     #deg/in, camber rates for front and rear
-    CMB_RT_F = 1.5
-    CMB_RT_R = 1.75
+    CMB_RT_F = 1.7
+    CMB_RT_R = 1.5
     # deg, static camber rates for front and rear
-    CMB_STC_F = 2
+    CMB_STC_F = 1
     CMB_STC_R = 1
     # in, maximum displacement in jounce for suspension, front and rear
     max_jounce_f = 1
@@ -135,6 +135,9 @@ class car():
     vels = []
     tires_force = []
 
+    engine_accel = []
+    tires_accel = []
+    rpm = []
 
 
     # aero csv file delimiter
@@ -167,6 +170,9 @@ class car():
                 self.drivetrain = pickle.load(f)
         except Exception:
             self.drivetrain = drivetrain_model.drivetrain(engine_data=file_manager.get_temp_folder_path(os.path.join(Path(__file__).resolve().parent.parent, "config_data", "ENG_RPM_DATA_92.csv")))
+
+        # Making brake model
+        self.brake_model = brake_model.Brakes(self)
 
         self.file_location = ""
 
@@ -444,7 +450,7 @@ class car():
 
     # Returns true if the car can generate the axial traction based on AY and AX. Returns false otherwise.
     # AY is magnitude of lateral acceleration, AX is magnitude of axial acceleration, both are measured in g's
-    def accel(self, AY, AX, bitch = False):
+    def accel(self, AY, AX):
         self.instant_AY, self.instant_AX = AY, AX
 
         W_f = self.W_f - self.h*self.W_car*AX/self.l # Vertical force on front track (lb)
@@ -503,12 +509,6 @@ class car():
         else:
             FX = self.FX_out_f + self.FX_in_f + self.FX_out_r + self.FX_in_r
 
-        if bitch:
-            print(self.FX_out_f / self.W_out_f)
-            print(self.FX_in_f / self.W_in_f)
-            print(self.FX_out_r / self.W_out_r)
-            print(self.FX_in_r / self.W_in_r)
-
         # Checking if the car can generate the necessary axial tire traction
         if abs(FX/self.W_car) < abs(AX):return False
         else: return True
@@ -564,11 +564,14 @@ class car():
         if not returned:
             snippet = copy.deepcopy(self.accel_car_data_snippets[-1])
 
-        A_engn = self.drivetrain.get_F_accel(int(v*0.0568182), transmission_gear) / self.W_car # engine acceleration G's
+        A_engn = self.drivetrain.get_F_accel(v*0.0568182, transmission_gear) / self.W_car # engine acceleration G's
 
         self.engine_force.append(A_engn*self.W_car)
+        self.engine_accel.append(A_engn-drag/self.W_car)
         self.tires_force.append(snippet.AX*self.W_car)
+        self.tires_accel.append(snippet.AX-drag/self.W_car)
         self.vels.append(v)
+        self.rpm.append(self.drivetrain.rpm[int(v*0.568182)])
 
         # returns either tire or engine acceleration depending on which is the limiting factor
         if A_engn < snippet.AX:
@@ -652,8 +655,30 @@ class car():
     def plot_forces(self):
         plt.plot(self.vels, self.engine_force)
         plt.plot(self.vels, self.tires_force)
+        # plt.title('5:1 Final Drive')
         plt.xlabel('Velocity (in/s)')
         plt.ylabel('Force (lbs)')
         plt.legend(['engine force', 'tire force'])
         plt.grid()
         plt.show()
+
+    def plot_accel(self):
+        plt.plot(self.vels, self.engine_accel)
+        plt.plot(self.vels, self.tires_accel)
+        plt.xlabel('Velocity (in/s)')
+        plt.ylabel('Acceleration (G\'s)')
+        plt.legend(['Car AX from Engine', 'Car AX from Tires'])
+        plt.grid()
+        plt.show()
+
+    def calculate_RPM_percentage(self):
+        count = 0
+        for rpm in self.rpm:
+            if rpm >= 2000:
+                count += 1
+        percent = count/len(self.rpm) * 100
+        print(f"{percent:.2f}%")
+        return percent
+
+# racecar = car()
+# racecar.traction_curve()
