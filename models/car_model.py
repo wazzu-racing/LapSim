@@ -439,7 +439,7 @@ class car():
             self.accel(0, 0)
             self.curves[-1].static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True, speed=speed) # Used to describe the state of the car during gear changes
 
-        # self.drag_goon()
+        self.force_drag()
 
     def recalculate_characteristics(self):
         # weight over front track
