@@ -17,14 +17,17 @@ class Track_Examine:
     def __init__(self, track_txt_path=""):
         self.racecar = car()
 
-        # self.run_endurance(self.racecar, 2500)
-        # self.plot_forces("RO")
-        # self.trk.sim.plot_velocities()
-        # self.export_csv()
-        # self.run_accel(self.racecar, 1000)
-        # self.racecar.plot_forces()
+        self.run_endurance(self.racecar, node_count=3000)
+        # self.export_csv(time_increment=0.005)
 
-        # print(self.estimate_cooling_coefficient(max_temp=750))
+        # self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSimV1_Aero"
+        #                              "/config_data/track_points/Diff_Testing.rtf")
+        #
+        # self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, self.racecar, loop=True,
+        #                  repeat=10)
+        # self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
+        #
+        # self.trk.run_sim(self.racecar, nodes=2000, clear_arrs=True)
 
     def parse_text_to_track_pkl(self, txt_path):
         """
@@ -98,7 +101,7 @@ class Track_Examine:
             self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
             self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
-        return self.trk.run_sim(car, nodes=node_count)
+        return self.trk.run_sim(car, nodes=node_count, clear_arrs=True)
 
     def run_autocross(self, car, node_count, again=False):
         if not again:
@@ -108,18 +111,26 @@ class Track_Examine:
             self.trk.adjust_track([40, 30, 30, 80], [100, 30, 10, 5])
 
         # self.trk.plot_without_UI()
-        return self.trk.run_sim(car, nodes=node_count)
+        return self.trk.run_sim(car, nodes=node_count, clear_arrs=True)
 
-    def run_constant_velocity_skidpad(self):
-        # Find max velocity
-        max_vel = math.sqrt(self.racecar.max_corner * 386.09 * 359)
-        AX = -1
-        while AX < 0:
-            max_vel -= 0.001 # decrement by in/s
-            AX = self.racecar.curve_accel(max_vel, 359).AX
+    def run_skidpad(self, car, node_count, again=False):
+        if not again:
+            self.points_x, self.points_y, self.points_x2, self.points_y2 = [], [], [], []
 
-        print(f"max_vel: {max_vel}")
-        self.times.append(self.trk.run_sim(self.racecar, 100, start_vel=max_vel, end_vel=max_vel))
+            self.trk = track(self.points_x, self.points_y, self.points_x2, self.points_y2, car, loop=True)
+
+            self.trk.rad = [300.23622+self.racecar.t_f/2]
+            self.trk.lens = [2 * math.pi * self.trk.rad[0]]
+            self.trk.turn_dirs = [curve.Turn.RIGHT]
+
+        # Calculate maximum velocity given radius
+        output_v, prev_v = 5000, 0 # in/s
+        while abs(output_v - prev_v) > 0.0001 and self.trk.rad[0] < 10000000:
+            prev_v = output_v
+            AY = car.compute_maximum_AY(output_v) # in/s^2
+            output_v = math.sqrt(AY*self.trk.rad[0])
+
+        return self.trk.run_sim(car, nodes=node_count, start_vel=output_v, end_vel=output_v, clear_arrs=False)
 
     def plot_forces(self, tire="FO", x=True, y=True, z=True):
         tk = tkinter.Tk()
@@ -154,63 +165,167 @@ class Track_Examine:
         tk.mainloop()
 
     def export_csv(self, time_increment:float=0):
-        # Makes arrays of FX, FY, FZ that correspond to the FRONT RIGHT tire
+
+        # RO_FX_unc, RI_FX_unc = (self.trk.sim.lapsim_data_storage.RO_FX_uncertainty,
+        #                         self.trk.sim.lapsim_data_storage.RI_FX_uncertainty)
+        # RO_FY_unc, RI_FY_unc = (self.trk.sim.lapsim_data_storage.RO_FY_uncertainty,
+        #                         self.trk.sim.lapsim_data_storage.RI_FY_uncertainty)
+
         turn_dirs = self.trk.sim.nturn_dirs
-        RO_FX, RI_FX = self.trk.sim.lapsim_data_storage.RO_FX_array, self.trk.sim.lapsim_data_storage.RI_FX_array
-        RO_FY, RI_FY = self.trk.sim.lapsim_data_storage.RO_FY_array, self.trk.sim.lapsim_data_storage.RI_FY_array
         RO_FZ, RI_FZ = self.trk.sim.lapsim_data_storage.RO_load_array, self.trk.sim.lapsim_data_storage.RI_load_array
-        FX, FY, FZ = [], [], []
-        for i in range(len(RO_FX)):
+        FO_FZ, FI_FZ = self.trk.sim.lapsim_data_storage.FO_load_array, self.trk.sim.lapsim_data_storage.FI_load_array
+        RO_FY, RI_FY = self.trk.sim.lapsim_data_storage.RO_FY_array, self.trk.sim.lapsim_data_storage.RI_FY_array
+        FO_FY, FI_FY = self.trk.sim.lapsim_data_storage.FO_FY_array, self.trk.sim.lapsim_data_storage.FI_FY_array
+        RO_FX, RI_FX = self.trk.sim.lapsim_data_storage.RO_FX_array, self.trk.sim.lapsim_data_storage.RI_FX_array
+        FO_FX, FI_FX = self.trk.sim.lapsim_data_storage.FO_FX_array, self.trk.sim.lapsim_data_storage.FI_FX_array
+        R_FZ_right, R_FZ_left, F_FZ_right, F_FZ_left = [], [], [], []
+        R_FY_right, R_FY_left, F_FY_right, F_FY_left = [], [], [], []
+        R_FX_right, R_FX_left, F_FX_right, F_FX_left = [], [], [], []
+        # FX_unc, FY_unc = [], []
+        for i in range(len(RO_FZ)):
             if turn_dirs[i] == curve.Turn.LEFT:
-                FX.append(RO_FX[i])
-                FY.append(RO_FY[i])
-                FZ.append(RO_FZ[i])
+                # FZ
+                R_FZ_right.append(RO_FZ[i])
+                R_FZ_left.append(RI_FZ[i])
+                F_FZ_right.append(FO_FZ[i])
+                F_FZ_left.append(FI_FZ[i])
+                # FY
+                R_FY_right.append(RO_FY[i])
+                R_FY_left.append(RI_FY[i])
+                F_FY_right.append(FO_FY[i])
+                F_FY_left.append(FI_FY[i])
+                # FX
+                R_FX_right.append(RO_FX[i])
+                R_FX_left.append(RI_FX[i])
+                F_FX_right.append(FO_FX[i])
+                F_FX_left.append(FI_FX[i])
+
+                # FX_unc.append(RO_FX_unc[i])
+                # FY_unc.append(RO_FY_unc[i])
             else:
-                FX.append(RI_FX[i])
-                FY.append(RI_FY[i])
-                FZ.append(RI_FZ[i])
+                # FZ
+                R_FZ_right.append(RI_FZ[i])
+                R_FZ_left.append(RO_FZ[i])
+                F_FZ_right.append(FI_FZ[i])
+                F_FZ_left.append(FO_FZ[i])
+                # FY
+                R_FY_right.append(RI_FY[i])
+                R_FY_left.append(RO_FY[i])
+                F_FY_right.append(FI_FY[i])
+                F_FY_left.append(FO_FY[i])
+                # FX
+                R_FX_right.append(RI_FX[i])
+                R_FX_left.append(RO_FX[i])
+                F_FX_right.append(FI_FX[i])
+                F_FX_left.append(FO_FX[i])
+
+                # FX_unc.append(RI_FX_unc[i])
+                # FY_unc.append(RI_FY_unc[i])
 
         time = self.trk.sim.lapsim_data_storage.time_array
+        # S_tor = self.trk.sim.lapsim_data_storage.sprocket_torque
         RPM = [i/9/2/math.pi*60 for i in self.trk.sim.lapsim_data_storage.velocity]
 
-        MX = [i*8.8 for i in FY]
-        MY = [i*8.8 for i in FX]
+        # MX = [i*8.8 for i in FY]
+        # MY = [i*8.8 for i in FX]
 
         f = open("data.csv", "w")
         writer = csv.writer(f)
 
         if time_increment != 0:
             iterate_by = time_increment # seconds
-            inter_FX, inter_FY, inter_FZ, inter_MX, inter_MY, inter_RPM, inter_time = [], [], [], [], [], [], []
+            inter_time = []
+            inter_RPM = []
+            inter_R_FZ_right, inter_R_FZ_left, inter_F_FZ_right, inter_F_FZ_left = [], [], [], []
+            inter_R_FY_right, inter_R_FY_left, inter_F_FY_right, inter_F_FY_left = [], [], [], []
+            inter_R_FX_right, inter_R_FX_left, inter_F_FX_right, inter_F_FX_left = [], [], [], []
+            # inter_S_tor = []
             next_time = 0
             for index, t in enumerate(time):
-                if FX[index] < 0:
+                if index == 273:
                     pass
                 if t > next_time:
                     amount = math.ceil((t - next_time)/iterate_by)
                     for i in range(amount):
                         inter_time.append(next_time)
-                        inter_FX.append(FX[index-1] + (FX[index]-FX[index-1])/(t-time[index-1])*(next_time-time[index-1]))
-                        inter_FY.append(FY[index-1] + (FY[index]-FY[index-1])/(t-time[index-1])*(next_time-time[index-1]))
-                        inter_FZ.append(FZ[index-1] + (FZ[index]-FZ[index-1])/(t-time[index-1])*(next_time-time[index-1]))
-                        inter_MX.append(MX[index-1] + (MX[index]-MX[index-1])/(t-time[index-1])*(next_time-time[index-1]))
-                        inter_MY.append(MY[index-1] + (MY[index]-MY[index-1])/(t-time[index-1])*(next_time-time[index-1]))
-                        inter_RPM.append(RPM[index-1] + (RPM[index]-RPM[index-1])/(t-time[index-1])*(next_time-time[index-1]))
-                        next_time += iterate_by
-                    else:
+
+                        ## RPM ##
+                        inter_RPM.append(RPM[index-1] + (RPM[index]-RPM[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+
+                        ## Rear Tires ##
+                        # FZ
+                        inter_R_FZ_right.append(R_FZ_right[index-1] + (R_FZ_right[index]-R_FZ_right[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        inter_R_FZ_left.append(R_FZ_left[index-1] + (R_FZ_left[index]-R_FZ_left[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        # FY
+                        inter_R_FY_right.append(R_FY_right[index-1] + (R_FY_right[index]-R_FY_right[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        inter_R_FY_left.append(R_FY_left[index-1] + (R_FY_left[index]-R_FY_left[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        # FX
+                        inter_R_FX_right.append(R_FX_right[index-1] + (R_FX_right[index]-R_FX_right[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        inter_R_FX_left.append(R_FX_left[index-1] + (R_FX_left[index]-R_FX_left[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+
+                        ## Front Tires ##
+                        # FZ
+                        inter_F_FZ_right.append(F_FZ_right[index-1] + (F_FZ_right[index]-F_FZ_right[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        inter_F_FZ_left.append(F_FZ_left[index-1] + (F_FZ_left[index]-F_FZ_left[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        # FY
+                        inter_F_FY_right.append(F_FY_right[index-1] + (F_FY_right[index]-F_FY_right[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        inter_F_FY_left.append(F_FY_left[index-1] + (F_FY_left[index]-F_FY_left[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        # FX
+                        inter_F_FX_right.append(F_FX_right[index-1] + (F_FX_right[index]-F_FX_right[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+                        inter_F_FX_left.append(F_FX_left[index-1] + (F_FX_left[index]-F_FX_left[index-1])/(
+                                t-time[index-1])*(next_time-time[index-1]))
+
                         next_time += iterate_by
 
-            writer.writerow(["Time (sec)", "FX (lbs)", "FY (lbs)", "FZ (lbs)", "MX (in*lbs)", "MY (in*lbs)", "RPM"])
+                        # Uncertainties
+                        # inter_FX_unc.append(FX_unc[index-1] + (FX_unc[index]-FX_unc[index-1])/(t-time[index-1])*(
+                        #         next_time-time[index-1]))
+                        # inter_FY_unc.append(FY_unc[index-1] + (FY_unc[index]-FY_unc[index-1])/(t-time[index-1])*(
+                        #         next_time-time[index-1]))
+
+                else:
+                    pass
+
+            writer.writerow(["Time (sec)", "Wheel RPM", "FZ Front Right (lbs)", "FZ Front Left (lbs)",
+                             "FZ Rear Right (lbs)",
+                             "FZ Rear Left (lbs)", "FY Front Right (lbs)", "FY Front Left (lbs)", "FY Rear Right (lbs)",
+                             "FY Rear Left (lbs)", "FX Front Right (lbs)", "FX Front Left (lbs)", "FX Rear Right (lbs)",
+                             "FX Rear Left (lbs)"])
             for index in range(len(inter_time)):
-                writer.writerow([round(inter_time[index], 3), round(inter_FX[index], 3), round(inter_FY[index], 3), round(inter_FZ[index], 3), round(inter_MX[index], 3), round(inter_MY[index], 3), round(inter_RPM[index], 3)])
+                writer.writerow([round(inter_time[index], 4), round(inter_RPM[index], 1), round(inter_F_FZ_right[
+                                 index], 1), round(inter_F_FZ_left[index], 1), round(inter_R_FZ_right[index], 1),
+                                 round(inter_R_FZ_left[index], 1), round(inter_F_FY_right[
+                                 index], 1), round(inter_F_FY_left[index], 1), round(inter_R_FY_right[index], 1),
+                                 round(inter_R_FY_left[index], 1), round(inter_F_FX_right[
+                                 index], 1), round(inter_F_FX_left[index], 1), round(inter_R_FX_right[index], 1),
+                                 round(inter_R_FX_left[index], 1)])
         else:
-            writer.writerow(["Time (sec)", "FX (lbs)", "FY (lbs)", "FZ (lbs)", "MX (in*lbs)", "MY (in*lbs)", "RPM"])
+            writer.writerow(["Time (sec)", "Wheel RPM", "FZ Front Right (lbs)", "FZ Front Left (lbs)",
+                             "FZ Rear Right (lbs)",
+                             "FZ Rear Left (lbs)", "FY Front Right (lbs)", "FY Front Left (lbs)", "FY Rear Right (lbs)",
+                             "FY Rear Left (lbs)", "FX Front Right (lbs)", "FX Front Left (lbs)", "FX Rear Right (lbs)",
+                             "FX Rear Left (lbs)"])
             for index in range(len(time)):
-                writer.writerow([time[index], FX[index], FY[index], FZ[index], MX[index], MY[index], RPM[index]])
+                writer.writerow([round(time[index], 4), round(RPM[index], 1), round(F_FZ_right[
+                                 index], 1), round(F_FZ_left[index], 1), round(R_FZ_right[index], 1),
+                                 round(R_FZ_left[index], 1), round(F_FY_right[
+                                 index], 1), round(F_FY_left[index], 1), round(R_FY_right[index], 1),
+                                 round(R_FY_left[index], 1), round(F_FX_right[
+                                 index], 1), round(F_FX_left[index], 1), round(R_FX_right[index], 1),
+                                 round(R_FX_left[index], 1)])
         f.close()
-
-    def run_track(self):
-        self.times.append(self.trk.run_sim(self.racecar, 100))
 
     def estimate_cooling_coefficient(self, max_temp):
         self.parse_text_to_track_pkl("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/track_points/Points for Endurance.rtf")

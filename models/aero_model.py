@@ -6,7 +6,7 @@ class Aero:
         self.racecar = racecar
 
         self.F_drag = 41 # lbs at speed
-        self.F_down = 105 # lbs at speed
+        self.F_down = 100 # lbs at speed
         self.speed = 616 # in/s
         self.P_air = 4.43e-5 # lbs/in^3
         self.COP_X = 6 # inches, behind CG

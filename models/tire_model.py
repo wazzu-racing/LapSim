@@ -1,18 +1,23 @@
 import math
+from copy import deepcopy
+
 from matplotlib import pyplot as plt
 import scipy
 import numpy as np
 import csv
 import copy
+import pandas as pd
 
 # tire magic function
 def magic_func(x, B, C, D, E):
     return D * np.sin(C * np.arctan(B*x - E * (B*x - np.arctan(B*x))))
 
-class magic_curve():
+class AverageCurve:
     def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1):
-        self.x = copy.deepcopy(x)
-        self.y = copy.deepcopy(y) * coeff
+        self.x = deepcopy(x)
+        self.y = deepcopy(y) * coeff
+
+        self.y_avg = []
 
         if data_cutoff:
             self.x = self.x[int(len(self.x)*0.15) : int(len(self.x)*0.85)]
@@ -22,7 +27,7 @@ class magic_curve():
             # vertically centering the y data around the origin
             offset = (self.y.min() + self.y.max()) / 2
             self.y -= offset
-        
+
         # centering the raw data curve horizontally
         center = 0
         for i in range(int(len(y)*0.5)):
@@ -42,7 +47,58 @@ class magic_curve():
                 self.x -= offset # shifting the domain such that the raw data curve intersects the origin
                 center = j # index of center
                 break
-        
+
+        df = pd.DataFrame({'values': self.y})
+        temp_y_avg = df['values'].rolling(window=15).mean().to_numpy()
+        indicies = []
+        for index, i in enumerate(temp_y_avg):
+            if np.isnan(i):
+                indicies.append(index)
+
+        # Clean temp_y_avg and put into perm array
+        for i in range(len(temp_y_avg)):
+            if np.isnan(temp_y_avg[i]):
+                self.y_avg.append(temp_y_avg[indicies[-1]+1])
+            else:
+                self.y_avg.append(temp_y_avg[i])
+
+    def get_y(self, x): # Where x is domain
+        return np.interp(x, np.flip(self.x), np.flip(self.y_avg))
+
+class magic_curve():
+    def __init__(self, x, y, center_vertical=False, data_cutoff=False, coeff=1):
+        self.x = copy.deepcopy(x)
+        self.y = copy.deepcopy(y) * coeff
+
+        if data_cutoff:
+            self.x = self.x[int(len(self.x)*0.15) : int(len(self.x)*0.85)]
+            self.y = self.y[int(len(self.y)*0.15) : int(len(self.y)*0.85)]
+
+        if center_vertical:
+            # vertically centering the y data around the origin
+            offset = (self.y.min() + self.y.max()) / 2
+            self.y -= offset
+
+        # centering the raw data curve horizontally
+        center = 0
+        for i in range(int(len(y)*0.5)):
+            x0 = int(len(y)*0.5)
+            y0 = y[x0]
+
+            j = x0 + i
+            if ((y[j] <= 0) and (y0 >= 0)) or ((y[j] >= 0) and (y0 <= 0)): # determines where y crosses the horizontal axis
+                offset = x[j] # determining the horizontal offset from the origin
+                self.x -= offset # shifting the domain such that the raw data curve intersects the origin
+                center = j # index of center
+                break
+
+            j = x0 - i
+            if ((y[j] <= 0) and (y0 >= 0)) or ((y[j] >= 0) and (y0 <= 0)): # determines where y crosses the horizontal axis
+                offset = x[j] # determining the horizontal offset from the origin
+                self.x -= offset # shifting the domain such that the raw data curve intersects the origin
+                center = j # index of center
+                break
+
         # determining slope around center using change in y over change in x through a section of data
         offset = int(len(x) * 0.015)
         x1 = x[center - offset]
@@ -67,11 +123,9 @@ class magic_curve():
 
         self.coeff = popt
         self.max = abs(popt[2])
-    
+
     def eval(self, x):
         return magic_func(x, *self.coeff)
-
-
 
 # stores a section of data and finds the average and standard devation of each list of data
 class data_section():
@@ -107,13 +161,15 @@ class curve_set():
             data_sets = parent.accel_data_sets
         else:
             raise SystemExit('Invalid Data type.')
-        
+
         x_index = titles.index(x_data)
         y_index = titles.index(y_data)
         self.curves = []
+        self.avg_curves = []
 
         for i in cambers:
             self.curves.append([])
+            self.avg_curves.append([])
             for j in loads:
                 if (data_type == 'corner') or (data_type == 'cornering'):
                     section = data_sets[parent.find_section('cornering', [['IA', i], ['FZ', -j]], [['P', 9, 99]])]
@@ -123,11 +179,12 @@ class curve_set():
                 x = section.data[x_index]
                 y = section.data[y_index] * coeff
                 self.curves[-1].append(magic_curve(x, y, center_vertical, data_cutoff))
+                self.avg_curves[-1].append(AverageCurve(x, y, center_vertical, data_cutoff))
 
         self.loads = loads
         self.cambers = cambers
         self.curve_domain = curve_domain
-        
+
     def eval(self, x, load, camber):
         ld_list = [0] + self.loads
         for i in range(len(ld_list)-1):
@@ -136,23 +193,23 @@ class curve_set():
                 prv_ld = i-1
                 ld_R = (load - ld_list[i]) / (ld_list[i+1] - ld_list[i]) # equals 1 when load == nxt_ld
                 break                                                    # equals 0 when load == prv_ld
-        
+
         for i in range(len(self.cambers)-1):
             if (i >= len(self.cambers)-2) or (self.cambers[i+1] >= camber):
                 nxt_cmbr = i+1
                 prv_cmbr = i
                 cmbr_R = (camber - self.cambers[i]) / (self.cambers[i+1] - self.cambers[i]) # equals 1 when camber == nxt_cmbr
                 break                                                                       # equals 0 when camber == prv_cmbr
-        
+
         output = 0
         output += self.curves[nxt_cmbr][nxt_ld].eval(x) * cmbr_R * ld_R
         output += self.curves[prv_cmbr][nxt_ld].eval(x) * (1-cmbr_R) * ld_R
         if prv_ld >= 0:
             output += self.curves[nxt_cmbr][prv_ld].eval(x) * cmbr_R * (1-ld_R)
             output += self.curves[prv_cmbr][prv_ld].eval(x) * (1-cmbr_R) * (1-ld_R)
-        
+
         return output
-    
+
     def get_max(self, load, camber):
         ld_list = [0] + self.loads
         for i in range(len(ld_list)-1):
@@ -161,21 +218,21 @@ class curve_set():
                 prv_ld = i-1
                 ld_R = (load - ld_list[i]) / (ld_list[i+1] - ld_list[i]) # equals 1 when load == nxt_ld
                 break                                                    # equals 0 when load == prv_ld
-        
+
         for i in range(len(self.cambers)-1):
             if (i >= len(self.cambers)-2) or (self.cambers[i+1] >= camber):
                 nxt_cmbr = i+1
                 prv_cmbr = i
                 cmbr_R = (camber - self.cambers[i]) / (self.cambers[i+1] - self.cambers[i]) # equals 1 when camber == nxt_cmbr
                 break                                                                       # equals 0 when camber == prv_cmbr
-        
+
         output = 0
         output += self.curves[nxt_cmbr][nxt_ld].coeff[2] * cmbr_R * ld_R
         output += self.curves[prv_cmbr][nxt_ld].coeff[2] * (1-cmbr_R) * ld_R
         if prv_ld >= 0:
             output += self.curves[nxt_cmbr][prv_ld].coeff[2] * cmbr_R * (1-ld_R)
             output += self.curves[prv_cmbr][prv_ld].coeff[2] * (1-cmbr_R) * (1-ld_R)
-        
+
         return output
 
     def plot_curve(self, load, camber, x='none'):
@@ -185,11 +242,16 @@ class curve_set():
         cmbr_indx = self.cambers.index(camber)
         curve = self.curves[cmbr_indx][load_indx]
         plt.plot(x, curve.eval(x))
-        
 
-        
+    def plot_avg_curve(self, load, camber, x='none'):
+        if x == 'none':
+            x = self.curve_domain
+        load_indx = self.loads.index(load)
+        cmbr_indx = self.cambers.index(camber)
+        curve = self.avg_curves[cmbr_indx][load_indx]
+        plt.plot(x, curve.get_y(x))
 
-        
+
 
 
 class tire():
@@ -220,7 +282,7 @@ class tire():
                         corner_units = line # defining units using third line in reader
                 else:
                     corner_data.append(np.array(line).astype(float)) # appending all lines after line 3 to the corner_data
-        
+
         # transposing corner_data: this makes each row correspond to the equal index titles and units in corner_titles and corner_units
         corner_data = np.transpose(corner_data)
 
@@ -245,8 +307,8 @@ class tire():
         arr = [[], [], []]
 
         # set to True when after appending to arr[1] to mark beginning of set but still waiting to find end of set to append to arr[2]
-        appending = False 
-        for i in range(len(corner_data[indx])):            
+        appending = False
+        for i in range(len(corner_data[indx])):
             # checks to make sure a new set of data is not currently being added to arr
             if not appending:
                 # checks if slip angle values are within the necessary ranges to mark a new set of data in arr
@@ -266,10 +328,10 @@ class tire():
                 elif 3.5 < corner_data[indx, i] < 4.5:
                     arr[0].append(4)
                     appending = True
-                
+
                 # records starting value of new dataset in arr[1] if a new set was created
                 if appending: arr[1].append(i)
-            
+
             # checks if slip angle value are no longer near -12, -4, 0, 4, or 12 deg
             if appending and not ((-0.1 < corner_data[indx, i] < 0.1) or (corner_data[indx, i] > 11.8) or (corner_data[indx, i] < -11.8) or (-4.5 < corner_data[indx, i] < -3.5) or (3.5 < corner_data[indx, i] < 4.5)):
                 arr[2].append(i)  # records the index for the end of the dataset if slip angle values have changed
@@ -285,7 +347,7 @@ class tire():
         for i in range(half, len(arr[0])-half):
             if arr[0][i-half : i+1+half] == sequence:
                 self.corner_set_index.append([int((arr[1][i-2] + arr[2][i-2])/2), int((arr[1][i+2] + arr[2][i+2])/2)])
-        
+
         # creating a list of data_section objects for each set of useful data
         self.corner_data_sets = []
         for i in self.corner_set_index:
@@ -315,7 +377,7 @@ class tire():
         self.corner_units = corner_units
         self.corner_loads = corner_loads
         self.corner_camber_angles = [0, 2, 4]
-        
+
         self.FY_curves = curve_set(self, 'corner', 'SA', 'FY', np.linspace(-20, 20, 101), coeff=0.5)
         self.aligning_torque = curve_set(self, 'corner', 'SA', 'MZ', np.linspace(-15, 15, 101), center_vertical=True, data_cutoff=True)
 
@@ -325,6 +387,14 @@ class tire():
             for j in range(len(corner_loads)):
                 self.max_lateral_forces[-1].append(self.FY_curves.curves[i][j].coeff[2])
 
+        self.avg_max_lateral_forces = []
+        for i in range(len(self.corner_camber_angles)):
+            self.avg_max_lateral_forces.append([])
+            for j in range(len(corner_loads)):
+                self.avg_max_lateral_forces[-1].append(max(self.FY_curves.avg_curves[i][j].get_y(
+                    self.FY_curves.curve_domain)))
+        pass
+
 
 
         ''' ================================================== '''
@@ -332,7 +402,7 @@ class tire():
         ''' ================================================== '''
 
         if acceleration_data_file == "": return # skips the rest of the function if acceleration data is missing
-        
+
         accel_data = []   # empty array to store acceleration data value
         accel_titles = [] # empty array for the titles of each acceleration dataset
         accel_units = []  # empty array for units of each acceleration dataset
@@ -352,7 +422,7 @@ class tire():
                         accel_units = line # defining units using third line in reader
                 else:
                     accel_data.append(np.array(line).astype(float)) # appending all lines after line 3 to acceleration_data
-        
+
         # transposing acceleration_data: this makes each row correspond to the equal index titles and units in accel_titles and accel_units
         accel_data = np.transpose(accel_data)
 
@@ -374,8 +444,8 @@ class tire():
         arr = [[], [], []]
 
         # set to True when after appending to arr[1] to mark beginning of set but still waiting to find end of set to append to arr[2]
-        appending = False 
-        for i in range(len(accel_data[indx])):            
+        appending = False
+        for i in range(len(accel_data[indx])):
             # checks to make sure a new set of data is not currently being added to arr
             if not appending:
                 # checks if slip ratio values are within the necessary ranges to mark a new set of data in arr
@@ -389,10 +459,10 @@ class tire():
                 elif -0.15 > accel_data[indx, i]:
                     arr[0].append(-0.15)
                     appending = True
-                
+
                 # records starting value of new dataset in arr[1] if a new set was created
                 if appending: arr[1].append(i)
-            
+
             # checks if slip ratio value are no longer near -0.15, 0, or 0.15 deg
             if appending and (((arr[0][-1] == 0) and not (-0.06 < accel_data[indx, i] < 0.04)) or ((arr[0][-1] == 0.15) and not (0.085 < accel_data[indx, i])) or ((arr[0][-1] == -0.15) and not (-0.014 > accel_data[indx, i]))):
                 arr[2].append(i)  # records the index for the end of the dataset if slip ratio values have changed
@@ -408,13 +478,13 @@ class tire():
         for i in range(half, len(arr[0])-half):
             if arr[0][i-half : i+1+half] == sequence:
                 self.accel_set_index.append([int(arr[2][i-2]), int((arr[1][i] + arr[2][i])/2)])
-        
+
         # creating a list of data_section objects for each set of useful data
         self.accel_data_sets = []
         for i in self.accel_set_index:
             self.accel_data_sets.append(data_section(accel_data[0:len(accel_data), i[0]:i[1]]))
-        
-        
+
+
         '''
         finding applied loads used for testing:
         There are four applied loads for each acceleration test, each a multiple of 50 lb and used multiple times in each test
@@ -445,7 +515,7 @@ class tire():
             self.max_axial_forces.append([])
             for j in range(len(accel_loads)):
                 self.max_axial_forces[-1].append(self.FX_curves.curves[i][j].coeff[2])
-    
+
 
 
 
@@ -480,7 +550,7 @@ class tire():
             titles = self.accel_titles
         else:
             raise SystemExit(f'Invalid set type: \'{set_type}\'')
-        
+
         # cost represents how bad a dataset is. The dataset with lowest cost will be returned
         cost = np.zeros(len(sets))
 
@@ -501,15 +571,15 @@ class tire():
             cost_mag = sum(i_cost)
             for j in range(len(cost)):
                 cost[j] += i_cost[j] / cost_mag
-        
+
         # finding dataset with lowest cost
         sect = 0
         for i in range(1, len(cost)):
             if cost[i] < cost[sect]:
                 sect = i
-        
+
         return sect
-    
+
     def plot_data(self, set_type, x_axis, y_axis, set_num):
         if set_type == 'cornering' or set_type == 'corner':
             x_indx = self.corner_titles.index(x_axis)
@@ -529,7 +599,7 @@ class tire():
             y_title = f'{self.accel_titles[y_indx]} ({self.accel_units[y_indx]})'
         else:
             raise SystemExit(f'Invalid set type: \'{set_type}\'')
-        
+
         plt.plot(x_data, y_data)
         plt.xlabel(x_title)
         plt.ylabel(y_title)
@@ -552,8 +622,47 @@ class tire():
                 num = abs(i)
 
         return num
-    
-    
+
+
+
+    def traction_avg(self, set_type, load, camber):
+        if set_type == 'cornering' or set_type == 'corner':
+            forces = copy.deepcopy(self.avg_max_lateral_forces)
+            loads_arr = copy.deepcopy(self.corner_loads)
+            camber_arr = copy.deepcopy(self.corner_camber_angles)
+        elif set_type == 'acceleration' or set_type == 'accel':
+            forces = copy.deepcopy(self.max_axial_forces)
+            loads_arr = copy.deepcopy(self.accel_loads)
+            camber_arr = copy.deepcopy(self.accel_camber_angles)
+        else:
+            raise SystemExit(f'Invalid set type: \'{set_type}\'')
+
+        # Extending dataset for higher loads by maintaining the slope created from the highest 2 loads
+        interpolation_load = 600
+        for i in range(len(forces)):
+            j = forces[i]
+            forces[i] = [0] + j + [interpolation_load * (j[-1]/loads_arr[-1] + (j[-1]/loads_arr[-1] - j[-2]/loads_arr[-2]) / (loads_arr[-1]-loads_arr[-2]) * (interpolation_load-loads_arr[-1]))]
+        loads_arr = [0] + loads_arr + [interpolation_load]
+
+        i_l, l_bias = 0, 0
+        for i, l in enumerate(loads_arr):
+            if loads_arr[i+1] > load:
+                i_l = i
+                l_bias = (load-loads_arr[i])/(loads_arr[i+1]-loads_arr[i])
+                break
+
+        i_c, c_bias = 0, 0
+        for i, c in enumerate(camber_arr):
+            if camber_arr[i+1] > camber:
+                i_c = i
+                c_bias = (camber-camber_arr[i])/(camber_arr[i+1]-camber_arr[i])
+                break
+
+        final = ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias)
+                + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 1.1
+
+        return final
+
 
     def traction(self, set_type, load, camber):
         if set_type == 'cornering' or set_type == 'corner':
@@ -566,7 +675,7 @@ class tire():
             camber_arr = copy.deepcopy(self.accel_camber_angles)
         else:
             raise SystemExit(f'Invalid set type: \'{set_type}\'')
-        
+
         # Extending dataset for higher loads by maintaining the slope created from the highest 2 loads
         interpolation_load = 600
         for i in range(len(forces)):
@@ -586,7 +695,7 @@ class tire():
                 # equals zero when camber = camber_arr[i_c]; equals 1 when camber = camber_arr[i_c+1]
                 l_bias = (load-loads_arr[i])/(loads_arr[i+1]-loads_arr[i])
                 break
-        
+
         for i in range(len(camber_arr)):
             if camber_arr[i+1] >= camber:
                 # index of the highest camber_arr value less than camber
@@ -594,9 +703,101 @@ class tire():
                 # equals zero when camber = camber_arr[i_c]; equals 1 when camber = camber_arr[i_c+1]
                 c_bias = (camber-camber_arr[i])/(camber_arr[i+1]-camber_arr[i])
                 break
-        
+
         return ((forces[i_c][i_l]*(1-l_bias) + forces[i_c][i_l+1]*l_bias)*(1-c_bias) + (forces[i_c+1][i_l]*(1-l_bias) + forces[i_c+1][i_l+1]*l_bias)*c_bias) * 1.1
-    
+
+    def get_uncertainty(self, set_type, load, camber, rang_perc):
+        curves, y, loads = None, [], []
+        if set_type == 'cornering' or set_type == 'corner':
+            loads = self.FY_curves.loads
+            y = self.FY_curves.curves[int(camber/2)][self.corner_loads.index(load)].eval(self.FY_curves.curve_domain)
+            curves = self.FY_curves
+        elif set_type == 'acceleration' or set_type == 'accel':
+            loads = self.FX_curves.loads
+            y = self.FX_curves.curves[int(camber/2)][self.accel_loads.index(load)].eval(self.FX_curves.curve_domain)
+            curves = self.FX_curves
+        raw_len = len(curves.curves[int(camber/2)][loads.index(load)].x)
+
+        max, max_index = 0, 0
+        for index, i in enumerate(y):
+            if i > max:
+                max = i
+                max_index = index
+        if max_index < int(len(curves.curve_domain) * 8.5/20/2):
+            crit_x = np.flip(curves.curves[int(camber/2)][loads.index(load)].x)[int(raw_len*0.05)]
+        else:
+            crit_x = curves.curve_domain[max_index]
+
+        # Getting the average curve and raw domain
+        raw_domain = curves.curves[int(camber/2)][loads.index(load)].x
+        avg_curve = curves.avg_curves[int(camber/2)][loads.index(load)].get_y(raw_domain)
+
+        # Find peaks and troughs around point of interest x
+        # Find index of x in avg_curve
+        closest_x, index_x, smallest_dif = 0, 0, 5
+        for index, x in enumerate(curves.avg_curves[int(camber/2)][loads.index(load)].x):
+            if abs(x - crit_x) < smallest_dif:
+                smallest_dif = abs(x - crit_x)
+                closest_x = x
+                index_x = index
+        # Find the highest peak and lowest trough within 'rang' parameter
+        peak = np.max(curves.curves[int(camber/2)][loads.index(load)].y[int(
+            index_x - raw_len*rang_perc/2) if int(
+                index_x - raw_len*rang_perc/2) > 0 else 0:int(index_x + raw_len*rang_perc/2)])
+        trough = np.min(curves.curves[int(camber/2)][loads.index(load)].y[int(
+            index_x - raw_len*rang_perc/2)if int(
+            index_x - raw_len*rang_perc/2) > 0 else 0:int(index_x + raw_len*rang_perc/2)])
+        # Find uncertainty
+        uncertainty = np.max([np.abs(curves.avg_curves[int(camber/2)][loads.index(load)].get_y(raw_domain)[
+                                         index_x] - peak), np.abs(curves.avg_curves[int(camber/2)][loads.index(load)].get_y(
+            raw_domain)[index_x] - trough)])
+        return uncertainty
+
+    def find_precise_uncertainty(self, set_type, load, camber, rang):
+        curves, y, loads, cambers = None, [], [], []
+        if set_type == 'cornering' or set_type == 'corner':
+            loads = self.FY_curves.loads
+            cambers = self.FY_curves.cambers
+        elif set_type == 'acceleration' or set_type == 'accel':
+            loads = self.FX_curves.loads
+            cambers = self.FX_curves.cambers
+
+        # Find indices for load and camber
+        load_index = 0
+        for index, l in enumerate(loads):
+            if l > load:
+                load_index = index
+                break
+            load_index = len(loads)-1
+        camber_index = 0
+        for index, c in enumerate(cambers):
+            if c > camber:
+                camber_index = index
+                break
+            camber_index = len(cambers)-1
+
+        # Get values and interpolate
+        # Load
+        lower_load_value = self.get_uncertainty(set_type, loads[load_index-1 if load_index > 0 else load_index],
+                                                cambers[camber_index-1 if camber_index > 0 else camber_index],rang)
+        higher_load_value = self.get_uncertainty(set_type, loads[load_index if load_index > 0 else load_index+1],
+                                                 cambers[camber_index-1 if camber_index > 0 else camber_index],rang)
+        load_interp = np.interp(load, [loads[load_index-1 if load_index > 0 else load_index],
+                                       loads[load_index if load_index > 0 else load_index+1]],
+                                [lower_load_value, higher_load_value])
+        # Camber
+        lower_camber_value = self.get_uncertainty(set_type, loads[load_index-1 if load_index > 0 else load_index],
+                                                  cambers[camber_index-1 if camber_index > 0 else camber_index],rang)
+        higher_camber_value = self.get_uncertainty(set_type, loads[load_index-1 if load_index > 0 else load_index],
+                                                   (cambers[camber_index if camber_index > 0 else camber_index+1]),rang)
+        camber_interp = np.interp(camber, [cambers[camber_index-1 if camber_index > 0 else camber_index],
+                                           cambers[camber_index if camber_index > 0 else camber_index+1]],
+                                  [lower_camber_value, higher_camber_value])
+        # Final value
+        value = np.interp(0.5, [0,1], [load_interp, camber_interp])
+        return value
+
+
     ''' ======================================================= '''
     ''' ========== Cornering Data Graphing Functions ========== '''
     ''' ======================================================= '''
@@ -612,7 +813,7 @@ class tire():
         plt.grid()
         plt.legend(leg)
         plt.show()
-    
+
     def lateral_coeff_plot(self):
         leg = []
         for i in range(len(self.max_lateral_forces)):
@@ -625,7 +826,7 @@ class tire():
         plt.grid()
         plt.legend(leg)
         plt.show()
-    
+
     def SA_FY_plot(self, camber):
         leg = []
         for i in self.corner_loads:
@@ -641,9 +842,9 @@ class tire():
 
     def SA_MZ_plot(self, camber):
         leg = []
-        # for i in self.corner_loads:
-        self.aligning_torque.plot_curve(100, camber)
-        leg.append(f'{100} {self.corner_units[self.corner_titles.index('FZ')]}')
+        for i in self.corner_loads:
+            self.aligning_torque.plot_curve(i, camber)
+            leg.append(f'{i} {self.corner_units[self.corner_titles.index('FZ')]}')
 
         plt.title(f"{self.tire_name}, Slip Angle vs Aligning Torque")
         plt.xlabel(f'Slip Angle (degrees)')
@@ -720,7 +921,7 @@ class tire():
     #     plt.grid()
     #     plt.legend(leg)
     #     plt.show()
-    
+
     def axial_coeff_plot(self):
         leg = []
         for i in range(len(self.max_axial_forces)):
@@ -733,16 +934,29 @@ class tire():
         plt.grid()
         plt.legend(leg)
         plt.show()
-    
+
     def SR_FX_plot(self, camber):
         leg = []
         for i in self.accel_loads:
             self.FX_curves.plot_curve(i, camber)
             leg.append(f'{i} {self.accel_units[self.accel_titles.index('FZ')]}')
 
-        plt.title(f"{self.tire_name}, Axial force vs slip ratio w/ {camber} degrees of camber")
+        plt.title(f"Slip Ratio vs. Axial Force")
         plt.xlabel(f'Slip Ratio')
         plt.ylabel(f'FX ({self.accel_units[self.accel_titles.index('FX')]})')
+        plt.grid()
+        plt.legend(leg)
+        plt.show()
+
+    def SA_FY_camber_plot(self, load):
+        leg = []
+        for i in range(3):
+            self.FY_curves.plot_curve(load, i*2)
+            leg.append(f'-{i*2}° camber')
+
+        plt.title(f"Slip Angle vs. Lateral Force")
+        plt.xlabel(f'Slip Angle')
+        plt.ylabel(f'FY ({self.corner_units[self.corner_titles.index('FY')]})')
         plt.grid()
         plt.legend(leg)
         plt.show()
@@ -795,12 +1009,29 @@ class tire():
         plt.grid()
         plt.show()
 
-# R20_18_6 = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_corner.dat",
-#                  "/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_18_6_R20_drive.dat")
-# R20_16_6 = tire("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/tire_data/Hoosier_16_6_R20_corner.dat",
-#                   "")
-#
-# R20_18_6.lateral_force_plot()
+    def plot_MZ_raw(self, CA=0):
+        for load_index, load in enumerate(self.corner_loads):
+            plt.plot(self.aligning_torque.curves[int(CA*0.5)][load_index].x,
+                     self.aligning_torque.curves[int(CA*0.5)][load_index].y)
+        plt.grid()
+        plt.show()
+
+    def plot_FY_raw(self, CA=0):
+        # for load_index, load in enumerate(self.corner_loads):
+        #     plt.plot(self.FY_curves.curves[int(CA*0.5)][load_index].x,
+        #              self.FY_curves.curves[int(CA*0.5)][load_index].y)
+        for i in self.corner_loads:
+            self.FY_curves.plot_avg_curve(i, CA)
+        # for i in self.corner_loads:
+        #     self.FY_curves.plot_curve(i, CA)
+        plt.grid()
+        plt.show()
+
+# t = tire(cornering_data_file="/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Copy/config_data"
+#                              "/tire_data/Hoosier_18_6_R20_corner.dat",
+#          acceleration_data_file="/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Copy/"
+#                                 "config_data/tire_data/Hoosier_18_6_R20_drive.dat")
+# t.plot_FY_raw(0)
 
 # def compare_max_lats(t_16, t_18):
 #     loads = np.linspace(50, 250, 100)

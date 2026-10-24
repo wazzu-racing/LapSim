@@ -40,7 +40,7 @@ class drivetrain:
             i = 0
             for line in reader:
                 if i >= 1: # skipping first line
-                    self.engn_rpm.append(int(line[0]))
+                    self.engn_rpm.append(float(line[0]))
                     self.hp.append(float(line[1]))
                     self.engn_T.append(float(line[2]))
                 i += 1

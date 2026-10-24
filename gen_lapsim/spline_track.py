@@ -651,8 +651,14 @@ class track():
 
     global x_array, y_array
 
-    def __init__(self, p1x, p1y, p2x, p2y, car, loop=False):
+    def __init__(self, p1x, p1y, p2x, p2y, car, loop=False, repeat=0):
         global x_array, y_array, turn_array
+
+        if repeat != 0:
+            p1x = np.tile(p1x, repeat)
+            p2x = np.tile(p2x, repeat)
+            p1y = np.tile(p1y, repeat)
+            p2y = np.tile(p2y, repeat)
 
         self.car = car
 
@@ -959,7 +965,7 @@ class track():
             arc.determine_turn_dirs()
 
     # Convert all arcs on track into lengths and radii, then run the lapsim using those.
-    def run_sim(self, car, nodes = 5000, start_nd = 0, end_nd = 0, start_vel = 0, end_vel = 0):
+    def run_sim(self, car, nodes = 5000, start_nd = 0, end_nd = 0, start_vel = 0, end_vel = 0, clear_arrs=True):
         from gen_lapsim import lapsim
 
         self.car = car
@@ -969,9 +975,10 @@ class track():
 
         self.determine_turn_dirs_on_track()
 
-        self.lens = []
-        self.rad = []
-        self.turn_dirs = []
+        if clear_arrs:
+            self.lens = []
+            self.rad = []
+            self.turn_dirs = []
         for i in self.arcs[start_nd:end_nd]:
             new_len, new_rad, new_turns = i.interpolate()
             self.lens += new_len
@@ -980,7 +987,6 @@ class track():
         self.sim = lapsim.four_wheel(self.lens, self.rad, self.turn_dirs, car, nodes, start_vel, end_vel)
         self.nodes, self.v3, self.t = self.sim.run() # Run lapsim
         return self.t
-        # print(f'Total Travel Time: {self.t}')
 
     def update_track(self):
         for i in self.nds:

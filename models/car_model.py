@@ -30,8 +30,8 @@ class car():
     # vertical center of gravity (in)
     h = 12.4
     # in, roll axis height, front and rear
-    z_rf = 3.1
-    z_rr = 3.3
+    z_rf = 2.5
+    z_rr = 2.7
     # Track widths, front and rear (in)
     t_f = 47
     t_r = 46
@@ -42,8 +42,8 @@ class car():
     K_rollF = 215203 # lb*in/rad
     K_rollR = 195952 # lb*in/rad
     #deg/in, camber rates for front and rear
-    CMB_RT_F = 1.3
-    CMB_RT_R = 1.15
+    CMB_RT_F = 1.7
+    CMB_RT_R = 1.5
     # deg, static camber rates for front and rear
     CMB_STC_F = 1
     CMB_STC_R = 1
@@ -134,6 +134,8 @@ class car():
     engine_force = []
     vels = []
     tires_force = []
+
+    sprocket_torque = [] # ft*lbs
 
     # aero csv file delimiter
     aero_delimiter = ';'
@@ -405,7 +407,7 @@ class car():
 
     def compute_traction(self):
 
-        speed_arr = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900] # in/s
+        speed_arr = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 616] # in/s
         self.curves = []
 
         for index, speed in enumerate(speed_arr):
@@ -437,7 +439,7 @@ class car():
             self.accel(0, 0)
             self.curves[-1].static_snippet = self.Car_Data_Snippet(self, -1, changing_gears=True, speed=speed) # Used to describe the state of the car during gear changes
 
-        self.drag_goon()
+        # self.drag_goon()
 
     def recalculate_characteristics(self):
         # weight over front track
@@ -522,7 +524,7 @@ class car():
             FX -= self.aero_model.get_drag(speed)
         else:
             FX = self.FX_out_f + self.FX_in_f + self.FX_out_r + self.FX_in_r
-            FX += self.aero_model.get_drag(speed)
+            FX -= self.aero_model.get_drag(speed)
 
         # Checking if the car can generate the necessary axial tire traction
         if abs(FX/self.W_car) < abs(AX):return False
@@ -534,7 +536,7 @@ class car():
 
         # returns the guess value if high and low estimates have converged
         if high_guess - low_guess < 0.0000000001:
-            return guess
+            return guess# - self.aero_model.get_drag(speed)/self.W_car
 
         if self.accel(AY, guess, speed=speed): # sets low estimate to the guess value if the car can handle cornering acceleration equal to the guess value
             return self.max_accel(AY, guess, high_guess, speed=speed)
@@ -546,7 +548,7 @@ class car():
 
         # returns the guess value if high and low estimates have converged
         if high_guess - low_guess < 0.0000000001:
-            return guess
+            return guess# - self.aero_model.get_drag(speed)/self.W_car
 
         if self.accel(AY, guess, speed=speed): # sets high estimate to the guess value if the car can handle breaking acceleration equal to the guess value
             return self.max_brake(AY, low_guess, guess, speed=speed)
@@ -614,8 +616,8 @@ class car():
         # returns either tire or engine acceleration depending on which is the limiting factor
         if A_engn < interpolated_snippet.AX:
             interpolated_snippet.AX = A_engn
-            return interpolated_snippet
-        return interpolated_snippet
+            return interpolated_snippet, A_engn*self.W_car*9/12
+        return interpolated_snippet, A_engn*self.W_car*9/12
 
     # calculates the max braking acceleration (in/s^2) along a curve of given radius while traveling at a given velocity
     # params: [v = vehicle_speed (in/s)] :: [r = curve_radius (in)]
@@ -677,7 +679,7 @@ class car():
         return static_snippet
 
     # Reduces AXs that are higher than self.curves[0].A_accel[0] to that same value.
-    def drag_goon(self):
+    def force_drag(self):
         for outer_index, curve in enumerate(self.curves):
             if outer_index == 0:
                 continue
@@ -783,6 +785,6 @@ class car():
         plt.show()
 
 # racecar = car()
+# print(racecar.curves[-1].AY[-1])
 # racecar.traction_curves()
-# racecar.compute_maximum_AY(350)
-# racecar.curve_brake(1000, 5169.294)
+# print(racecar.curves[-1].AY[-1])

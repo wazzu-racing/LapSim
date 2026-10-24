@@ -16,6 +16,8 @@ class Brakes:
 
         self.times = []
 
+        self.dx = 0
+
         self.ambient_temp = 24 # degrees, celsius
 
         self.front_brake_temps = [self.ambient_temp]
@@ -33,11 +35,12 @@ class Brakes:
         self.Pr = 0.71 # unitless, prandtl number of air
         self.K_air = 0.0261 # W/(m*K), thermal conductivity of air at 75 degrees Fahrenheit
         # COOLING COEFFICIENT
-        self.C_C = 0.2 # unitless
+        self.C_C = 0.44 # unitless
 
         self.last_time = 0
 
         self.max_speed = self.racecar.drivetrain.max_speed * 17.6 # in/s
+
 
     def reset(self):
         self.front_brake_temps = [self.ambient_temp]
@@ -45,6 +48,7 @@ class Brakes:
         self.last_time = 0
 
     def calculate_brake_temps(self, FX_array, vel_array, times):
+        self.max_speed = max(vel_array)
         self.times = times
         for index, FX in enumerate(FX_array):
             if index == 0:
@@ -54,13 +58,15 @@ class Brakes:
     def add_brake_data(self, F_B, v, t):
 
         def calculate_cooling_coefficient():
-            Re_U = self.P_air * v*0.0254 * self.D_rotor / self.dynamic_viscity_air # Reynolds number
-            Re_R = self.P_air * v*0.0254/0.2286 * ((self.D_rotor/2)**2) / self.dynamic_viscity_air
-            Nu = math.sqrt((0.036*Re_U**0.8)**2 + (0.556*Re_R**0.5)**2) # Nusselt number
-            h = Nu * self.K_air / self.D_rotor # convection coefficient
-            k = h * self.A_rotor / (self.M_brake * self.C_p) # cooling coefficient
+            # Re_U = self.P_air * v*0.0254 * self.D_rotor / self.dynamic_viscity_air # Reynolds number
+            # Re_R = self.P_air * v*0.0254/0.2286 * ((self.D_rotor/2)**2) / self.dynamic_viscity_air
+            # Nu = math.sqrt((0.036*Re_U**0.8)**2 + (0.556*Re_R**0.5)**2) # Nusselt number
+            # h = Nu * self.K_air / self.D_rotor # convection coefficient
+            # k = h * self.A_rotor / (self.M_brake * self.C_p) # cooling coefficient
 
-            k = self.C_C * (v / self.max_speed)**2
+            k_neutral = (25 * self.A_rotor) / (self.M_brake * self.C_p)
+
+            k = self.C_C * (v / self.max_speed)**2 + k_neutral
 
             return k
 

@@ -32,6 +32,15 @@ class LapSimData:
         self.FO_FX_array = []
         self.RI_FX_array = []
         self.RO_FX_array = []
+        # Uncertainties
+        self.FI_FY_uncertainty = []
+        self.FO_FY_uncertainty = []
+        self.RI_FY_uncertainty = []
+        self.RO_FY_uncertainty = []
+        self.FI_FX_uncertainty = []
+        self.FO_FX_uncertainty = []
+        self.RI_FX_uncertainty = []
+        self.RO_FX_uncertainty = []
         # Vectors of forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
         self.FI_vector = []
         self.FO_vector = []
@@ -56,6 +65,8 @@ class LapSimData:
         self.theta_accel = []
         # records the nodes at which the car is changing gears
         self.changing_gears = []
+        # sprocket torque
+        self.sprocket_torque = [] # ft*lbs
 
         self.max_value_names = ["max_time", "max_AY", "max_AX", "max_FI_load", "max_FO_load", "max_RI_load",
                                 "max_RO_load", "max_FI_FY", "max_FO_FY", "max_RI_FY", "max_RO_FY", "max_FI_FX",
@@ -84,6 +95,15 @@ class LapSimData:
         self.FI_FX_array = np.zeros(int(n + 1))
         self.RO_FX_array = np.zeros(int(n + 1))
         self.RI_FX_array = np.zeros(int(n + 1))
+        # Uncertainties
+        self.FI_FY_uncertainty = np.zeros(int(n+1))
+        self.FO_FY_uncertainty = np.zeros(int(n+1))
+        self.RI_FY_uncertainty = np.zeros(int(n+1))
+        self.RO_FY_uncertainty = np.zeros(int(n+1))
+        self.FI_FX_uncertainty = np.zeros(int(n+1))
+        self.FO_FX_uncertainty = np.zeros(int(n+1))
+        self.RI_FX_uncertainty = np.zeros(int(n+1))
+        self.RO_FX_uncertainty = np.zeros(int(n+1))
         # vectors for forces on tires, arr[0] = axial, arr[1] = lateral, arr[2] = vertical
         self.FI_vector = np.zeros(shape=(int(n + 1), 3))
         self.FO_vector = np.zeros(shape=(int(n + 1), 3))
@@ -112,6 +132,8 @@ class LapSimData:
         self.theta_accel = np.zeros(int(n + 1))
         # records the nodes at which the car is changing gears
         self.changing_gears = np.zeros(int(n + 1))
+        # sprocket torque
+        self.sprocket_torque = np.zeros(int(n + 1)) # ft*lbs
 
     # Append a data point to all arrays.
     def append_data_arrays(self, snippet, index):
@@ -170,6 +192,25 @@ class LapSimData:
         self.FI_C[index] = snippet.FI_camber
         self.RO_C[index] = snippet.RO_camber
         self.RI_C[index] = snippet.RI_camber
+
+    def calculate_uncertainties(self, n, racecar, rang):
+        for i in range(n+1):
+            self.FI_FY_uncertainty[i] = racecar.tires.find_precise_uncertainty('corner',self.FO_load_array[i],
+                                                                        self.FO_C[i], rang)
+            self.FO_FY_uncertainty[i] = racecar.tires.find_precise_uncertainty('corner',self.FI_load_array[i],
+                                                                        self.FI_C[i], rang)
+            self.RI_FY_uncertainty[i] = racecar.tires.find_precise_uncertainty('corner',self.RO_load_array[i],
+                                                                        self.RO_C[i], rang)
+            self.RO_FY_uncertainty[i] = racecar.tires.find_precise_uncertainty('corner',self.RI_load_array[i],
+                                                                        self.RI_C[i], rang)
+            self.FI_FX_uncertainty[i] = racecar.tires.find_precise_uncertainty('accel',self.FO_load_array[i],
+                                                                        self.FO_C[i], rang)
+            self.FO_FX_uncertainty[i] = racecar.tires.find_precise_uncertainty('accel',self.FI_load_array[i],
+                                                                        self.FI_C[i], rang)
+            self.RI_FX_uncertainty[i] = racecar.tires.find_precise_uncertainty('accel',self.RO_load_array[i],
+                                                                        self.RO_C[i], rang)
+            self.RO_FX_uncertainty[i] = racecar.tires.find_precise_uncertainty('accel',self.RI_load_array[i],
+                                                                                self.RI_C[i],rang)
 
     # Returns a dictionary of all the max values within arrays.
     def find_max_values(self):
@@ -329,9 +370,11 @@ class four_wheel:
                     v2[int(i + 1)] = v2[int(i)]
 
             else:
-                # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower, engine accel. limit or tire grip limit as explained in word doc.
+                # Below section determines maximum longitudinal acceleration (a_tan) by selecting whichever is lower,
+                # engine accel. limit or tire grip limit as explained in word doc.
                 if (gear >= self.car.drivetrain.gear_vel[int(v1[int(i)] * 0.0568182 * 10)]) and not shifting:
-                    snippet = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in g's
+                    snippet, S_tor = self.car.curve_accel(v1[int(i)], self.nd_rad[int(i)], gear)  # in g's
+                    self.lapsim_data_storage.sprocket_torque[int(i)] = S_tor
                     snippet.AX *= 32.17 * 12
                 else:
                     snippet = self.car.curve_idle(v1[int(i)], self.nd_rad[int(i)])
@@ -370,6 +413,8 @@ class four_wheel:
         print(f"Time: {t}")
         # print(f"Time: {t} seconds"
 
+        # self.lapsim_data_storage.calculate_uncertainties(n,self.car,0.1)
+
         # Brake shit
         # AX_FX = []
         # for index in range(len(self.lapsim_data_storage.FO_FX_array)):
@@ -388,6 +433,11 @@ class four_wheel:
         self.v1 = v1
         self.t = t
 
+        print(f"Max velocity: {max(self.v3)*0.0568182} MPH")
+        print(f"Average velocity: {np.average(self.v3)*0.0568182} MPH")
+
+        self.plot_velocities()
+
         # plt.plot(self.nds, self.W_out_f_array)
         # plt.show()
 
@@ -402,17 +452,24 @@ class four_wheel:
         return nds / 12, v1 / 17.6, t
 
     def plot_velocities(self):
-        tk = tkinter.Tk()
-        fig = Figure(figsize=(10, 10), dpi=100)
-        ax = fig.add_subplot(111)
-        canvas = FigureCanvasTkAgg(fig, tk)
-        canvas.draw()
-        toolbar = NavigationToolbar2Tk(canvas, tk)
-        canvas.get_tk_widget().pack()
-        toolbar.update()
-        ax.plot(np.linspace(0, len(self.v2), len(self.v2)), self.v2, color="red")
-        ax.plot(np.linspace(0, len(self.v1), len(self.v1)), self.v1, color="green")
-        ax.plot(np.linspace(0, len(self.v3), len(self.v3)), self.v3, color="blue")
-        ax.legend()
-        ax.grid()
-        tk.mainloop()
+        # tk = tkinter.Tk()
+        # fig = Figure(figsize=(10, 10), dpi=100)
+        # ax = fig.add_subplot(111)
+        # canvas = FigureCanvasTkAgg(fig, tk)
+        # canvas.draw()
+        # toolbar = NavigationToolbar2Tk(canvas, tk)
+        # canvas.get_tk_widget().pack()
+        # toolbar.update()
+        # ax.plot(np.linspace(0, len(self.v2), len(self.v2)), self.v2, color="red")
+        # ax.plot(np.linspace(0, len(self.v1), len(self.v1)), self.v1, color="green")
+        # ax.plot(np.linspace(0, len(self.v3), len(self.v3)), self.v3, color="blue")
+        # ax.legend()
+        # ax.grid()
+        # tk.mainloop()
+
+        plt.plot(np.linspace(0, len(self.v2), len(self.v2)), self.v2, color="red")
+        plt.plot(np.linspace(0, len(self.v1), len(self.v1)), self.v1, color="green")
+        plt.plot(np.linspace(0, len(self.v3), len(self.v3)), self.v3, color="blue")
+        plt.legend()
+        plt.grid()
+        plt.show()
