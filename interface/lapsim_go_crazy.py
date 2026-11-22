@@ -316,8 +316,10 @@ class LapSimGoCrazy:
                         new_track_data = LapData(data)
                         pickle.dump(obj=new_track_data, file=f)
                     print('[Track points saved]')
-                    print(f"points_x: {self.points_x}")
-                    print(f"points_y: {self.points_y}")
+                    print(f"p1x: [{self.p1x}]\n")
+                    print(f"p1y: [{self.p1ys}]\n")
+                    print(f"p2x: [{self.p2x}]\n")
+                    print(f"p2y: [{self.p2ys}]\n")
 
                     self.close_window()
             case 'z': # Undo the dot the user last placed.
@@ -498,6 +500,8 @@ class LapSimGoCrazy:
         self.go_crazy_root.bind("<Return>", self.return_key)
         self.go_crazy_root.bind("<Motion>", self.get_mouse_pos)
         self.go_crazy_root.bind("<Key>", self.key)
+
+# lap = LapSimGoCrazy(image_path="/Users/jacobmckee/Desktop/Screenshot 2026-10-13 at 8.10.36 PM.png", editing=True)
 
     # Uncompleted function to zoom in and out with mouse wheel. Issues w/ scaling the self.dots along the resized image.
     # def mouse_wheel(event):

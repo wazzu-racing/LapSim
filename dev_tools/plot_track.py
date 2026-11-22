@@ -51,11 +51,12 @@ def parse_text_to_track_pkl(txt_path):
 
     return points_x, points_y, points_x2, points_y2
 
-points_x, points_y, points_x2, points_y2 = parse_text_to_track_pkl("/".join(os.getcwd().split("/")[:-1]) + "/config_data/track_points/Points for Endurance.rtf")
+points_x, points_y, points_x2, points_y2 = parse_text_to_track_pkl("/".join(os.getcwd().split("/")[:-1]) +
+                                                                   "/config_data/track_points/Untitled.rtf")
 
 racecar = car()
 trk = track(points_x, points_y, points_x2, points_y2, racecar, True)
-trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
 trk.determine_turn_dirs_on_track()
+trk.adjust_track([40, 30, 30, 80],[100, 30, 10, 5])
 
 trk.plot_without_UI(show_turns=False)

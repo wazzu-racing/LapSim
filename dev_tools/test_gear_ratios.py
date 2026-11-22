@@ -12,14 +12,47 @@ from models.drivetrain_model import drivetrain
 
 class GearRatios:
     def __init__(self):
-        self.ratios = {"CBR650F":[1.69, [3.071, 2.235, 1.777, 1.520, 1.333, 1.214]],
-                  "R6":[2.073, [2.6,2.063,1.762,1.522,1.364,1.222]],
-                  "CBR600RR":[2.111, [2.75,2,1.666,1.444,1.304,1.208]],
-                  "SV650":[2.088, [2.461,1.777,1.38,1.125,0.961,0.851]],
-                  "GSX-R600":[1.9,[2.786,2.053,1.714,1.5,1.348,1.208]],
-                  "ZX-6R":[1.891,[2.923,2.055,1.666,1.45,1.272,1.153]]}
+        self.ratios = {"KTM690":[2.194, [2.500, 1.750, 1.333, 1.091, 1.045, 1.150]],
+                  "R7":[1.925, [2.846,2.125,1.632,1.300,1.091,0.930]]}
 
-        self.calculate_engine_times()
+        ktm_dir=("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/engine_data/"
+                 "690.csv")
+        r7_dir=("/Users/jacobmckee/Documents/Wazzu_Racing/Vehicle_Dynamics/Repos/LapSim_Main/config_data/engine_data/"
+                "R7.csv")
+
+        ktm_time, ktm_final_drive = self.calculate_engine_time("KTM690", self.ratios["KTM690"][0], self.ratios[
+            "KTM690"][1],
+                                           eng_dir=ktm_dir)
+        # r7_time, r7_final_drive = self.calculate_engine_time("R7", self.ratios["R7"][0], self.ratios["R7"][1],
+        #                                                 eng_dir=r7_dir)
+
+        # print(f"\nKTM\nBest Time: {round(ktm_time, 3)}\nBest Final Drive:"
+        #       f" {ktm_final_drive}")
+        print(f"\nKTM\nBest Time: {round(ktm_time, 3)}\nBest Final Drive:"f" {ktm_final_drive}")
+
+    def calculate_engine_time(self, name, primary, gears, eng_dir="", final=0):
+        track_ex = Track_Examine()
+        self.racecar = car()
+        times = []
+        final_range=np.arange(1,4, 0.1)
+
+        if final == 0:
+            for ratio in final_range:
+                new_dt = drivetrain(engine_data=eng_dir, final_drive=ratio)
+                self.racecar.drivetrain = new_dt
+                self.racecar.drivetrain.gear_ratios = gears
+                self.racecar.drivetrain.primary_drive = primary
+
+                if any(times):
+                    time = track_ex.run_accel(self.racecar, 1000, again=True)
+                else:
+                    time = track_ex.run_accel(self.racecar, 1000, again=False)
+                times.append(time)
+        else:
+            pass
+
+        return np.min(times), final_range[np.where(times == (np.min(times)))]
+
 
     def calculate_engine_times(self):
         self.racecar = car()
@@ -29,7 +62,7 @@ class GearRatios:
         final_drive_4_times = {key:0 for key in self.ratios.keys()}
         times = {key:[] for key in self.ratios.keys()}
 
-        final_drive_range = [1,6]
+        final_drive_range = [1,5]
         step = 0.1
         for key, value in self.ratios.items():
             dir = '/'.join(os.getcwd().split('/')[:-1])+f"/config_data/engine_data/{key}.csv"
